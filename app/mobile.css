@@ -1,0 +1,393 @@
+/*
+ * Phones: keep the core of every step on the first screen.
+ * Text and buttons hug their content (tight padding, no tall minimum heights),
+ * secondary explanations are shortened or hidden, and each step's working
+ * surface (practice pad, font list, writing sheet, separation canvas) takes
+ * the height that is left. Loaded after touch.css.
+ */
+@media (max-width: 699px), (orientation: landscape) and (max-height: 500px) {
+  /* ---- shared chrome ---- */
+  /* Header and step bar take only the height of their content. */
+  .studio.journey {
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+  .studio.journey.journey-step-2 {
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+  }
+  .studio.journey > .journey-track button {
+    min-width: 0;
+  }
+  .studio.journey .new-project-trigger {
+    min-width: 0;
+  }
+  .studio.journey > .topbar {
+    height: 44px;
+    min-height: 0;
+    padding: 0 10px;
+  }
+  .studio.journey .brand {
+    gap: 6px;
+  }
+  .studio.journey .brand-mark {
+    width: 26px;
+    height: 26px;
+    font-size: 14px;
+  }
+  .studio.journey .top-actions {
+    gap: 6px;
+    align-items: center;
+  }
+  .studio.journey .top-actions button {
+    min-height: 0;
+    height: auto;
+    padding: 5px 8px;
+    font-size: 11px;
+    line-height: 1.2;
+  }
+  .studio.journey .top-actions .icon-button {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+  }
+  .studio.journey .save-state {
+    font-size: 9px;
+  }
+  .studio.journey > .journey-track {
+    min-height: 0;
+    padding: 2px 4px;
+    gap: 0;
+  }
+  .studio.journey > .journey-track button {
+    min-height: 0;
+    padding: 2px 0;
+    gap: 2px;
+    font-size: 10px;
+    line-height: 1.15;
+  }
+  .studio.journey > .journey-track .step-number {
+    width: 18px;
+    height: 18px;
+    font-size: 8px;
+  }
+  .studio.journey .step-kicker,
+  .studio.journey .eyebrow {
+    display: none;
+  }
+  .studio.journey h1,
+  .studio.journey .font-header h2 {
+    font-size: 19px;
+    line-height: 1.25;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .studio.journey h1 br {
+    display: none;
+  }
+
+  /* ---- 01 brush & 02 reference ---- */
+  .studio.journey .setup-screen {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 14px 62px;
+    overflow: hidden;
+  }
+  .studio.journey .setup-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .studio.journey .setup-copy > p {
+    font-size: 12px;
+    line-height: 1.45;
+    margin: 0;
+  }
+  .studio.journey .setup-copy > small,
+  .studio.journey .trial-note {
+    display: none;
+  }
+  .studio.journey .setup-thickness {
+    margin: 0;
+    gap: 2px 10px;
+    font-size: 12px;
+  }
+  .studio.journey .setup-copy .check {
+    min-height: 0;
+    margin: 0;
+    font-size: 12px;
+  }
+  .studio.journey .journey-next {
+    min-height: 0;
+    padding: 11px 16px;
+    font-size: 14px;
+    bottom: 10px;
+  }
+  .studio.journey .brush-experience {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .studio.journey .setup-brushes {
+    gap: 4px;
+  }
+  .studio.journey .setup-brushes button {
+    min-height: 0;
+    padding: 4px 2px;
+    gap: 0;
+  }
+  .studio.journey .setup-brushes button small {
+    display: none;
+  }
+  .studio.journey .trial-heading {
+    min-height: 0;
+    margin: 0;
+    font-size: 11px;
+  }
+  .studio.journey .trial-heading button {
+    min-height: 0;
+    padding: 3px 6px;
+  }
+  .studio.journey .brush-trial {
+    flex: 1 1 auto;
+    min-height: 120px;
+    display: flex;
+    justify-content: center;
+  }
+  .studio.journey .brush-trial .pad {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    aspect-ratio: auto;
+  }
+  .studio.journey .setup-sentence {
+    gap: 4px;
+    font-size: 12px;
+  }
+  .studio.journey .setup-sentence input {
+    min-height: 0;
+    padding: 7px 10px;
+  }
+  .studio.journey .setup-fonts {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    gap: 0;
+    margin: 0;
+  }
+  .studio.journey .setup-fonts > button {
+    min-height: 0;
+    padding: 6px 10px;
+    gap: 2px;
+  }
+  .studio.journey .font-choice-sentence {
+    font-size: 19px;
+    line-height: 1.3;
+  }
+  .studio.journey .font-choice-label {
+    font-size: 10px;
+  }
+
+  /* ---- 03 writing ---- */
+  .studio.journey.journey-step-2 .character-instruction {
+    gap: 8px;
+    margin: 0;
+  }
+  .studio.journey.journey-step-2 .character-instruction strong {
+    font-size: 24px;
+    line-height: 1;
+  }
+  .studio.journey.journey-step-2 .character-instruction p {
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .studio.journey.journey-step-2 .mode-tabs button,
+  .studio.journey.journey-step-2 .mobile-ink-tools button,
+  .studio.journey.journey-step-2 .navigation button,
+  .studio.journey.journey-step-2 .strip-filters button,
+  .studio.journey.journey-step-2 .grid-tools button {
+    min-height: 0;
+    padding: 6px 8px;
+    font-size: 12px;
+    line-height: 1.2;
+  }
+  .studio.journey.journey-step-2 > .progress-panel {
+    padding: 4px 10px 6px;
+    gap: 4px;
+  }
+  .studio.journey.journey-step-2 .progress-heading {
+    gap: 6px;
+    min-height: 0;
+  }
+  .studio.journey.journey-step-2 .progress-heading > div:first-child {
+    display: none;
+  }
+  .studio.journey.journey-step-2 .strip-filters select,
+  .studio.journey.journey-step-2 .progress-heading select {
+    min-height: 0;
+    padding: 5px 6px;
+    font-size: 11px;
+  }
+
+  /* ---- 04 jamo separation & 05 font ---- */
+  .studio.journey .guided-workshop {
+    padding: 6px 10px 10px;
+  }
+  .studio.journey .font-workshop {
+    padding: 0;
+  }
+  .studio.journey .font-header {
+    min-height: 0;
+    padding: 4px 0;
+    gap: 6px;
+  }
+  .studio.journey .font-header button,
+  .studio.journey .font-footer button,
+  .studio.journey .font-primary,
+  .studio.journey .font-secondary,
+  .studio.journey .finish-track button,
+  .studio.journey .finish-navigation button {
+    min-height: 0;
+    padding: 7px 10px;
+    font-size: 12px;
+    line-height: 1.2;
+  }
+  .studio.journey .separation-welcome {
+    margin: 0 0 4px;
+  }
+  .studio.journey .separation-welcome .jamo-example {
+    gap: 8px;
+    margin: 0;
+    padding: 2px 0;
+  }
+  .studio.journey .jamo-example > span {
+    font-size: 17px;
+    gap: 4px;
+  }
+  .studio.journey .jamo-example small {
+    font-size: 9px;
+  }
+  .studio.journey .separation-welcome p {
+    font-size: 12px;
+    margin: 4px 0;
+  }
+  .studio.journey .separation-welcome ol {
+    gap: 4px;
+  }
+  .studio.journey .separation-welcome li {
+    padding-top: 4px;
+  }
+  .studio.journey .character-navigation {
+    min-height: 0;
+    margin: 0 0 4px;
+    gap: 6px;
+  }
+  .studio.journey .character-navigation > button {
+    min-height: 0;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .studio.journey .character-navigation strong {
+    font-size: 20px;
+    line-height: 1;
+  }
+  .studio.journey .character-slider {
+    gap: 4px;
+    margin: 0 0 6px;
+    padding: 2px 0;
+  }
+  .studio.journey .character-slider > button {
+    min-height: 0;
+    width: 40px;
+    min-width: 40px;
+    height: 44px;
+    padding: 2px;
+    font-size: 10px;
+  }
+  /* Two tight rows: modes, then undo / redo / select all / clear. */
+  .studio.journey .editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 0 0 4px;
+  }
+  .studio.journey .editor-toolbar .editor-modes {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+    margin: 0;
+  }
+  .studio.journey .editor-toolbar button,
+  .studio.journey .editor-toolbar > button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    padding: 6px 8px;
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  /* The long how-to text is in the folded explanation above. */
+  .studio.journey .separation-editor > .font-help {
+    display: none;
+  }
+  .studio.journey .reference-region-note {
+    font-size: 10px;
+    line-height: 1.3;
+    margin: 0 0 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .studio.journey .font-workshop .separation-layout {
+    margin: 0;
+    gap: 8px;
+  }
+  .studio.journey .font-workshop .separation-svg {
+    width: min(100%, calc(100dvh - 362px));
+  }
+  .studio.journey .part-legend {
+    margin: 4px 0;
+    gap: 12px;
+    font-size: 11px;
+  }
+  .studio.journey .quick-assign {
+    margin-top: 4px;
+    gap: 6px;
+    font-size: 12px;
+  }
+  .studio.journey .quick-assign button {
+    min-height: 0;
+    padding: 7px 4px;
+    line-height: 1.2;
+  }
+  .studio.journey .assignment-row {
+    min-height: 0;
+    padding: 3px 6px;
+  }
+  .studio.journey .assignment-row button {
+    min-height: 0;
+    padding: 5px 4px;
+    font-size: 11px;
+  }
+  .studio.journey .font-workshop p,
+  .studio.journey .font-help {
+    font-size: 12px;
+    line-height: 1.45;
+    margin-top: 4px;
+    margin-bottom: 4px;
+  }
+  .studio.journey .font-footer {
+    padding: 6px 0;
+    gap: 6px;
+  }
+}
+
+/* Sideways phones: too short for chrome + canvas together; the canvas is
+ * sized to the screen height so, once scrolled to, it is fully usable. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .studio.journey .font-workshop .separation-svg {
+    width: min(100%, calc(100dvh - 70px));
+  }
+}

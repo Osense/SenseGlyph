@@ -5,6 +5,7 @@ import "./editor.css";
 import "./workspace.css";
 import "./journey.css";
 import "./touch.css";
+import "./mobile.css";
 import { BASE_PATH } from "../lib/base-path";
 
 // Bundled reference fonts. Declared here (not in CSS) so their URLs follow the

@@ -1,0 +1,577 @@
+.make-font-button,
+.font-primary,
+.font-download {
+  background: #47654b;
+  color: #fff;
+  padding: 0 18px;
+  font-weight: 500;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.make-font-button:hover:not(:disabled),
+.font-primary:hover:not(:disabled),
+.font-download:hover:not(:disabled) {
+  background: #345439;
+}
+.font-backdrop {
+  grid-template-columns: minmax(0, 1fr);
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #1c2b226b;
+  backdrop-filter: blur(7px);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.font-workshop {
+  min-width: 0;
+  width: min(1080px, 100%);
+  max-width: 100%;
+  max-height: 94dvh;
+  overflow: auto;
+  background: #f9faf3;
+  color: #293e34;
+  border: 1px solid #dfe3d8;
+  border-radius: 20px;
+  padding: 28px 36px;
+  box-shadow: 0 25px 90px #14291d35;
+}
+.font-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+.font-header h2 {
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.8px;
+  margin: 7px 0 0;
+}
+.font-header > button {
+  font-size: 22px;
+}
+.font-steps {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #dfe3d8;
+  padding: 22px 0 15px;
+}
+.font-steps button {
+  padding: 0 18px;
+  font-size: 12px;
+  border: 1px solid #dfe3d8;
+}
+.font-steps button.active {
+  background: #e8eddf;
+  color: #3f603e;
+  border-color: #b9cbae;
+}
+.font-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+.font-summary > div {
+  padding: 20px 24px;
+  background: #edf1e6;
+  border-radius: 12px;
+}
+.font-summary b {
+  font-size: 29px;
+  font-weight: 500;
+  display: block;
+  letter-spacing: -1px;
+}
+.font-summary b small {
+  font-size: 15px;
+  color: #8d9a82;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.font-summary span {
+  display: block;
+  font-size: 11px;
+  color: #87947c;
+  margin-top: 5px;
+}
+.font-help {
+  font-size: 12px;
+  line-height: 1.9;
+  color: #7d8b72;
+}
+.font-field {
+  font-size: 12px;
+  color: #65785a;
+  display: block;
+  margin: 12px 0;
+}
+.font-field > input:not([type="range"]),
+.font-field > select,
+.font-field > textarea {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #ccd7c2;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fffef8;
+  color: #354d35;
+  margin-top: 8px;
+}
+.font-field > textarea {
+  resize: vertical;
+}
+.font-field > b {
+  float: right;
+}
+.separation-stage > .font-field {
+  max-width: 220px;
+}
+.separation-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 285px;
+  gap: 30px;
+  margin: 20px 0;
+}
+.separation-svg {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #fffef8;
+  border: 1px solid #dbe1d4;
+  border-radius: 5px;
+  display: block;
+}
+.separation-svg path {
+  cursor: pointer;
+}
+.separation-svg path:hover {
+  opacity: 0.7;
+}
+.separation-svg path:focus {
+  outline: none;
+  stroke: #e3b341;
+  stroke-width: 8px;
+}
+.part-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  font-size: 12px;
+  margin: 12px 0;
+}
+.stroke-assignments {
+  max-height: 520px;
+  overflow: auto;
+  padding: 0 8px 0 0;
+}
+.stroke-assignments h3 {
+  font-size: 14px;
+  margin: 0 0 16px;
+  font-weight: 500;
+}
+.stroke-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid #e1e6d9;
+  padding: 5px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+.stroke-row > button {
+  flex: 1;
+  text-align: left;
+  padding-left: 10px;
+}
+.stroke-row select {
+  font-size: 12px;
+  width: 110px;
+}
+.stroke-row.chosen {
+  background: #f5f0d8;
+}
+.font-secondary {
+  border: 1px solid #cdd8c3;
+  padding: 0 16px;
+  font-size: 12px;
+}
+.stroke-assignments > .font-secondary {
+  width: 100%;
+  margin-top: 16px;
+  font-size: 10px;
+}
+.font-settings {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 30px;
+}
+.font-notice {
+  font-size: 12px;
+  line-height: 1.9;
+  background: #f3eedc;
+  border: 1px solid #e5d9af;
+  border-radius: 10px;
+  padding: 14px 20px;
+  margin: 18px 0;
+  color: #8b7745;
+}
+.font-notice button {
+  font-size: 11px;
+  text-decoration: underline;
+  color: inherit;
+  padding: 0 10px;
+}
+.font-build-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 24px 0 16px;
+}
+.font-build-actions button {
+  min-height: 48px;
+}
+.font-download {
+  background: #658c47;
+}
+.build-progress {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  font-size: 11px;
+  color: #789163;
+}
+.build-progress progress {
+  width: 180px;
+  height: 7px;
+  accent-color: #658c47;
+}
+.font-error {
+  background: #f7e5df;
+  color: #a34f39;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+.font-preview {
+  border-top: 1px solid #dfe3d8;
+  margin-top: 26px;
+  padding-top: 22px;
+}
+.preview-heading {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+.preview-heading h3 {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+.preview-heading span {
+  font-size: 10px;
+  color: #8a987f;
+}
+.preview-size {
+  max-width: 260px;
+}
+.generated-preview {
+  background: #fffef8;
+  border: 1px solid #dfe3d8;
+  border-radius: 10px;
+  min-height: 180px;
+  line-height: 1.6;
+  padding: 22px 24px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: #263c33;
+  font-kerning: none;
+}
+.missing-glyph {
+  font-family: inherit !important;
+  color: #c8cdbc;
+  font-size: 0.8em;
+}
+.font-install-help {
+  font-size: 12px;
+  line-height: 1.9;
+  color: #728663;
+  background: #edf2e6;
+  padding: 14px 18px;
+  border-radius: 8px;
+}
+.font-footer {
+  border-top: 1px solid #dfe3d8;
+  padding-top: 18px;
+  margin-top: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #94a088;
+  gap: 16px;
+}
+.font-footer button {
+  font-size: 12px;
+  border: 1px solid #d7dfcd;
+  padding: 0 14px;
+}
+.font-empty {
+  font-size: 13px;
+  padding: 25px 0;
+  color: #8b977f;
+}
+.font-empty button {
+  display: block;
+  border: 1px solid #d1dcc6;
+  margin-top: 12px;
+  padding: 0 14px;
+}
+.box-settings,
+.missing-details {
+  font-size: 12px;
+  border: 1px solid #d8e0cd;
+  border-radius: 10px;
+  padding: 0 16px;
+  margin: 18px 0;
+}
+.box-settings summary,
+.missing-details summary {
+  min-height: 44px;
+  display: list-item;
+  align-content: center;
+  cursor: pointer;
+  color: #6e815e;
+  margin-left: 14px;
+}
+.box-settings fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  border: 0;
+  border-top: 1px solid #dfe5d6;
+  margin: 16px 0;
+  padding: 14px 0 0;
+}
+.box-settings legend {
+  font-size: 12px;
+  padding: 0 6px;
+}
+.box-settings fieldset label {
+  font-size: 10px;
+  color: #819071;
+  display: block;
+}
+.box-settings fieldset input {
+  display: block;
+  margin-top: 6px;
+  width: 100px;
+  min-height: 44px;
+  border: 1px solid #d5dec9;
+  border-radius: 6px;
+  padding: 8px;
+  background: #fffef8;
+  color: #354d35;
+}
+.missing-chars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 18px;
+}
+.missing-chars button {
+  font-size: 13px;
+  border: 1px solid #d7dfce;
+  padding: 0 12px;
+}
+.dark .font-workshop {
+  background: #243128;
+  color: #e0e5d7;
+  border-color: #43513e;
+}
+.dark .font-summary > div,
+.dark .font-install-help,
+.dark .font-steps button.active {
+  background: #33442e;
+  color: #c9d8b8;
+}
+.dark .separation-svg,
+.dark .generated-preview,
+.dark .font-field > input:not([type="range"]),
+.dark .font-field > select,
+.dark .font-field > textarea,
+.dark .box-settings fieldset input {
+  background: #29372e;
+  color: #d4dfc6;
+  border-color: #53614a;
+}
+.dark .font-field,
+.dark .font-help {
+  color: #a2b393;
+}
+.dark .font-notice {
+  background: #433f28;
+  color: #d2c18f;
+  border-color: #6f6343;
+}
+.dark .stroke-row.chosen {
+  background: #494b2d;
+}
+.dark .font-footer,
+.dark .font-preview,
+.dark .font-steps,
+.dark .stroke-row {
+  border-color: #45523f;
+}
+.dark .separation-svg text {
+  paint-order: stroke;
+  stroke: #243128;
+  stroke-width: 2px;
+}
+.dark .make-font-button {
+  background: #617f50;
+}
+@media (max-width: 900px) {
+  .font-workshop {
+    padding: 24px;
+    max-height: 96dvh;
+  }
+  .font-backdrop {
+    padding: 14px;
+  }
+  .font-summary > div {
+    padding: 16px;
+  }
+  .font-summary b {
+    font-size: 24px;
+  }
+  .font-summary b small {
+    font-size: 12px;
+  }
+  .font-settings {
+    gap: 18px;
+  }
+  .separation-layout {
+    grid-template-columns: minmax(0, 1fr) 230px;
+    gap: 20px;
+  }
+  .top-actions {
+    gap: 10px;
+  }
+}
+@media (max-width: 640px) {
+  .font-backdrop {
+    padding: 0;
+  }
+  .font-workshop {
+    border-radius: 0;
+    max-height: 100dvh;
+    height: 100dvh;
+    padding: 22px 18px;
+  }
+  .font-header h2 {
+    font-size: 21px;
+  }
+  .font-summary {
+    gap: 8px;
+    margin: 18px 0;
+  }
+  .font-summary > div {
+    padding: 14px 10px;
+  }
+  .font-summary b {
+    font-size: 22px;
+  }
+  .font-summary b small {
+    display: block;
+    font-size: 11px;
+  }
+  .font-summary span {
+    font-size: 9px;
+  }
+  .font-steps {
+    gap: 6px;
+    padding-top: 18px;
+  }
+  .font-steps button {
+    font-size: 11px;
+    padding: 0 10px;
+    flex: 1;
+  }
+  .font-settings {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 18px;
+  }
+  .font-settings > .font-field:first-child {
+    grid-column: 1/-1;
+  }
+  .separation-layout {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .stroke-assignments {
+    max-height: 280px;
+  }
+  .font-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .preview-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .build-progress {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .generated-preview {
+    padding: 14px;
+    min-height: 150px;
+  }
+  .make-font-button {
+    font-size: 10px;
+    padding: 0 10px;
+  }
+  .topbar .prompt h1 {
+    font-size: 17px;
+  }
+  .topbar .badge {
+    display: block;
+    width: fit-content;
+    margin: 4px 0 0;
+  }
+  .topbar {
+    padding: 12px;
+    gap: 10px;
+  }
+  .topbar .brand-mark {
+    width: 36px;
+    height: 36px;
+  }
+  .font-notice {
+    padding: 14px;
+  }
+  .font-build-actions {
+    gap: 8px;
+  }
+  .font-build-actions button {
+    padding: 0 14px;
+    font-size: 11px;
+  }
+  .box-settings fieldset input {
+    width: 85px;
+  }
+}
+
+.font-field {
+  min-width: 0;
+}
+.font-field input,
+.font-field select,
+.font-field textarea {
+  min-width: 0;
+}

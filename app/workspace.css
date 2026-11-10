@@ -1,0 +1,1112 @@
+/* Main workbench: keep the drawing surface, tools, navigation and review strip together. */
+.studio {
+  height: 100dvh;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 64px minmax(0, 1fr) 132px;
+  overflow: hidden;
+}
+.studio > .topbar {
+  height: 64px;
+  min-height: 0;
+  padding: 0 20px;
+  gap: 20px;
+}
+.studio .brand {
+  min-width: 165px;
+  font-size: 21px;
+}
+.studio .brand-mark {
+  width: 38px;
+  height: 38px;
+  font-size: 26px;
+}
+.studio .brand small {
+  font-size: 8px;
+}
+.studio .prompt h1 {
+  font-size: 21px;
+  margin: 2px 0;
+}
+.studio .eyebrow {
+  font-size: 9px;
+}
+.studio .top-actions {
+  gap: 12px;
+}
+.studio .save-state {
+  display: block;
+  font-size: 10px;
+  max-width: 170px;
+}
+.studio > .workspace {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr) 220px;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 14px;
+  padding: 12px 18px;
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.studio > .workspace > .tools {
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding: 0 10px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border-right: 1px solid var(--line);
+}
+.studio .tools > .section-label {
+  font-size: 9px;
+  line-height: 16px;
+  display: block;
+}
+.studio .tools > .tool-divider {
+  display: none;
+}
+.studio .brushes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  margin: 0 0 5px;
+  flex: none;
+}
+.studio .brush-button {
+  min-width: 44px;
+  min-height: 44px;
+  height: 44px;
+  padding: 3px 5px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+}
+.studio .brush-button span {
+  font-size: 11px;
+}
+.studio .brush-button canvas {
+  width: 58px;
+  max-width: 100%;
+  height: 17px;
+}
+.studio .pen-options[hidden] {
+  display: none;
+}
+.studio .pen-options > .slider-label {
+  width: auto;
+  font-size: 11px;
+}
+.studio .pen-options input[type="range"] {
+  margin: 0;
+  height: 44px;
+}
+.studio .pen-options > .check {
+  min-height: 44px;
+  font-size: 11px;
+}
+.studio .tools .wide-button {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 9px;
+  flex: none;
+}
+.studio .eraser-controls {
+  display: block;
+  padding: 0;
+}
+.studio .eraser-controls select {
+  width: 100%;
+  font-size: 11px;
+}
+.studio .eraser-controls .slider-label {
+  width: auto;
+  margin-top: 4px;
+}
+.studio .eraser-controls input[type="range"] {
+  height: 44px;
+  margin: 0;
+}
+.studio .history-buttons {
+  margin: 3px 0 0;
+  gap: 5px;
+  flex: none;
+  position: sticky;
+  bottom: 44px;
+  background: #f3f3ec;
+}
+.studio .history-buttons button {
+  height: 44px;
+  min-width: 44px;
+}
+.studio .reset-button {
+  margin: 0;
+  min-height: 44px;
+  flex: none;
+  position: sticky;
+  bottom: 0;
+  background: #f3f3ec;
+}
+.studio > .workspace > .writing-area {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 44px minmax(0, 1fr) 18px 16px 44px;
+  gap: 4px;
+  justify-items: center;
+  align-items: center;
+  order: initial;
+  container-type: size;
+}
+.studio .writing-area > .pad {
+  width: min(100cqw, calc(100cqh - 138px));
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 1;
+}
+.studio .writing-area > .canvas-toolbar,
+.studio .writing-area > .canvas-footer,
+.studio .writing-area > .safety-caption,
+.studio .writing-area > .grid-tools {
+  width: min(100cqw, calc(100cqh - 138px));
+  margin: 0;
+}
+.studio .canvas-toolbar {
+  gap: 6px;
+}
+.studio .mode-tabs {
+  padding: 0;
+  min-height: 44px;
+}
+.studio .mode-tabs button {
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 11px;
+}
+.studio .canvas-caption {
+  font-size: 8px;
+}
+.studio .canvas-footer {
+  font-size: 8px;
+}
+.studio .safety-caption {
+  font-size: 8px;
+  line-height: 16px;
+  text-align: center;
+  white-space: nowrap;
+}
+.studio .grid-tools {
+  gap: 5px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.studio .grid-tools button {
+  min-height: 44px;
+  padding: 0 9px;
+}
+.studio .grid-tools > span {
+  margin-right: 3px;
+}
+.studio > .workspace > .reference-panel {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  order: initial;
+}
+.studio .reference-panel > .section-label,
+.studio .reference-panel > h2,
+.studio .reference-panel > p,
+.studio .reference-panel > .ink-symbol,
+.studio .tiny-note {
+  display: none;
+}
+.studio .reference-font-picker {
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0;
+}
+.studio .reference-font-picker button {
+  height: 44px;
+  min-height: 44px;
+  padding: 2px;
+}
+.studio .reference-font-picker button span {
+  font-size: 17px;
+  line-height: 20px;
+}
+.studio .reference-font-picker button small {
+  font-size: 7px;
+  margin-top: 1px;
+}
+.studio .reference-canvas {
+  width: 124px;
+  height: 124px;
+  max-width: 100%;
+  max-height: 124px;
+  margin: 0;
+  align-self: center;
+}
+.studio .opacity-control {
+  margin: 0;
+  width: 100%;
+  font-size: 11px;
+}
+.studio .opacity-control input {
+  height: 44px;
+  margin: 0;
+}
+.studio .next-block {
+  margin: auto 0 0;
+  padding: 0;
+  min-width: 0;
+}
+.studio .next-block > .section-label {
+  display: block;
+  line-height: 18px;
+  font-size: 9px;
+  letter-spacing: 0.3px;
+}
+.studio .navigation {
+  gap: 6px;
+  margin: 0;
+}
+.studio .navigation button {
+  min-height: 44px;
+  min-width: 44px;
+  font-size: 12px;
+  padding: 0 8px;
+}
+.studio .skip-button {
+  min-height: 44px;
+  margin: 0;
+  font-size: 10px;
+}
+.review-card {
+  border: 1px solid #d8e2d0;
+  border-radius: 9px;
+  background: #edf2e7;
+  padding: 8px;
+  flex: none;
+}
+.review-card.has-issues {
+  border-color: #e2b6ad;
+  background: #fff0ec;
+}
+.review-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 10px;
+  line-height: 18px;
+}
+.review-card-heading strong {
+  font-weight: 500;
+}
+.review-card-heading > span {
+  font-size: 9px;
+  color: #839574;
+}
+.review-card.has-issues .review-card-heading {
+  color: #ad5146;
+}
+.review-reasons {
+  font-size: 10px !important;
+  line-height: 1.5 !important;
+  color: #ad5146 !important;
+  margin: 3px 0 5px !important;
+}
+.review-actions {
+  display: flex;
+  gap: 4px;
+}
+.review-actions button {
+  border: 1px solid #cbd8c2;
+  min-height: 44px;
+  font-size: 10px;
+  flex: 1;
+  padding: 0 5px;
+  white-space: nowrap;
+}
+.review-actions button[aria-pressed="true"] {
+  background: #b5584e;
+  color: #fff;
+  border-color: #b5584e;
+}
+.studio > .progress-panel {
+  padding: 8px 18px;
+  display: grid;
+  grid-template-rows: 44px 3px minmax(0, 1fr);
+  gap: 5px;
+  min-height: 0;
+  overflow: hidden;
+}
+.studio .progress-heading {
+  margin: 0;
+  gap: 10px;
+  min-width: 0;
+}
+.studio .progress-heading strong {
+  font-size: 11px;
+}
+.studio .progress-heading > div:first-child {
+  white-space: nowrap;
+}
+.studio .progress-heading span {
+  font-size: 10px;
+  margin-left: 7px;
+}
+.strip-filters {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.strip-filters button {
+  border: 1px solid #d4dfc9;
+  min-height: 44px;
+  font-size: 11px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+.strip-filters button b {
+  font-weight: 500;
+  margin-left: 5px;
+}
+.strip-filters button[aria-pressed="true"] {
+  background: #49684c;
+  color: #fff;
+  border-color: #49684c;
+}
+.strip-filters button:not(:first-child) {
+  color: #ac5549;
+  border-color: #e4c7bf;
+}
+.strip-filters button:not(:first-child)[aria-pressed="true"] {
+  background: #b35b50;
+  color: #fff;
+  border-color: #b35b50;
+}
+.studio .progress-heading select {
+  min-height: 44px;
+  max-width: 160px;
+  font-size: 11px;
+}
+.studio .progress-track {
+  margin: 0;
+}
+.studio .glyph-strip {
+  gap: 6px;
+  padding: 2px 2px 4px;
+  min-height: 0;
+  align-items: stretch;
+}
+.studio .glyph {
+  min-width: 51px;
+  width: 51px;
+  height: 100%;
+  min-height: 44px;
+  border-radius: 7px;
+}
+.studio .glyph > span {
+  font-size: 22px;
+  line-height: 28px;
+}
+.studio .glyph canvas {
+  width: 31px;
+  height: 31px;
+}
+.studio .glyph small {
+  font-size: 8px;
+  line-height: 10px;
+}
+.studio .glyph.needs-review {
+  background: #fff0ed;
+  border: 1px solid #d17a6d;
+}
+.studio .glyph.needs-review > span,
+.studio .glyph.needs-review small {
+  color: #b34237;
+}
+.studio .glyph.needs-review small {
+  font-weight: 700;
+}
+.studio .glyph.needs-review.current {
+  background: #ffe0d8;
+  border: 2px solid #b94c40;
+  box-shadow: 0 0 0 2px #e8bab240;
+}
+.studio .glyph.unsafe {
+  border-color: #bd4e40;
+}
+.strip-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 100%;
+  font-size: 12px;
+  color: #7e9171;
+}
+.strip-empty button {
+  border: 1px solid #d1ddc6;
+  padding: 0 12px;
+  font-size: 11px;
+}
+.dark .tools .history-buttons,
+.dark .tools .reset-button {
+  background: #1d2721;
+}
+.dark .review-card {
+  background: #2d3c2a;
+  border-color: #4c6041;
+}
+.dark .review-card.has-issues {
+  background: #422d29;
+  border-color: #8b5548;
+}
+.dark .review-card.has-issues .review-card-heading,
+.dark .review-reasons {
+  color: #e4a08e !important;
+}
+.dark .review-actions button {
+  border-color: #647b54;
+}
+.dark .review-card-heading > span {
+  color: #b0c09f;
+}
+.dark .strip-filters button {
+  border-color: #59704b;
+}
+.dark .strip-filters button:not(:first-child) {
+  color: #e2a48e;
+  border-color: #966453;
+}
+.dark .glyph.needs-review {
+  background: #482e27;
+  border-color: #bc7563;
+}
+.dark .glyph.needs-review > span,
+.dark .glyph.needs-review small {
+  color: #f0b09a;
+}
+.dark .glyph.needs-review.current {
+  background: #60392d;
+  border-color: #eea48a;
+}
+@media (min-width: 700px) and (max-width: 959px) {
+  .studio > .workspace {
+    grid-template-columns: 132px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) 148px;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  .studio > .workspace > .reference-panel {
+    grid-column: 1/-1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns:
+      minmax(190px, 1.25fr) minmax(100px, 0.8fr) minmax(150px, 1fr)
+      minmax(150px, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+    border-top: 1px solid var(--line);
+    padding-top: 8px;
+  }
+  .studio .reference-font-picker {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .studio .reference-canvas,
+  .studio .opacity-control {
+    grid-column: 2;
+    grid-row: 1;
+    max-width: 100%;
+    justify-self: center;
+  }
+  .studio .reference-canvas {
+    width: 118px;
+    height: 118px;
+  }
+  .studio .review-card {
+    grid-column: 3;
+    grid-row: 1;
+    padding: 6px;
+  }
+  .studio .next-block {
+    grid-column: 4;
+    grid-row: 1;
+    margin: 0;
+    align-self: center;
+  }
+  .studio .brand {
+    min-width: 0;
+  }
+  .studio .brand > span:last-child {
+    display: none;
+  }
+  .studio > .topbar {
+    padding: 0 14px;
+    gap: 15px;
+  }
+  .studio .top-actions {
+    gap: 8px;
+  }
+  .studio .save-state {
+    font-size: 9px;
+    max-width: 140px;
+  }
+  .studio .progress-heading strong {
+    font-size: 10px;
+  }
+  .strip-filters button {
+    font-size: 10px;
+    padding: 0 8px;
+  }
+  .studio .progress-heading select {
+    max-width: 135px;
+    font-size: 10px;
+  }
+}
+@media (max-width: 699px) {
+  .studio {
+    height: 100dvh;
+    min-height: 820px;
+    grid-template-rows: 60px minmax(0, 1fr) 160px;
+    overflow: hidden;
+  }
+  .studio > .topbar {
+    height: 60px;
+    min-height: 0;
+    padding: 0 10px;
+    gap: 9px;
+  }
+  .studio .brand {
+    min-width: 0;
+  }
+  .studio .brand > span:last-child {
+    display: none;
+  }
+  .studio .brand-mark {
+    width: 31px;
+    height: 31px;
+    font-size: 23px;
+  }
+  .studio .prompt h1 {
+    font-size: 16px;
+    white-space: nowrap;
+  }
+  .studio .prompt .badge {
+    display: inline-block;
+    font-size: 7px;
+    padding: 3px 5px;
+    margin-left: 4px;
+  }
+  .studio .eyebrow {
+    font-size: 8px;
+  }
+  .studio .save-state {
+    display: none;
+  }
+  .studio .top-actions {
+    gap: 5px;
+  }
+  .studio .make-font-button {
+    padding: 0 8px;
+    font-size: 9px;
+  }
+  .studio .icon-button {
+    font-size: 19px;
+    min-width: 36px;
+  }
+  .studio > .workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 104px minmax(0, 1fr) 144px;
+    padding: 6px;
+    gap: 6px;
+  }
+  .studio > .workspace > .tools {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 64px 132px;
+    grid-template-rows: 44px 54px;
+    gap: 5px 4px;
+    border: 0;
+    padding: 0;
+    overflow: visible;
+    max-height: none;
+  }
+  .studio .tools > .section-label {
+    display: none;
+  }
+  .studio .brushes {
+    grid-column: 1/-1;
+    grid-row: 1;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    margin: 0;
+  }
+  .studio .brush-button {
+    height: 44px;
+    padding: 2px;
+  }
+  .studio .brush-button canvas {
+    width: 42px;
+    height: 14px;
+  }
+  .studio .brush-button span {
+    font-size: 10px;
+  }
+  .studio .pen-options {
+    grid-column: 1;
+    grid-row: 2;
+    display: flex;
+    gap: 3px;
+    align-items: center;
+    min-width: 0;
+  }
+  .studio .pen-options > .slider-label {
+    flex: 1;
+    min-width: 0;
+    font-size: 9px;
+  }
+  .studio .pen-options > .check {
+    font-size: 8px;
+    gap: 2px;
+    white-space: nowrap;
+  }
+  .studio .pen-options > .check input {
+    width: 15px;
+    height: 15px;
+  }
+  .studio .pen-options input[type="range"] {
+    width: 100%;
+    min-width: 0;
+  }
+  .studio .tools .wide-button {
+    grid-column: 2;
+    grid-row: 2;
+    font-size: 9px;
+    padding: 0 4px;
+  }
+  .studio .wide-button kbd {
+    display: none;
+  }
+  .studio .history-buttons {
+    grid-column: 3;
+    grid-row: 2;
+    margin: 0;
+    width: 88px;
+    height: 44px;
+    gap: 0;
+    position: static;
+    align-self: center;
+  }
+  .studio .history-buttons button {
+    width: 44px;
+    min-width: 44px;
+  }
+  .studio .reset-button {
+    grid-column: 3;
+    grid-row: 2;
+    justify-self: end;
+    align-self: center;
+    width: 44px;
+    height: 44px;
+    position: static;
+    font-size: 0;
+  }
+  .studio .reset-button::before {
+    content: "↺";
+    font-size: 23px;
+  }
+  .studio .eraser-controls {
+    grid-column: 1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 4px;
+    align-items: center;
+    padding: 0;
+    min-width: 0;
+  }
+  .studio .eraser-controls select {
+    font-size: 8px;
+    padding: 0 3px;
+    min-width: 0;
+  }
+  .studio .eraser-controls .slider-label {
+    font-size: 9px;
+    margin: 0;
+  }
+  .studio > .workspace > .writing-area {
+    grid-template-rows: 44px minmax(0, 1fr) 18px 44px;
+    gap: 3px;
+  }
+  .studio .writing-area > .pad {
+    width: min(100cqw, calc(100cqh - 115px));
+  }
+  .studio .writing-area > .canvas-toolbar,
+  .studio .writing-area > .canvas-footer,
+  .studio .writing-area > .grid-tools {
+    width: min(100cqw, calc(100cqh - 115px));
+  }
+  .studio .writing-area > .safety-caption {
+    display: none;
+  }
+  .studio .canvas-caption {
+    display: none;
+  }
+  .studio .mode-tabs {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .studio .mode-tabs button {
+    font-size: 10px;
+    min-width: 44px;
+    padding: 0 5px;
+  }
+  .studio .grid-tools > span {
+    display: none;
+  }
+  .studio .grid-tools {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3px;
+  }
+  .studio .grid-tools button {
+    font-size: 9px;
+    padding: 0 4px;
+  }
+  .studio .canvas-footer {
+    font-size: 7px;
+  }
+  .studio > .workspace > .reference-panel {
+    display: grid;
+    grid-template-columns: minmax(70px, 0.8fr) minmax(100px, 1.1fr) minmax(
+        120px,
+        1.3fr
+      );
+    grid-template-rows: 44px 88px;
+    gap: 6px;
+    overflow: hidden;
+    align-items: center;
+    border-top: 1px solid var(--line);
+    padding: 5px 0 0;
+  }
+  .studio .reference-font-picker {
+    grid-column: 1/-1;
+    grid-row: 1;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 3px;
+  }
+  .studio .reference-font-picker button span {
+    font-size: 16px;
+    line-height: 20px;
+  }
+  .studio .reference-font-picker button small {
+    font-size: 6px;
+  }
+  .studio .reference-canvas,
+  .studio .opacity-control {
+    grid-column: 1;
+    grid-row: 2;
+    max-width: 100%;
+    width: 100%;
+    font-size: 9px;
+    justify-self: center;
+  }
+  .studio .reference-canvas {
+    width: 80px;
+    height: 80px;
+  }
+  .studio .review-card {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 4px;
+    max-height: 88px;
+    overflow: auto;
+  }
+  .studio .review-card-heading {
+    font-size: 9px;
+  }
+  .studio .review-card-heading > span {
+    display: none;
+  }
+  .studio .review-reasons {
+    font-size: 8px !important;
+    line-height: 12px !important;
+    max-height: 24px;
+    overflow: hidden;
+    margin: 0 !important;
+  }
+  .studio .review-actions {
+    gap: 2px;
+  }
+  .studio .review-actions button {
+    font-size: 8px;
+    padding: 0 2px;
+    min-width: 44px;
+  }
+  .studio .next-block {
+    grid-column: 3;
+    grid-row: 2;
+    margin: 0;
+    align-self: center;
+  }
+  .studio .next-block > .section-label {
+    display: none;
+  }
+  .studio .navigation {
+    gap: 3px;
+  }
+  .studio .navigation button {
+    font-size: 10px;
+    padding: 0 3px;
+  }
+  .studio .skip-button {
+    font-size: 9px;
+    min-height: 44px;
+    height: 44px;
+  }
+  .studio > .progress-panel {
+    padding: 6px 10px;
+    grid-template-rows: 88px 3px minmax(0, 1fr);
+    gap: 4px;
+  }
+  .studio .progress-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 44px 40px;
+    gap: 4px 6px;
+  }
+  .studio .progress-heading > div:first-child {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .studio .progress-heading strong {
+    font-size: 9px;
+  }
+  .studio .progress-heading span {
+    font-size: 8px;
+    margin-left: 5px;
+  }
+  .studio .progress-heading > .strip-filters {
+    grid-column: 1/-1;
+    grid-row: 1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .strip-filters button {
+    font-size: 10px;
+    padding: 0 4px;
+  }
+  .studio .progress-heading > select {
+    grid-column: 2;
+    grid-row: 2;
+    max-width: 145px;
+    min-height: 40px;
+    height: 40px;
+    font-size: 9px;
+  }
+  .studio .glyph {
+    min-width: 46px;
+    width: 46px;
+  }
+  .studio .glyph-strip {
+    gap: 5px;
+  }
+  .studio .glyph canvas {
+    width: 27px;
+    height: 27px;
+  }
+  .studio .glyph > span {
+    font-size: 20px;
+    line-height: 25px;
+  }
+  .strip-empty {
+    font-size: 10px;
+    gap: 7px;
+  }
+  .strip-empty button {
+    font-size: 9px;
+    padding: 0 6px;
+  }
+  .studio .toast {
+    bottom: 165px;
+    max-width: 95vw;
+    font-size: 10px;
+  }
+  .studio .pad-warning {
+    font-size: 9px;
+    line-height: 1.5;
+  }
+  .studio .pad-warning button {
+    padding: 0 6px;
+    font-size: 9px;
+  }
+}
+.studio .review-actions button:disabled {
+  opacity: 0.35;
+}
+@media (max-width: 699px) {
+  .studio .review-card-heading {
+    display: none;
+  }
+}
+.font-workshop {
+  padding: 18px 24px;
+}
+.font-workshop .font-header {
+  padding: 6px 0 9px;
+}
+.font-workshop .font-header h2 {
+  font-size: 21px;
+  margin-top: 4px;
+}
+.font-workshop .font-steps {
+  padding: 10px 0;
+  margin: 0;
+}
+.font-workshop .font-summary {
+  margin: 12px 0;
+  gap: 10px;
+}
+.font-workshop .font-summary > div {
+  padding: 10px 16px;
+}
+.font-workshop .font-summary b {
+  font-size: 25px;
+}
+.font-workshop .font-summary span {
+  font-size: 10px;
+  margin-top: 2px;
+}
+.font-workshop .character-navigation {
+  margin: 7px 0;
+}
+.font-workshop .character-navigation strong {
+  font-size: 28px;
+}
+.font-workshop .character-slider {
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+}
+.font-workshop .character-slider > button {
+  height: 58px;
+  min-width: 55px;
+  width: 55px;
+}
+.font-workshop .character-slider canvas {
+  width: 29px;
+  height: 29px;
+}
+.font-workshop .font-help {
+  font-size: 11px;
+  line-height: 1.7;
+  margin: 7px 0;
+}
+.font-workshop .separation-layout {
+  margin: 10px 0;
+  gap: 20px;
+}
+.font-workshop .separation-svg {
+  width: min(100%, calc(100dvh - 370px));
+  height: auto;
+  display: block;
+  margin-inline: auto;
+}
+.font-workshop .font-footer {
+  margin-top: 14px;
+  padding-top: 10px;
+}
+.font-workshop .metric-preview {
+  padding: 12px 16px;
+  margin: 10px 0 14px;
+}
+@media (max-width: 640px) {
+  .font-workshop {
+    padding: 14px;
+  }
+  .font-workshop .font-header h2 {
+    font-size: 18px;
+  }
+  .font-workshop .font-summary > div {
+    padding: 9px;
+  }
+  .font-workshop .font-summary b {
+    font-size: 22px;
+  }
+  .font-workshop .font-summary span {
+    font-size: 9px;
+  }
+  .font-workshop .separation-svg {
+    width: min(100%, calc(100dvh - 330px));
+  }
+}
+@media (max-width: 699px) {
+  .studio {
+    grid-template-rows: 60px minmax(0, 1fr) 166px;
+  }
+  .studio > .progress-panel {
+    grid-template-rows: 92px 3px minmax(0, 1fr);
+  }
+  .studio .progress-heading {
+    grid-template-rows: 44px 44px;
+  }
+  .studio .progress-heading > select {
+    height: 44px;
+    min-height: 44px;
+  }
+  .studio .icon-button {
+    min-width: 44px;
+  }
+  .studio .brand {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+.metric-guide-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 9px;
+  color: #7c927c;
+  white-space: nowrap;
+  width: 100%;
+  height: 44px;
+}
+.metric-guide-legend strong {
+  font-weight: 500;
+  color: #ad8554;
+}
+@media (max-width: 699px) {
+  .studio .grid-tools > .metric-guide-legend {
+    grid-column: 1/-1;
+    font-size: 8px;
+    gap: 6px;
+  }
+}
+.font-workshop .font-settings {
+  grid-template-columns: minmax(180px, 1.4fr) repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 900px) {
+  .font-workshop .font-settings {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

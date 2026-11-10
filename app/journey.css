@@ -1,0 +1,1150 @@
+/* Guided service flow. GSAP is bundled locally for brief step transitions only. */
+.studio.journey {
+  min-height: 0;
+  --paper: #faf9f5;
+  --ink: #292b27;
+  --accent: #b65032;
+  --line: #dddcd4;
+  color: var(--ink);
+  background: var(--paper);
+  height: 100dvh;
+  grid-template-rows: 70px 68px minmax(0, 1fr);
+}
+.journey button {
+  border-radius: 3px;
+}
+.journey button:focus-visible,
+.journey input:focus-visible,
+.journey textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.journey .topbar {
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  padding: 0 36px;
+  box-shadow: none;
+  height: 70px;
+}
+.journey .brand {
+  font-size: 24px;
+  letter-spacing: -1px;
+}
+.journey .brand small {
+  display: none;
+}
+.journey .brand-mark {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 2px;
+}
+.journey-tagline {
+  font-size: 12px;
+  color: #73756c;
+  flex: 1;
+}
+.journey .top-actions .make-font-button {
+  display: none;
+}
+.new-project-trigger {
+  font-size: 11px;
+  border: 1px solid var(--line);
+  padding: 0 12px;
+  white-space: nowrap;
+}
+.new-project-trigger small {
+  display: none;
+}
+.project-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: #22271d66;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.project-manager {
+  width: min(680px, 100%);
+  max-height: 90dvh;
+  overflow: auto;
+  background: var(--paper);
+  padding: 28px 32px;
+  border: 1px solid var(--line);
+}
+.project-manager header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.project-manager h2 {
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -1px;
+  margin: 8px 0;
+}
+.project-manager > p {
+  font-size: 12px;
+  line-height: 1.9;
+  color: #71766a;
+}
+.project-manager form {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 24px 0 30px;
+}
+.project-manager label {
+  flex: 1;
+  font-size: 11px;
+}
+.project-manager input {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  padding: 12px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.project-manager h3 {
+  font-size: 13px;
+  font-weight: 500;
+}
+.saved-projects {
+  max-height: 36dvh;
+  overflow: auto;
+}
+.saved-projects article {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding: 12px 0;
+}
+.saved-projects article > div:first-child {
+  flex: 1;
+  min-width: 120px;
+}
+.saved-projects strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.saved-projects small {
+  display: block;
+  font-size: 10px;
+  color: #82877b;
+  margin-top: 5px;
+}
+.saved-projects button {
+  font-size: 11px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+}
+.project-delete-confirm {
+  flex-basis: 100%;
+  padding: 12px;
+  background: #f7e9df;
+  font-size: 12px;
+}
+.project-delete-confirm p {
+  line-height: 1.8;
+}
+.project-delete-confirm button {
+  margin-right: 8px;
+}
+.reference-region-note {
+  font-size: 10px;
+  color: #797f72;
+  margin: 6px 0;
+}
+.stroke-assignments {
+  position: relative;
+}
+.stroke-assignments .assignment-heading {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--paper);
+  padding-bottom: 8px;
+}
+.assignment-row.chosen {
+  position: relative;
+  z-index: 2;
+}
+.journey .save-state {
+  font-size: 11px;
+  max-width: 230px;
+}
+.journey-track {
+  display: flex;
+  justify-content: center;
+  gap: 36px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+.journey-track button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #777a70;
+  font-size: 12px;
+  padding: 0 10px;
+  position: relative;
+}
+.journey-track .step-number {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  border: 1px solid #cecec5;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  border-radius: 50%;
+}
+.journey-track .is-current {
+  color: var(--ink);
+  font-weight: 600;
+}
+.journey-track .is-current::after {
+  content: "";
+  position: absolute;
+  bottom: -13px;
+  left: 10px;
+  right: 10px;
+  height: 2px;
+  background: var(--accent);
+}
+.journey-track .is-current .step-number {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.journey-track .is-past .step-number {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.setup-screen {
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 38px 56px;
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 72px;
+  min-height: 0;
+  overflow-y: auto;
+  align-items: center;
+}
+.step-kicker {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  font-weight: 500;
+}
+.setup-copy h1 {
+  font-size: clamp(30px, 3.2vw, 46px);
+  font-weight: 500;
+  letter-spacing: -2px;
+  line-height: 1.45;
+  margin: 20px 0;
+  outline: none;
+}
+.setup-copy p {
+  font-size: 14px;
+  line-height: 1.9;
+  color: #727569;
+  max-width: 340px;
+  margin-bottom: 26px;
+  word-break: keep-all;
+}
+.setup-copy > small {
+  display: block;
+  font-size: 11px;
+  color: #7c7e74;
+  margin-top: 14px;
+}
+.setup-copy .check {
+  font-size: 12px;
+  margin: 10px 0 24px;
+}
+.setup-thickness {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 13px;
+  max-width: 340px;
+  align-items: center;
+}
+.setup-thickness b {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 400;
+}
+.setup-thickness input {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.journey-next {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(340px, 100%);
+  padding: 15px 20px;
+  background: var(--ink);
+  color: white;
+  font-size: 13px;
+  gap: 30px;
+}
+.journey-next:hover {
+  background: #484b42;
+}
+.setup-brushes {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.setup-brushes button {
+  min-width: 0;
+  text-align: left;
+  padding: 12px 9px;
+  border: 1px solid var(--line);
+  background: transparent;
+}
+.setup-brushes button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: #f5ede5;
+}
+.setup-brushes canvas {
+  width: 100%;
+  height: 40px;
+}
+.setup-brushes strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+}
+.setup-brushes small {
+  font-size: 9px;
+  color: #777b70;
+  display: block;
+  margin-top: 5px;
+  word-break: keep-all;
+}
+.trial-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  font-size: 11px;
+  color: #75776f;
+}
+.trial-heading button {
+  font-size: 11px;
+}
+.brush-trial {
+  height: min(39vh, 350px);
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+.brush-trial .pad {
+  height: 100%;
+  width: auto;
+  aspect-ratio: 1;
+  max-width: 100%;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+}
+.trial-note {
+  display: block;
+  font-size: 10px;
+  color: #898a80;
+  margin-top: 10px;
+}
+.setup-sentence {
+  display: block;
+  font-size: 11px;
+  margin: 20px 0 26px;
+  max-width: 340px;
+}
+.setup-sentence input {
+  display: block;
+  margin-top: 10px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  background: white;
+  font-size: 13px;
+  border-radius: 2px;
+}
+.setup-fonts {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.setup-fonts button {
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 15px 18px;
+  min-width: 0;
+  border-left: 2px solid transparent;
+}
+.setup-fonts button:first-child {
+  border-top: 1px solid var(--line);
+}
+.setup-fonts button[aria-checked="true"] {
+  border-left-color: var(--accent);
+  background: #f3eee6;
+}
+.font-choice-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #797c71;
+}
+.font-choice-label > span {
+  font-size: 9px;
+  color: var(--accent);
+}
+.font-choice-sentence {
+  display: block;
+  font-size: 24px;
+  line-height: 1.7;
+  margin-top: 7px;
+  overflow-wrap: anywhere;
+}
+.studio.journey-step-2 {
+  grid-template-rows: 70px 68px 70px minmax(0, 1fr) 118px;
+}
+.writing-intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 12px 30px 4px;
+}
+.writing-intro h1 {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.7px;
+  margin: 4px 0;
+  outline: none;
+}
+.writing-intro .step-kicker {
+  font-size: 9px;
+}
+.writing-intro > button {
+  font-size: 12px;
+  border-bottom: 1px solid var(--ink);
+}
+.journey > .workspace {
+  grid-template-columns: 140px minmax(0, 1fr) 180px;
+  max-width: 1300px;
+  gap: 24px;
+  padding: 10px 30px;
+}
+.journey .tools > .brushes,
+.journey .reference-font-picker,
+.journey .reference-panel > .section-label {
+  display: none;
+}
+.journey .tools > .section-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+}
+.journey .change-brush {
+  font-size: 10px;
+  text-decoration: underline;
+}
+.journey .tools .slider-label {
+  font-size: 11px;
+}
+.journey .tools .check {
+  font-size: 10px;
+}
+.journey > .workspace > .writing-area {
+  grid-template-rows: auto 44px minmax(0, 1fr) auto auto auto;
+}
+.character-instruction {
+  width: 100%;
+  max-width: 580px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: auto auto 5px;
+}
+.character-instruction > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+}
+.character-instruction strong {
+  font-size: 38px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--ink);
+}
+.character-instruction span {
+  font-size: 10px;
+  color: #8a8b80;
+  max-width: 70px;
+}
+.character-instruction p {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #6c7165;
+  margin: 0;
+  word-break: keep-all;
+}
+.journey .writing-area > .pad .pad-sheet {
+  border-radius: 2px;
+  box-shadow: none;
+}
+.journey .canvas-caption {
+  font-size: 9px;
+}
+.mobile-ink-tools {
+  display: none;
+}
+.journey .reference-panel {
+  justify-content: center;
+}
+.journey .review-card {
+  border-radius: 2px;
+  background: transparent;
+  border-color: var(--line);
+}
+.journey .review-card:not(.has-issues) {
+  border: 0;
+  padding: 0;
+}
+.journey .next-block {
+  margin-top: 15px;
+}
+.journey .next-block .navigation {
+  gap: 5px;
+}
+.journey .navigation .primary,
+.journey .strip-filters button[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.journey > .progress-panel {
+  border-top: 1px solid var(--line);
+  background: transparent;
+  padding: 6px 30px;
+}
+.journey .glyph.current {
+  border-color: var(--ink);
+  box-shadow: none;
+}
+.guided-workshop {
+  min-height: 0;
+  overflow-y: auto;
+  width: 100%;
+  padding: 28px 36px;
+}
+.guided-workshop .font-workshop {
+  width: 100%;
+  max-width: 1180px;
+  max-height: none;
+  overflow: visible;
+  margin: 0 auto;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
+  color: var(--ink);
+}
+.guided-workshop .font-header {
+  margin-bottom: 22px;
+}
+.guided-workshop .font-header h2 {
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -1.3px;
+}
+.guided-workshop .font-header .eyebrow {
+  color: var(--accent);
+  font-size: 10px;
+}
+.guided-workshop .font-header > button {
+  display: none;
+}
+.guided-workshop .font-save-controls {
+  display: none;
+}
+.guided-workshop .font-footer {
+  margin-top: 22px;
+  border-top: 1px solid var(--line);
+  font-size: 10px;
+}
+.guided-workshop .font-primary,
+.guided-workshop .font-download {
+  background: var(--ink);
+}
+.separation-welcome {
+  margin-bottom: 20px;
+}
+.jamo-example {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin-bottom: 18px;
+}
+.jamo-example > span {
+  font-size: 27px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.jamo-example small {
+  font-size: 10px;
+  color: #74796c;
+  font-weight: 400;
+}
+.jamo-example i {
+  font-style: normal;
+  color: #aaa99e;
+}
+.separation-welcome p {
+  font-size: 13px;
+  color: #6c7165;
+  line-height: 1.8;
+  margin: 0 0 16px;
+}
+.separation-welcome ol {
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  list-style: none;
+  counter-reset: guide;
+}
+.separation-welcome li {
+  font-size: 11px;
+  line-height: 1.8;
+  color: #777b70;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  counter-increment: guide;
+}
+.separation-welcome li b {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.separation-welcome li b::before {
+  content: counter(guide) ". ";
+  color: var(--accent);
+}
+.finish-track {
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 18px;
+}
+.finish-track button {
+  font-size: 12px;
+  padding: 0 4px 10px;
+  color: #808276;
+  border-bottom: 2px solid transparent;
+}
+.finish-track button[aria-current] {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.finish-description {
+  font-size: 13px;
+  color: #717669;
+  line-height: 1.9;
+  margin: 0 0 20px;
+}
+.guided-workshop .font-settings[data-setting-step="0"] {
+  display: none;
+}
+.guided-workshop .font-settings[data-setting-step="1"] {
+  display: block;
+  max-width: 500px;
+}
+.guided-workshop
+  .font-settings[data-setting-step="1"]
+  > label:not(:first-child) {
+  display: none;
+}
+.guided-workshop .font-settings[data-setting-step="1"] input {
+  font-size: 25px;
+  padding: 18px;
+  background: white;
+  min-height: 70px;
+}
+.guided-workshop .font-settings[data-setting-step="2"] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.guided-workshop .font-settings[data-setting-step="2"] > label:first-child {
+  display: none;
+}
+.guided-workshop .font-settings[data-setting-step="3"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 760px;
+}
+.guided-workshop .font-settings[data-setting-step="3"] > label:first-child,
+.guided-workshop .font-settings[data-setting-step="3"] > label:last-child {
+  display: none;
+}
+.guided-workshop .font-preview {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+.guided-workshop[data-finish-step="0"] .font-install-help {
+  display: none;
+}
+.guided-workshop[data-finish-step="0"] .preview-heading > span {
+  display: none;
+}
+.guided-workshop .build-progress progress {
+  accent-color: var(--accent);
+}
+.guided-workshop .generated-preview {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  min-height: 160px;
+}
+.guided-workshop .font-notice {
+  font-size: 11px;
+  background: #f3eee6;
+  border: 0;
+  border-left: 2px solid #bb8a65;
+  border-radius: 0;
+  padding: 12px 16px;
+}
+.guided-workshop .font-build-actions:empty {
+  display: none;
+}
+.finish-navigation {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.guided-workshop .metric-preview {
+  border-radius: 2px;
+}
+.journey.dark {
+  --paper: #20251f;
+  --ink: #ecebe1;
+  --line: #424b3e;
+  --accent: #d99576;
+}
+.journey.dark .journey-next,
+.journey.dark .font-primary,
+.journey.dark .font-download,
+.journey.dark .navigation .primary {
+  color: #20251f;
+}
+.journey.dark .setup-fonts button[aria-checked="true"],
+.journey.dark .setup-brushes button[aria-pressed="true"] {
+  background: #343c2d;
+}
+@media (min-width: 1000px) and (max-height: 780px) {
+  .setup-screen {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    gap: 50px;
+  }
+  .setup-copy h1 {
+    font-size: 34px;
+    margin: 10px 0;
+  }
+  .setup-copy p {
+    font-size: 12px;
+    margin-bottom: 16px;
+  }
+  .setup-fonts button {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .font-choice-sentence {
+    font-size: 21px;
+  }
+  .studio.journey-step-2 {
+    grid-template-rows: 60px 58px 60px minmax(0, 1fr) 110px;
+  }
+  .journey .topbar {
+    height: 60px;
+  }
+  .journey .writing-area > .safety-caption,
+  .journey .canvas-footer {
+    display: none;
+  }
+}
+@media (max-width: 1000px) {
+  .setup-screen {
+    padding: 28px;
+    gap: 30px;
+    grid-template-columns: 0.8fr 1.2fr;
+  }
+  .setup-copy h1 {
+    font-size: 30px;
+  }
+  .journey-track {
+    gap: 10px;
+  }
+  .journey > .workspace {
+    grid-template-columns: 110px minmax(0, 1fr) 150px;
+    gap: 12px;
+    padding: 10px 18px;
+  }
+  .journey-tagline {
+    display: none;
+  }
+  .character-instruction {
+    gap: 10px;
+  }
+  .character-instruction strong {
+    font-size: 30px;
+  }
+  .journey .canvas-caption {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .studio.journey {
+    grid-template-rows: 60px 62px minmax(0, 1fr);
+  }
+  .journey .topbar {
+    height: 60px;
+    padding: 0 16px;
+  }
+  .journey .save-state {
+    display: block;
+    font-size: 9px;
+    max-width: 150px;
+  }
+  .journey .brand {
+    min-width: 85px;
+    font-size: 20px;
+  }
+  .journey .brand-mark {
+    width: 28px;
+    height: 28px;
+    font-size: 21px;
+  }
+  .journey .brand > span:last-child {
+    display: block;
+  }
+  .journey .top-actions {
+    margin-left: auto;
+    gap: 5px;
+  }
+  .journey .top-actions .save-state {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 8px;
+  }
+  .new-project-trigger {
+    padding: 0 8px;
+  }
+  .new-project-trigger span {
+    display: none;
+  }
+  .new-project-trigger small {
+    display: block;
+    font-size: 10px;
+  }
+  .project-backdrop {
+    padding: 12px;
+  }
+  .project-manager {
+    padding: 20px 18px;
+  }
+  .project-manager h2 {
+    font-size: 20px;
+  }
+  .project-manager form {
+    display: block;
+  }
+  .project-manager form button {
+    margin-top: 12px;
+    width: 100%;
+  }
+  .journey-track {
+    gap: 0;
+    padding: 8px 6px;
+    justify-content: space-between;
+  }
+  .journey-track button {
+    flex: 1;
+    flex-direction: column;
+    gap: 3px;
+    padding: 0 2px;
+    font-size: 9px;
+    min-width: 0;
+  }
+  .journey-track .step-number {
+    width: 23px;
+    height: 23px;
+    font-size: 8px;
+  }
+  .journey-track .is-current::after {
+    bottom: -9px;
+    left: 8px;
+    right: 8px;
+  }
+  .setup-screen {
+    display: block;
+    padding: 24px 22px;
+  }
+  .setup-copy h1 {
+    font-size: 29px;
+    line-height: 1.4;
+    letter-spacing: -1px;
+    margin: 10px 0;
+  }
+  .setup-copy h1 br {
+    display: none;
+  }
+  .setup-copy p {
+    font-size: 12px;
+    max-width: none;
+    margin-bottom: 14px;
+  }
+  .setup-copy .check {
+    margin-bottom: 12px;
+  }
+  .setup-copy > small {
+    margin-top: 8px;
+  }
+  .setup-copy .journey-next {
+    position: fixed;
+    bottom: 16px;
+    left: 22px;
+    width: calc(100% - 44px);
+    z-index: 8;
+    box-shadow: 0 0 0 12px var(--paper);
+  }
+  .brush-experience,
+  .setup-fonts {
+    margin-top: 24px;
+    margin-bottom: 90px;
+  }
+  .setup-brushes {
+    gap: 4px;
+  }
+  .setup-brushes button {
+    padding: 6px;
+  }
+  .setup-brushes strong {
+    font-size: 10px;
+  }
+  .setup-brushes small {
+    display: none;
+  }
+  .brush-trial {
+    height: 280px;
+  }
+  .font-choice-sentence {
+    font-size: 21px;
+  }
+  .setup-sentence {
+    margin: 12px 0;
+    max-width: none;
+  }
+  .studio.journey-step-2 {
+    grid-template-rows: 60px 62px 64px minmax(0, 1fr) 108px;
+  }
+  .writing-intro {
+    padding: 8px 16px;
+    gap: 12px;
+  }
+  .writing-intro h1 {
+    font-size: 16px;
+  }
+  .writing-intro > button {
+    font-size: 10px;
+    max-width: 110px;
+    text-align: right;
+  }
+  .writing-intro .step-kicker {
+    font-size: 8px;
+  }
+  .journey > .workspace {
+    padding: 4px 12px;
+    gap: 5px;
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) 44px;
+  }
+  .journey > .workspace > .tools {
+    display: none;
+  }
+  .journey > .workspace > .writing-area {
+    grid-column: 1;
+    grid-row: 1;
+    grid-template-rows: auto 36px minmax(0, 1fr) 44px;
+  }
+  .journey .mobile-ink-tools {
+    display: flex;
+    grid-row: 4;
+    justify-content: center;
+    gap: 5px;
+  }
+  .mobile-ink-tools button {
+    font-size: 12px;
+    padding: 0 10px;
+    min-height: 44px;
+  }
+  .mobile-ink-tools button[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .journey .character-instruction {
+    max-width: none;
+    gap: 14px;
+    margin-bottom: 2px;
+  }
+  .character-instruction span {
+    display: none;
+  }
+  .character-instruction p {
+    font-size: 10px;
+  }
+  .journey .writing-area > .pad {
+    width: auto;
+    height: 100%;
+    max-width: 100%;
+    aspect-ratio: 1;
+  }
+  .journey .writing-area > .grid-tools,
+  .journey .writing-area > .safety-caption,
+  .journey .writing-area > .canvas-footer {
+    display: none;
+  }
+  .journey > .workspace > .reference-panel {
+    grid-column: 1;
+    grid-row: 2;
+    display: block;
+    overflow: visible;
+  }
+  .journey .reference-panel > :not(.next-block) {
+    display: none;
+  }
+  .journey .next-block {
+    margin: 0;
+  }
+  .journey .next-block > :not(.navigation) {
+    display: none;
+  }
+  .journey .navigation {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .journey .navigation button {
+    flex: 0 1 42%;
+  }
+  .journey > .progress-panel {
+    padding: 5px 12px;
+    grid-template-rows: 44px 2px minmax(0, 1fr);
+  }
+  .journey .progress-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 108px;
+    grid-template-rows: 44px;
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+  .journey .progress-heading > div:first-child {
+    display: none;
+  }
+  .journey .strip-filters {
+    flex: 1;
+  }
+  .journey .progress-heading > .strip-filters {
+    grid-column: 1;
+    grid-row: 1;
+    gap: 2px;
+  }
+  .journey .progress-heading > select {
+    grid-column: 2;
+    grid-row: 1;
+    min-height: 44px;
+    height: 44px;
+  }
+  .journey .strip-filters button {
+    font-size: 9px;
+    padding: 0 2px;
+  }
+  .journey .progress-heading select {
+    max-width: 112px;
+    font-size: 9px;
+  }
+  .guided-workshop {
+    padding: 20px 16px;
+  }
+  .guided-workshop .font-header h2 {
+    font-size: 25px;
+  }
+  .separation-welcome ol {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .separation-welcome li {
+    padding-top: 6px;
+    font-size: 10px;
+  }
+  .separation-welcome li b {
+    display: inline;
+    margin-right: 8px;
+  }
+  .jamo-example {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .jamo-example > span {
+    font-size: 22px;
+    gap: 5px;
+  }
+  .jamo-example small {
+    font-size: 9px;
+  }
+  .finish-track {
+    gap: 12px;
+    justify-content: space-between;
+  }
+  .finish-track button {
+    font-size: 11px;
+  }
+  .guided-workshop .font-settings[data-setting-step="2"],
+  .guided-workshop .font-settings[data-setting-step="3"] {
+    grid-template-columns: 1fr;
+  }
+}
+.brush-trial .pad .pad-sheet {
+  box-shadow: none;
+  border-radius: 0;
+}

@@ -1,0 +1,71 @@
+import { describe, it, expect } from "vitest";
+import {
+  assignStroke,
+  boxesFor,
+  componentLibrary,
+  composeGlyph,
+  coverage,
+  transformComponent,
+} from "./composition";
+import { defaultPreparation } from "./types";
+import { completeFixture } from "./fixtures";
+import { newProject } from "../defaults";
+
+describe("Hangul component assembly", () => {
+  it("separates all 237 slots and covers every modern syllable from the 138 samples", () => {
+    const project = completeFixture(),
+      prep = defaultPreparation(project.name);
+    const report = coverage(project, prep);
+    expect(report.slots).toBe(237);
+    expect(report.missingSlots).toEqual([]);
+    expect(report.direct).toBe(138);
+    expect(report.composed).toBe(11172 - 138);
+    expect(new Set(report.available).size).toBe(11172);
+    const library = componentLibrary(project, prep);
+    for (const char of ["가", "값", "안", "녕", "힣", "휰"])
+      expect(composeGlyph(char, library)?.length).toBeGreaterThan(1);
+  });
+  it("keeps incomplete coverage honest and supports direct-only export", () => {
+    const project = newProject(),
+      prep = defaultPreparation(project.name);
+    expect(coverage(project, prep).available).toEqual([]);
+    const full = completeFixture();
+    project.samples["겨"] = full.samples["겨"];
+    expect(coverage(project, prep).available).toContain("겨");
+    expect(coverage(project, prep).slots).toBe(2);
+    expect(composeGlyph("힣", componentLibrary(project, prep))).toBeNull();
+    prep.settings.includeComposed = false;
+    expect(coverage(project, prep).composed).toBe(0);
+  });
+  it("manual stroke assignment and source boxes override automatic grouping", () => {
+    const p = completeFixture(),
+      sample = p.samples["겨"],
+      stroke = sample.strokes[0];
+    expect(assignStroke("겨", stroke)).toBe("cho");
+    const separation = {
+      assignments: { [stroke.id]: "jung" as const },
+      boxes: { cho: { x: 100, y: 110, width: 200, height: 250 } },
+    };
+    expect(assignStroke("겨", stroke, separation)).toBe("jung");
+    expect(boxesFor("겨", separation).cho).toEqual(separation.boxes.cho);
+  });
+  it("transforms original centerlines without mutating pressure, tilt, time or original vectors", () => {
+    const p = completeFixture(),
+      prep = defaultPreparation(p.name),
+      component = [...componentLibrary(p, prep).values()][0];
+    const original = JSON.stringify(component.strokes),
+      from = component.box;
+    const strokes = transformComponent(component, {
+      x: from.x + 10,
+      y: from.y + 20,
+      width: from.width * 2,
+      height: from.height * 2,
+    });
+    expect(strokes[0].points[0].x).toBeCloseTo(
+      from.x + 10 + (component.strokes[0].points[0].x - from.x) * 2,
+    );
+    expect(strokes[0].points[0].p).toBe(component.strokes[0].points[0].p);
+    expect(strokes[0].params.size).toBe(component.strokes[0].params.size * 2);
+    expect(JSON.stringify(component.strokes)).toBe(original);
+  });
+});

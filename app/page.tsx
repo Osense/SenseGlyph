@@ -763,6 +763,23 @@ export default function Page() {
                 tool={tool}
                 dark={dark}
                 onBusy={setBusy}
+                navigation={{
+                  previousDisabled:
+                    busy ||
+                    (listFilter === "all"
+                      ? currentPosition <= 0
+                      : navigationChars.every((entry) => entry.char === char)),
+                  nextDisabled: busy,
+                  onPrevious: () => go(-1),
+                  onNext: () =>
+                    listFilter !== "all"
+                      ? navigationChars.length
+                        ? go(1)
+                        : selectFilter("all")
+                      : isLast
+                        ? changeStep(3)
+                        : go(1),
+                }}
               />
               <div className="canvas-footer">
                 <span>

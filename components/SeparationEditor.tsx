@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
+import CanvasStepButtons from "./CanvasStepButtons";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { outline } from "../lib/brushes";
 import { pixelToEm } from "../lib/geometry";
@@ -548,160 +549,173 @@ export default function SeparationEditor({
       </p>
       <div className="separation-layout">
         <div>
-          <svg
-            ref={svg}
-            viewBox="0 0 1000 1000"
-            className="separation-svg editable"
-            aria-label={char + " 자모 분리 화면"}
-            onPointerDown={down}
-            onPointerMove={move}
-            onPointerUp={(event) => finish(event)}
-            onPointerCancel={(event) => finish(event, true)}
-            onLostPointerCapture={(event) => finish(event, true)}
-          >
-            <rect width="1000" height="1000" fill="transparent" />
-            {guide && regionImage && (
-              <image
-                data-reference-regions="true"
-                href={regionImage}
-                x={guide.x - guide.width / (guide.resolution - 3)}
-                y={guide.y - guide.height / (guide.resolution - 3)}
-                width={(guide.width * guide.resolution) / (guide.resolution - 3)}
-                height={
-                  (guide.height * guide.resolution) / (guide.resolution - 3)
-                }
-                preserveAspectRatio="none"
-                style={{ imageRendering: "pixelated" }}
-                pointerEvents="none"
-              />
-            )}
-            {parts.map((part) => {
-              const box = boxes[part]!;
-              if (guide)
-                return (
-                  <text
-                    key={part}
-                    x={box.x + 6}
-                    y={box.y - 8}
-                    fill={PART_COLORS[part]}
-                    fontSize="23"
-                    fontWeight="600"
-                    pointerEvents="none"
-                  >
-                    {PART_LABELS[part]}
-                  </text>
-                );
-              return (
-                <g key={part} pointerEvents="none">
-                  <rect
-                    x={box.x}
-                    y={box.y}
-                    width={box.width}
-                    height={box.height}
-                    fill={PART_COLORS[part]}
-                    fillOpacity=".045"
-                    stroke={PART_COLORS[part]}
-                    strokeDasharray="10 10"
-                    strokeWidth="2"
-                  />
-                  <text
-                    x={box.x + 12}
-                    y={box.y + 30}
-                    fill={PART_COLORS[part]}
-                    fontSize="23"
-                  >
-                    {PART_LABELS[part]}
-                  </text>
-                </g>
-              );
-            })}
-            <rect
-              x={SAFE_INSET}
-              y={SAFE_INSET}
-              width={1000 - SAFE_INSET * 2}
-              height={1000 - SAFE_INSET * 2}
-              fill="none"
-              stroke="#b99d72"
-              strokeDasharray="7 5"
-              strokeWidth="2"
-              pointerEvents="none"
+          <div className="separation-canvas-frame">
+            <CanvasStepButtons
+              context="자모"
+              navigation={{
+                previousDisabled: currentIndex <= 0,
+                nextDisabled: currentIndex >= chars.length - 1,
+                onPrevious: () => changeChar(-1),
+                onNext: () => changeChar(1),
+              }}
             />
-            {displayed.map((stroke, i) => {
-              const part = assignStroke(
-                  char,
-                  stroke,
-                  separation,
-                  project.settings,
-                ),
-                poly = outline(stroke.points, stroke.brush, stroke.params);
-              return (
-                <path
-                  key={stroke.id}
-                  data-stroke-id={stroke.id}
-                  d={
-                    poly.length
-                      ? "M" + poly.map((p) => p.join(",")).join("L") + "Z"
-                      : ""
+            <svg
+              ref={svg}
+              viewBox="0 0 1000 1000"
+              className="separation-svg editable"
+              aria-label={char + " 자모 분리 화면"}
+              onPointerDown={down}
+              onPointerMove={move}
+              onPointerUp={(event) => finish(event)}
+              onPointerCancel={(event) => finish(event, true)}
+              onLostPointerCapture={(event) => finish(event, true)}
+            >
+              <rect width="1000" height="1000" fill="transparent" />
+              {guide && regionImage && (
+                <image
+                  data-reference-regions="true"
+                  href={regionImage}
+                  x={guide.x - guide.width / (guide.resolution - 3)}
+                  y={guide.y - guide.height / (guide.resolution - 3)}
+                  width={
+                    (guide.width * guide.resolution) / (guide.resolution - 3)
                   }
-                  fill={PART_COLORS[part]}
-                  stroke={selection.includes(stroke.id) ? "#dca829" : "none"}
-                  strokeWidth="6"
-                  role="button"
-                  tabIndex={0}
-                  aria-label={i + 1 + "번 획 " + PART_LABELS[part]}
-                  aria-pressed={selection.includes(stroke.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === " " || event.key === "Enter") {
-                      event.preventDefault();
-                      toggle(stroke.id);
-                    }
-                  }}
+                  height={
+                    (guide.height * guide.resolution) / (guide.resolution - 3)
+                  }
+                  preserveAspectRatio="none"
+                  style={{ imageRendering: "pixelated" }}
+                  pointerEvents="none"
                 />
-              );
-            })}
-            {bounds && (
-              <rect
-                x={bounds.x - 10}
-                y={bounds.y - 10}
-                width={bounds.width + 20}
-                height={bounds.height + 20}
-                fill="none"
-                stroke="#d5a228"
-                strokeWidth="3"
-                strokeDasharray="8 5"
-                pointerEvents="none"
-              />
-            )}
-            {lasso && (
-              <path
-                data-lasso="true"
-                d={"M" + lasso.map((p) => `${p.x},${p.y}`).join("L") + "Z"}
-                fill="#497fba25"
-                stroke="#497fba"
-                strokeWidth="3"
-                pointerEvents="none"
-              />
-            )}
-            {mode === "point" &&
-              anchorStroke &&
-              anchors.map((index) => {
-                const p = anchorStroke.points[index];
+              )}
+              {parts.map((part) => {
+                const box = boxes[part]!;
+                if (guide)
+                  return (
+                    <text
+                      key={part}
+                      x={box.x + 6}
+                      y={box.y - 8}
+                      fill={PART_COLORS[part]}
+                      fontSize="23"
+                      fontWeight="600"
+                      pointerEvents="none"
+                    >
+                      {PART_LABELS[part]}
+                    </text>
+                  );
                 return (
-                  <circle
-                    key={index}
-                    data-stroke-id={anchorStroke.id}
-                    data-point-index={index}
-                    cx={p.x}
-                    cy={p.y}
-                    r="8"
-                    fill="#fffdf1"
-                    stroke="#456d98"
-                    strokeWidth="3"
-                    className="point-handle"
+                  <g key={part} pointerEvents="none">
+                    <rect
+                      x={box.x}
+                      y={box.y}
+                      width={box.width}
+                      height={box.height}
+                      fill={PART_COLORS[part]}
+                      fillOpacity=".045"
+                      stroke={PART_COLORS[part]}
+                      strokeDasharray="10 10"
+                      strokeWidth="2"
+                    />
+                    <text
+                      x={box.x + 12}
+                      y={box.y + 30}
+                      fill={PART_COLORS[part]}
+                      fontSize="23"
+                    >
+                      {PART_LABELS[part]}
+                    </text>
+                  </g>
+                );
+              })}
+              <rect
+                x={SAFE_INSET}
+                y={SAFE_INSET}
+                width={1000 - SAFE_INSET * 2}
+                height={1000 - SAFE_INSET * 2}
+                fill="none"
+                stroke="#b99d72"
+                strokeDasharray="7 5"
+                strokeWidth="2"
+                pointerEvents="none"
+              />
+              {displayed.map((stroke, i) => {
+                const part = assignStroke(
+                    char,
+                    stroke,
+                    separation,
+                    project.settings,
+                  ),
+                  poly = outline(stroke.points, stroke.brush, stroke.params);
+                return (
+                  <path
+                    key={stroke.id}
+                    data-stroke-id={stroke.id}
+                    d={
+                      poly.length
+                        ? "M" + poly.map((p) => p.join(",")).join("L") + "Z"
+                        : ""
+                    }
+                    fill={PART_COLORS[part]}
+                    stroke={selection.includes(stroke.id) ? "#dca829" : "none"}
+                    strokeWidth="6"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={i + 1 + "번 획 " + PART_LABELS[part]}
+                    aria-pressed={selection.includes(stroke.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === " " || event.key === "Enter") {
+                        event.preventDefault();
+                        toggle(stroke.id);
+                      }
+                    }}
                   />
                 );
               })}
-          </svg>
+              {bounds && (
+                <rect
+                  x={bounds.x - 10}
+                  y={bounds.y - 10}
+                  width={bounds.width + 20}
+                  height={bounds.height + 20}
+                  fill="none"
+                  stroke="#d5a228"
+                  strokeWidth="3"
+                  strokeDasharray="8 5"
+                  pointerEvents="none"
+                />
+              )}
+              {lasso && (
+                <path
+                  data-lasso="true"
+                  d={"M" + lasso.map((p) => `${p.x},${p.y}`).join("L") + "Z"}
+                  fill="#497fba25"
+                  stroke="#497fba"
+                  strokeWidth="3"
+                  pointerEvents="none"
+                />
+              )}
+              {mode === "point" &&
+                anchorStroke &&
+                anchors.map((index) => {
+                  const p = anchorStroke.points[index];
+                  return (
+                    <circle
+                      key={index}
+                      data-stroke-id={anchorStroke.id}
+                      data-point-index={index}
+                      cx={p.x}
+                      cy={p.y}
+                      r="8"
+                      fill="#fffdf1"
+                      stroke="#456d98"
+                      strokeWidth="3"
+                      className="point-handle"
+                    />
+                  );
+                })}
+            </svg>
+          </div>
           {selection.length > 0 && (
             <div
               className="quick-assign"

@@ -1,0 +1,59 @@
+/* Dedicated side rails keep navigation beside, never on, the editable ink. */
+.separation-canvas-frame {
+  position: relative;
+  padding-inline: 52px;
+  box-sizing: border-box;
+  width: 100%;
+}
+.canvas-step-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 44px;
+  min-width: 44px;
+  min-height: 64px;
+  padding: 8px 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 1px solid var(--border, #d5d9cf);
+  border-radius: 12px;
+  color: var(--ink, #263c33);
+  background: var(--paper, #fffef8);
+  touch-action: manipulation;
+  cursor: pointer;
+}
+.canvas-step-button > span {
+  font: 32px/1 sans-serif;
+}
+.canvas-step-button > small {
+  font-size: 11px;
+}
+.canvas-step-previous {
+  left: 0;
+}
+.canvas-step-next {
+  right: 0;
+}
+.canvas-step-button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.canvas-step-button:focus-visible {
+  outline: 3px solid #387aab;
+  outline-offset: 2px;
+}
+.canvas-step-button:not(:disabled):active {
+  background: #e1e9df;
+}
+.dark .canvas-step-button {
+  color: #e5eadf;
+  background: #252d26;
+  border-color: #56604e;
+}
+.dark .canvas-step-button:not(:disabled):active {
+  background: #394937;
+}

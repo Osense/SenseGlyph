@@ -13,6 +13,7 @@ import { drawGrid, drawSample } from "../lib/drawing";
 import { useStudio } from "../lib/store";
 import { loadReferenceFont } from "../lib/reference-fonts";
 import { strokeIsSafe, strokesAreSafe } from "../lib/safety";
+import CanvasStepButtons, { type CanvasNavigation } from "./CanvasStepButtons";
 let penDetectedThisSession = false;
 interface Props {
   char: string;
@@ -23,6 +24,7 @@ interface Props {
   dark: boolean;
   onBusy: (busy: boolean) => void;
   practice?: boolean;
+  navigation?: CanvasNavigation;
 }
 export default function WritingPad({
   char,
@@ -33,6 +35,7 @@ export default function WritingPad({
   dark,
   onBusy,
   practice = false,
+  navigation,
 }: Props) {
   // SPEC 해석: 진행 중 획을 확정 잉크와 분리하기 위해 4개의 canvas를 쓴다.
   const wrap = useRef<HTMLDivElement>(null),
@@ -71,11 +74,16 @@ export default function WritingPad({
     // the em grid, sample and handwriting are never stretched.
     const ob = new ResizeObserver((es) => {
       const { width, height } = es[0].contentRect;
-      setSize(Math.floor(height > 0 ? Math.min(width, height) : width));
+      const availableWidth = Math.max(1, width - (navigation ? 104 : 0));
+      setSize(
+        Math.floor(
+          height > 0 ? Math.min(availableWidth, height) : availableWidth,
+        ),
+      );
     });
     if (wrap.current) ob.observe(wrap.current);
     return () => ob.disconnect();
-  }, []);
+  }, [!!navigation]);
   useEffect(() => {
     let alive = true;
     setFontReady(false);
@@ -263,6 +271,9 @@ export default function WritingPad({
   };
   return (
     <div className="pad" ref={wrap} aria-label={char + " 쓰기 칸"}>
+      {navigation && (
+        <CanvasStepButtons navigation={navigation} context="쓰기" />
+      )}
       <div
         className="pad-sheet"
         style={size ? { width: size, height: size } : undefined}

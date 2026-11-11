@@ -1,5 +1,6 @@
 "use client";
 
+import { defaultEnglishFontName } from "../lib/font/names";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { HANGUL } from "../data/charset";
 import SeparationEditor from "./SeparationEditor";
@@ -472,7 +473,7 @@ export default function FontWorkshop({
               className="font-settings"
               data-setting-step={guided ? finishStep : "all"}
             >
-              <label className="font-field">
+              <label className="font-field font-name-field">
                 폰트 이름
                 <input
                   aria-label="폰트 이름"
@@ -480,6 +481,19 @@ export default function FontWorkshop({
                   value={prep.settings.familyName}
                   disabled={building && !guided}
                   onChange={(e) => settings({ familyName: e.target.value })}
+                />
+              </label>
+              <label className="font-field font-name-field">
+                영문 폰트 이름
+                <input
+                  aria-label="영문 폰트 이름"
+                  maxLength={60}
+                  value={prep.settings.englishFamilyName ?? ""}
+                  placeholder={defaultEnglishFontName(prep.settings.familyName)}
+                  disabled={building && !guided}
+                  onChange={(e) =>
+                    settings({ englishFamilyName: e.target.value })
+                  }
                 />
               </label>
               <label className="font-field">

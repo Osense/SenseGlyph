@@ -24,6 +24,7 @@ export interface FontBuildSettings {
   shapeInterpolation?: number;
   bodySize?: number;
   familyName: string;
+  englishFamilyName?: string;
   letterSpacing: number;
   baseline: number;
   includeComposed: boolean;

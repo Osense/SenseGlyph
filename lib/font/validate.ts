@@ -23,6 +23,9 @@ export function validPreparation(value: unknown): value is FontPreparation {
   if (
     typeof s.familyName !== "string" ||
     s.familyName.length > 80 ||
+    (s.englishFamilyName !== undefined &&
+      (typeof s.englishFamilyName !== "string" ||
+        s.englishFamilyName.length > 60)) ||
     !finite(s.letterSpacing) ||
     s.letterSpacing < LIMITS.spacingMin ||
     s.letterSpacing > LIMITS.spacingMax ||

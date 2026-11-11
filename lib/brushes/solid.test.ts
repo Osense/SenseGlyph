@@ -216,7 +216,7 @@ it("exports nib retracing and pixel strokes as nonempty, parseable OTF glyphs wi
   );
   expect(
     font.charToGlyph("A").path.commands.filter((c) => c.type === "Z"),
-  ).toHaveLength(2);
+  ).toHaveLength(1);
   expect(font.charToGlyph("B").path.commands.length).toBeGreaterThan(20);
   expect(JSON.stringify(project)).toBe(before);
 });

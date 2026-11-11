@@ -1,4 +1,5 @@
 import opentype from "opentype.js";
+import polygonClipping, { type Ring } from "polygon-clipping";
 import { slotKeys } from "../hangul";
 import {
   prepareHandwriting,
@@ -7,6 +8,7 @@ import {
 } from "./composition";
 import type { BuildRequest, FontStats } from "./types";
 import { FONT_SETTING_LIMITS as LIMITS } from "./types";
+import { defaultEnglishFontName, isEnglishFontName } from "./names";
 import { replaceCmap } from "./cmap";
 import { effectiveSample } from "./editing";
 import { strokesAreSafe, SAFE_INSET, SAFE_MAX } from "../safety";
@@ -29,12 +31,6 @@ export function appendContour(
     Math.round(p[0]),
     Math.round(baseline - p[1]),
   ]);
-  const area = points.reduce((sum, p, i) => {
-    const n = points[(i + 1) % points.length];
-    return sum + p[0] * n[1] - n[0] * p[1];
-  }, 0);
-  // All outer contours have the same winding so overlapping strokes stay filled.
-  if (area > 0) points.reverse();
   path.moveTo(points[0][0], points[0][1]);
   for (const p of points.slice(1)) path.lineTo(p[0], p[1]);
   path.close();
@@ -46,6 +42,15 @@ export function generateFont(
 ): { buffer: ArrayBuffer; stats: FontStats } {
   const options = { ...preparation.settings, includeComposed: true };
   if (!options.familyName.trim()) throw new Error("폰트 이름을 입력하세요.");
+  const explicitEnglish = options.englishFamilyName?.trim();
+  const englishName =
+    explicitEnglish || defaultEnglishFontName(options.familyName);
+  if (!isEnglishFontName(englishName) || englishName.length > 80)
+    throw new Error(
+      "영문 폰트 이름은 영문자나 숫자를 포함하고, 영문 키보드의 문자와 공백으로 입력하세요.",
+    );
+  const postScriptName =
+    englishName.replace(/[^a-zA-Z0-9]/g, "").slice(0, 55) + "-Regular";
   if (
     [options.positionCorrection, options.shapeInterpolation].some(
       (v) => v !== undefined && (!Number.isFinite(v) || v < 0 || v > 100),
@@ -169,8 +174,17 @@ export function generateFont(
     const [char, paths] = entries[i],
       path = new opentype.Path();
     const shaped = layoutGlyph(char, paths, layout);
+    // Merge ink before writing CFF so renderers see the boundary, not stacked faces.
+    const polygons = shaped.contours.map((ring) => [ring as Ring]);
+    if (polygons.length) {
+      for (const polygon of polygonClipping.union(polygons)) {
+        for (const ring of polygon) {
+          // The union winds holes opposite to outer rings. Preserve that winding.
+          appendContour(path, ring.slice(0, -1), options.baseline);
+        }
+      }
+    }
     for (const polygon of shaped.contours) {
-      appendContour(path, polygon, options.baseline);
       for (const p of polygon) {
         highest = Math.max(highest, options.baseline - p[1]);
         lowest = Math.min(lowest, options.baseline - p[1]);
@@ -201,23 +215,19 @@ export function generateFont(
   const internalName =
     "Hanhoek-" + project.id.replace(/[^a-zA-Z0-9]/g, "").slice(0, 24);
   const font = new opentype.Font({
-    familyName: internalName,
+    familyName: englishName,
     styleName: "Regular",
     unitsPerEm: 1000,
     ascender: Math.ceil(highest),
     descender: Math.min(-1, Math.floor(lowest)),
     glyphs,
   });
-  // Keep CFF/PostScript identifiers ASCII; localized naming remains available to OS font menus.
-  const englishName = /^[\x20-\x7e]+$/.test(options.familyName.trim())
-    ? options.familyName.trim()
-    : internalName;
   for (const key of ["fontFamily", "fullName"] as const)
     font.names[key] = { en: englishName, ko: options.familyName.trim() };
-  font.names.postScriptName = { en: internalName + "-Regular" };
-  font.names.version = { en: "Version 1.300" };
+  font.names.postScriptName = { en: postScriptName };
+  font.names.version = { en: "Version 1.400" };
   Object.assign(font.names, {
-    uniqueID: { en: internalName + "-1.300-" + project.updatedAt },
+    uniqueID: { en: internalName + "-1.400-" + project.updatedAt },
   });
   const mapping = glyphs.flatMap((glyph, index) =>
     glyph.unicodes.map((code) => ({ code, index })),

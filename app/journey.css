@@ -687,7 +687,7 @@
 }
 .guided-workshop
   .font-settings[data-setting-step="1"]
-  > label:not(:first-child) {
+  > label:not(.font-name-field) {
   display: none;
 }
 .guided-workshop .font-settings[data-setting-step="1"] input {
@@ -699,14 +699,14 @@
 .guided-workshop .font-settings[data-setting-step="2"] {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
-.guided-workshop .font-settings[data-setting-step="2"] > label:first-child {
+.guided-workshop .font-settings[data-setting-step="2"] > .font-name-field {
   display: none;
 }
 .guided-workshop .font-settings[data-setting-step="3"] {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   max-width: 760px;
 }
-.guided-workshop .font-settings[data-setting-step="3"] > label:first-child,
+.guided-workshop .font-settings[data-setting-step="3"] > .font-name-field,
 .guided-workshop .font-settings[data-setting-step="3"] > label:last-child {
   display: none;
 }

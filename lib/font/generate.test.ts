@@ -135,3 +135,22 @@ it("exports English descenders below the Hangul safety boundary without clipping
   expect(font.charToGlyph("g").getBoundingBox().y1).toBeLessThan(-160);
   expect(font.descender).toBeLessThanOrEqual(-200);
 });
+
+it("exports separate readable Korean and English names with a matching PostScript name", () => {
+  const project = newProject();
+  project.samples["겨"] = completeFixture().samples["겨"];
+  const preparation = defaultPreparation("나의 손글씨");
+  preparation.settings.englishFamilyName = "Osense Hand";
+  project.fontPreparation = preparation;
+  const restored = parseProject(JSON.stringify(project));
+  const font = opentype.parse(
+    generateFont({ project: restored, preparation: restored.fontPreparation! })
+      .buffer,
+  );
+  expect(font.names.fontFamily).toMatchObject({
+    en: "Osense Hand",
+    ko: "나의 손글씨",
+  });
+  expect(font.names.fullName.en).toBe("Osense Hand");
+  expect(font.names.postScriptName.en).toBe("OsenseHand-Regular");
+});

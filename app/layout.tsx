@@ -45,7 +45,7 @@ const FONT_FACES = `
 }
 `;
 export const metadata: Metadata = {
-  title: "한 획 — 나만의 손글씨",
+  title: "센스글리프 — 나만의 손글씨",
   description: "오프라인에서 차곡차곡 모으는 나의 손글씨",
 };
 export default function Layout({ children }: { children: React.ReactNode }) {

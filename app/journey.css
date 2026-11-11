@@ -33,6 +33,13 @@
 .journey .brand small {
   display: none;
 }
+.journey .brand small.brand-credit {
+  display: block;
+  font-size: 9px;
+  line-height: 1.2;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
 .journey .brand-mark {
   background: var(--ink);
   color: var(--paper);

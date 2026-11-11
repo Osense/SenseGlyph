@@ -430,8 +430,8 @@ export default function Page() {
   if (!project || !s)
     return (
       <main className="loading">
-        <span className="brand-mark">ㅎ</span>
-        <p>나의 손글씨 작업실을 여는 중…</p>
+        <span className="brand-mark" aria-hidden="true">ㅅ</span>
+        <p>센스글리프를 여는 중…</p>
       </main>
     );
   const params = s.brushParams[s.activeBrush],
@@ -452,9 +452,9 @@ export default function Page() {
     >
       <header className="topbar">
         <a className="brand" href="./">
-          <span className="brand-mark">ㅎ</span>
+          <span className="brand-mark" aria-hidden="true">ㅅ</span>
           <span>
-            한 획<small>나만의 손글씨 작업실</small>
+            센스글리프<small className="brand-credit">OSNS.studio 제작</small>
           </span>
         </a>
         <span className="journey-tagline">손글씨가 글꼴이 되는 다섯 걸음</span>
@@ -1355,7 +1355,7 @@ export default function Page() {
               Ctrl / ⌘ + Z 실행 취소 · Shift + Z 다시 실행
             </p>
             <p className="version">
-              한 획 · Phase 1 / 모든 획은 벡터로 보관됩니다.
+              센스글리프 · 모든 획은 벡터로 보관됩니다.
             </p>
           </section>
         </div>

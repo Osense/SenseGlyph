@@ -9,7 +9,6 @@ import type { FontProject } from "../lib/types";
 import { Thumbnail } from "./Preview";
 
 const parts = ["cho", "jung", "jong"] as const;
-const examples = { cho: "ㄱ", jung: "ㅝ", jong: "ㄹㄱ" };
 
 export default function HandwritingSearch({
   project,
@@ -62,6 +61,20 @@ export default function HandwritingSearch({
 
   return (
     <section className="handwriting-search" aria-label="원본 손글씨 검색">
+      <div className="source-search-heading">
+        <h3>원본 손글씨 찾기</h3>
+        <details>
+          <summary>사용 방법</summary>
+          <p>
+            찾고 싶은 자모를 초성·중성·종성 칸에 하나씩 입력하세요. 빈 칸은 검색
+            조건에서 제외돼요. 겹받침은 ㄺ 또는 ㄹㄱ으로 입력할 수 있어요.
+          </p>
+          <p>
+            검색 결과에서 글자를 선택하면 자모 배정을 고치거나 글자를 다시 쓸 수
+            있어요.
+          </p>
+        </details>
+      </div>
       <div className="handwriting-filters">
         {filters.map(({ part, value }) => (
           <label className="font-field" key={part}>
@@ -69,7 +82,6 @@ export default function HandwritingSearch({
             <input
               aria-invalid={value === -1 || undefined}
               autoComplete="off"
-              placeholder={examples[part]}
               value={query[part]}
               onChange={(event) => {
                 setQuery({ ...query, [part]: event.target.value });
@@ -83,7 +95,7 @@ export default function HandwritingSearch({
         {invalid
           ? "각 칸에는 해당하는 한글 자모를 하나씩 입력하세요."
           : !hasFilter
-            ? "빈 칸은 검색 조건에서 제외됩니다. 겹받침은 ㄺ 또는 ㄹㄱ으로 쓸 수 있어요."
+            ? ""
             : exact.length
               ? `일치하는 원본 ${exact.length}개`
               : results.length

@@ -106,8 +106,7 @@
 .font-specimen-layout {
   --field-gap: 14px;
 }
-.font-specimen-layout > .font-settings[data-setting-step="2"],
-.font-specimen-layout > .font-settings[data-setting-step="4"] {
+.font-specimen-layout > .font-settings {
   gap: 0 var(--field-gap);
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -153,7 +152,7 @@
   border-color: var(--line);
 }
 @media (min-width: 900px) {
-  .font-specimen-layout:is([data-step="2"], [data-step="4"]) {
+  .font-specimen-layout[data-step="refine"] {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
     align-items: start;

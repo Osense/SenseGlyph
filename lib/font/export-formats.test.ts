@@ -7,7 +7,7 @@ import { completeFixture } from "./fixtures";
 import { generateFont } from "./generate";
 import { defaultPreparation } from "./types";
 
-it("exports four valid fonts with the original names and Hangul coverage", async () => {
+it("exports four valid fonts with the output names and original Hangul coverage", async () => {
   const project = completeFixture();
   const preparation = defaultPreparation("나의 글씨");
   preparation.settings.englishFamilyName = "My Handwriting";
@@ -15,28 +15,32 @@ it("exports four valid fonts with the original names and Hangul coverage", async
   const zip = await convertFont({
     buffer: original.buffer,
     format: "zip",
-    filename: "나의 글씨",
+    filename: "OSNS 새 글씨",
+    names: { korean: "새 글씨", english: "New Handwriting" },
   });
   const files = unzipSync(new Uint8Array(zip));
   expect(Object.keys(files)).toEqual(
-    ["ttf", "otf", "woff", "woff2"].map((ext) => "나의 글씨." + ext),
+    ["ttf", "otf", "woff", "woff2"].map((ext) => "OSNS 새 글씨." + ext),
   );
-  expect(files["나의 글씨.otf"]).toEqual(new Uint8Array(original.buffer));
+  expect(opentype.parse(original.buffer).names.fontFamily).toMatchObject({
+    en: "My Handwriting",
+    ko: "나의 글씨",
+  });
   for (const [ext, signature] of [
     ["ttf", 0x00010000],
     ["otf", 0x4f54544f],
     ["woff", 0x774f4646],
     ["woff2", 0x774f4632],
   ] as const) {
-    const bytes = files["나의 글씨." + ext];
+    const bytes = files["OSNS 새 글씨." + ext];
     expect(new DataView(bytes.buffer, bytes.byteOffset).getUint32(0)).toBe(
       signature,
     );
     const sfnt = ext === "woff2" ? await decompress(bytes) : bytes;
     const font = opentype.parse(Uint8Array.from(sfnt).buffer);
     expect(font.names.fontFamily).toMatchObject({
-      en: "My Handwriting",
-      ko: "나의 글씨",
+      en: "OSNS New Handwriting",
+      ko: "OSNS 새 글씨",
     });
     expect(font.glyphs.length).toBe(original.stats.glyphs);
     expect(font.charToGlyphIndex("가")).toBeGreaterThan(0);

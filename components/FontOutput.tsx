@@ -1,0 +1,259 @@
+"use client";
+
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import type { ExportFormat } from "../lib/font/export-formats";
+import { isEnglishFontName } from "../lib/font/names";
+import {
+  isKoreanOutputName,
+  OUTPUT_PREFIX,
+  type OutputNames,
+} from "../lib/font/output-names";
+
+export function FontDialog({
+  title,
+  children,
+  onClose,
+}: {
+  title: string;
+  children: ReactNode;
+  onClose?: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const heading = useId();
+  useEffect(() => {
+    const node = dialog.current!;
+    node.showModal();
+    return () => node.close();
+  }, []);
+  return (
+    <dialog
+      className="font-flow-dialog"
+      ref={dialog}
+      aria-labelledby={heading}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose?.();
+      }}
+    >
+      <h3 id={heading}>{title}</h3>
+      {children}
+    </dialog>
+  );
+}
+
+const specimen = [
+  "축하해요! 이제 당신의 손글씨로 세상에 인사를 건넬 수 있어요.",
+  "Hello, world! 내 글씨가 1·2·3, 마음을 전해요 :)",
+  "Aa–Zz / 0123456789 / !? @#%&+ « » ( ) [ ] ₩",
+];
+
+export default function FontOutput({
+  family,
+  characters,
+  exporting,
+  exportError,
+  onDownload,
+}: {
+  family: string;
+  characters: string[];
+  exporting: ExportFormat | null;
+  exportError: string;
+  onDownload: (format: ExportFormat, names: OutputNames) => void;
+}) {
+  const [names, setNames] = useState<OutputNames>({ korean: "", english: "" });
+  const [format, setFormat] = useState<ExportFormat>("zip");
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [promo, setPromo] = useState<"valid" | "invalid" | null>(null);
+  const korean = names.korean.trim().normalize("NFC");
+  const english = names.english.trim();
+  const valid = isKoreanOutputName(korean) && isEnglishFontName(english);
+  const available = new Set(characters);
+  const missing = [...new Set(specimen.join(""))].filter(
+    (char) => !/\s/.test(char) && !available.has(char),
+  );
+
+  return (
+    <section className="font-output" aria-label="폰트 내보내기">
+      <div
+        className="generated-preview output-specimen"
+        aria-label="생성된 폰트 미리보기"
+      >
+        {specimen.map((line) => (
+          <p key={line} style={{ fontFamily: family }}>
+            {[...line].map((char, index) =>
+              /\s/.test(char) || available.has(char) ? (
+                char
+              ) : (
+                <span
+                  className="missing-glyph"
+                  key={index}
+                  title={char + " · 아직 없는 글자"}
+                >
+                  {char}
+                </span>
+              ),
+            )}
+          </p>
+        ))}
+      </div>
+      {missing.length > 0 && (
+        <p className="font-help">
+          회색으로 표시된 문자는 생성된 폰트에 없어요. {missing.join(" ")}
+        </p>
+      )}
+      <form
+        className="output-fields"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (valid) {
+            setCode("");
+            setPromo(null);
+            setOpen(true);
+          }
+        }}
+      >
+        <label className="font-field">
+          한글 폰트 이름
+          <span className="output-prefix">
+            <span>OSNS</span>
+            <input
+              required
+              aria-label="한글 폰트 이름"
+              maxLength={60}
+              value={names.korean}
+              onChange={(event) =>
+                setNames({ ...names, korean: event.target.value })
+              }
+            />
+          </span>
+          <small className="font-field-note">
+            한글을 한 글자 이상 포함해 주세요.
+          </small>
+        </label>
+        <label className="font-field">
+          영문 폰트 이름
+          <span className="output-prefix">
+            <span>OSNS</span>
+            <input
+              required
+              aria-label="영문 폰트 이름"
+              maxLength={60}
+              value={names.english}
+              onChange={(event) =>
+                setNames({ ...names, english: event.target.value })
+              }
+            />
+          </span>
+          <small className="font-field-note">
+            영문 키보드의 문자로 입력하고 영문자나 숫자를 포함해 주세요.
+          </small>
+        </label>
+        <label className="font-field">
+          파일 형식
+          <select
+            value={format}
+            onChange={(event) => setFormat(event.target.value as ExportFormat)}
+          >
+            <option value="zip">ZIP · 전체 형식</option>
+            {(["ttf", "otf", "woff", "woff2"] as const).map((ext) => (
+              <option key={ext} value={ext}>
+                {ext.toUpperCase()}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button className="font-primary" disabled={!valid} type="submit">
+          다운로드 →
+        </button>
+      </form>
+      {open && (
+        <FontDialog
+          title="폰트 출력"
+          onClose={exporting ? undefined : () => setOpen(false)}
+        >
+          <p className="output-filename">
+            {OUTPUT_PREFIX}
+            {korean}.{format}
+          </p>
+          <p className="output-price">
+            <span>1회 출력</span> <del>29,000원</del> <strong>19,900원</strong>{" "}
+            <span>프로모션 · 30% 할인</span>
+          </p>
+          <p>
+            폰트의 저작권은 전부 사용자에게 있습니다. 폰트명에는 서비스명 OSNS를
+            남기는 조건입니다.
+          </p>
+          <p>
+            수정 후 다시 출력하면 추가 비용이 발생할 수 있어요. 출력 전에 이름과
+            글자 모양을 확인해 주세요.
+          </p>
+          <p className="font-help">
+            프로토타입입니다. 프로모션 코드로 출력 기능을 체험할 수 있어요.
+          </p>
+          <form
+            className="output-code"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setPromo(
+                code.trim().toLowerCase() === "osnsstudio"
+                  ? "valid"
+                  : "invalid",
+              );
+            }}
+          >
+            <label className="font-field">
+              프로모션 코드
+              <input
+                autoComplete="off"
+                disabled={exporting !== null}
+                value={code}
+                onChange={(event) => {
+                  setCode(event.target.value);
+                  setPromo(null);
+                }}
+              />
+            </label>
+            <button
+              type="submit"
+              className="font-secondary"
+              disabled={!code.trim() || exporting !== null}
+            >
+              적용
+            </button>
+          </form>
+          {promo && (
+            <p role="status">
+              {promo === "valid"
+                ? "인증되었습니다. 다운로드를 해주세요."
+                : "프로모션 코드를 확인해 주세요."}
+            </p>
+          )}
+          {exportError && (
+            <p className="font-error" role="alert">
+              {exportError}
+            </p>
+          )}
+          <div className="font-dialog-actions">
+            <button
+              type="button"
+              className="font-secondary"
+              disabled={exporting !== null}
+              onClick={() => setOpen(false)}
+            >
+              닫기
+            </button>
+            <button
+              type="button"
+              className="font-primary"
+              disabled={promo !== "valid" || exporting !== null}
+              onClick={() => onDownload(format, { korean, english })}
+            >
+              {exporting ? "파일 준비 중…" : "다운로드 ↓"}
+            </button>
+          </div>
+        </FontDialog>
+      )}
+    </section>
+  );
+}

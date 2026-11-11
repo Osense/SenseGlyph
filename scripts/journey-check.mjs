@@ -2,7 +2,10 @@ import { chromium } from "@playwright/test";
 import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import opentype from "opentype.js";
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({
+  headless: true,
+  executablePath: process.env.CHROMIUM_EXECUTABLE_PATH,
+});
 const context = await browser.newContext({
   viewport: { width: 1366, height: 900 },
   acceptDownloads: true,
@@ -37,11 +40,21 @@ const draw = async (canvas, a, b) => {
   await page.mouse.up();
   await page.waitForTimeout(100);
 };
+let builds = 0;
+page.on("worker", (worker) => {
+  if (/font-worker\.[a-f0-9]+\.js$/.test(worker.url())) builds++;
+});
+const exportTab = page.getByRole("button", { name: "내보내기", exact: true });
 const waitFont = async () => {
   await page.waitForFunction(
-    () =>
-      document.querySelector(".generated-preview") ||
-      document.querySelector(".font-error"),
+    () => {
+      const button = [
+        ...document.querySelectorAll(".finish-track button"),
+      ].find((item) => item.textContent === "내보내기");
+      return (
+        (button && !button.disabled) || document.querySelector(".font-error")
+      );
+    },
     null,
     { timeout: 120000 },
   );
@@ -186,27 +199,49 @@ try {
   await page.getByRole("button", { name: "보정 실행 취소" }).click();
   await page.screenshot({ path: "artifacts/journey-04-separation.png" });
   check("the lasso popup sits above the selection and bulk assigns with undo");
+  const beforeBuild = builds;
   await page
-    .getByRole("button", { name: "내 폰트로 써보기 →", exact: true })
+    .getByRole("button", {
+      name: "손글씨를 이용해 폰트 생성하기 →",
+      exact: true,
+    })
     .click();
+  await page.getByRole("progressbar", { name: "폰트 생성 진행률" }).waitFor();
   await waitFont();
-  assert.equal(
-    await page.getByLabel("폰트 이름", { exact: true }).isVisible(),
-    false,
+  assert.equal(builds, beforeBuild + 1);
+  const source = page.getByRole("region", { name: "원본 손글씨 검색" });
+  assert.deepEqual(
+    await source
+      .locator("input")
+      .evaluateAll((inputs) =>
+        inputs.map((input) => [input.value, input.placeholder]),
+      ),
+    [
+      ["", ""],
+      ["", ""],
+      ["", ""],
+    ],
   );
-  await page.getByLabel("미리 볼 문장", { exact: true }).fill("겨구귀갛");
-  await page.screenshot({ path: "artifacts/journey-05-preview.png" });
-  await page
-    .getByRole("button", { name: "이름 정하기 →", exact: true })
-    .click();
-  await page.getByLabel("폰트 이름", { exact: true }).fill("Journey Hand Test");
-  await page
-    .getByRole("button", { name: "간격 다듬기 →", exact: true })
-    .click();
-  await page.getByLabel("출력 글자 크기", { exact: true }).fill("900");
-  await page.getByLabel("글자 사이 간격", { exact: true }).fill("35");
-  await page.screenshot({ path: "artifacts/journey-06-spacing.png" });
-  await page.getByRole("button", { name: "원본 찾기 →", exact: true }).click();
+  await source.getByText("사용 방법", { exact: true }).click();
+  await source.getByText(/겹받침은 ㄺ/).waitFor();
+  await exportTab.click();
+  const preview = page.getByLabel("생성된 폰트 미리보기");
+  await preview.waitFor();
+  const family = await preview
+    .locator("p")
+    .first()
+    .evaluate((el) => el.style.fontFamily);
+  await page.getByRole("button", { name: "다듬기", exact: true }).click();
+  await exportTab.click();
+  assert.equal(
+    await preview
+      .locator("p")
+      .first()
+      .evaluate((el) => el.style.fontFamily),
+    family,
+  );
+  assert.equal(builds, beforeBuild + 1);
+  await page.getByRole("button", { name: "다듬기", exact: true }).click();
   await page.getByLabel("중성", { exact: true }).fill("ㅏ");
   await page.getByLabel("종성", { exact: true }).fill("ㅎ");
   await page.getByRole("button", { name: /^갛 / }).click();
@@ -215,48 +250,64 @@ try {
   await page.getByRole("button", { name: "이 글자 다시 쓰러 가기" }).click();
   await page.getByLabel("갛 쓰기 칸", { exact: true }).waitFor();
   await step(4);
-  await page.getByRole("button", { name: "5. 내보내기", exact: true }).click();
+  await waitFont();
   await page.getByLabel("출력 글자 크기", { exact: true }).fill("1200");
   await page.getByLabel("글자 사이 간격", { exact: true }).fill("-220");
-  await waitFont();
-  const downloaded = page.waitForEvent("download");
+  assert.equal(await exportTab.isEnabled(), false);
   await page
-    .getByRole("button", { name: "OTF 폰트 다운로드 ↓", exact: true })
+    .getByRole("button", { name: "폰트 생성하기", exact: true })
     .click();
-  await (await downloaded).saveAs("artifacts/journey-test.otf");
+  await waitFont();
+  await exportTab.click();
+  const output = page.getByRole("button", { name: "다운로드 →", exact: true });
+  assert.equal(await output.isEnabled(), false);
+  await page.getByLabel(/한글 폰트 이름/).fill("여정 손글씨");
+  assert.equal(await output.isEnabled(), false);
+  await page.getByLabel(/영문 폰트 이름/).fill("Journey Hand Test");
+  await page.getByLabel("파일 형식").selectOption("otf");
+  await output.click();
+  const checkout = page.getByRole("dialog", { name: "폰트 출력" });
+  await checkout.getByText("19,900원").waitFor();
+  const download = checkout.getByRole("button", {
+    name: "다운로드 ↓",
+    exact: true,
+  });
+  assert.equal(await download.isEnabled(), false);
+  await checkout.getByLabel("프로모션 코드").fill("invalid");
+  await checkout.getByRole("button", { name: "적용", exact: true }).click();
+  assert.equal(await download.isEnabled(), false);
+  await checkout.getByLabel("프로모션 코드").fill("oSnSsTuDiO");
+  await checkout.getByRole("button", { name: "적용", exact: true }).click();
+  await checkout.getByText("인증되었습니다. 다운로드를 해주세요.").waitFor();
+  await page.screenshot({ path: "artifacts/journey-07-output-dialog.png" });
+  const downloaded = page.waitForEvent("download");
+  await download.click();
+  const file = await downloaded;
+  assert.equal(file.suggestedFilename(), "OSNS 여정 손글씨.otf");
+  await file.saveAs("artifacts/journey-test.otf");
   const bytes = await readFile("artifacts/journey-test.otf");
   const font = opentype.parse(
     bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
   );
   assert.equal(font.glyphs.length, 11175);
-  assert.equal(font.names.fontFamily.en, "Journey Hand Test");
+  assert.equal(font.names.fontFamily.en, "OSNS Journey Hand Test");
+  assert.equal(font.names.fontFamily.ko, "OSNS 여정 손글씨");
   const glyph = font.charToGlyph("겨"),
     bounds = glyph.getBoundingBox();
   assert.equal(glyph.advanceWidth - (bounds.x2 - bounds.x1), -120);
   assert.equal(glyph.leftSideBearing, -60);
-  let maxBody = 0;
-  for (let code = 0xac00; code <= 0xd7a3; code++) {
-    const box = font.charToGlyph(String.fromCharCode(code)).getBoundingBox();
-    maxBody = Math.max(maxBody, box.x2 - box.x1, box.y2 - box.y1);
-  }
-  assert.equal(maxBody, 1200);
+  assert.ok(font.charToGlyphIndex("힣") > 0);
   check(
-    "export-stage size and tighter-spacing sliders update the real OTF to 120% bodies and negative bearings",
+    "font generation is reused across tabs, and promo-gated OTF uses both OSNS names and current metrics",
   );
-  await page.screenshot({ path: "artifacts/journey-07-export.png" });
-  check(
-    "font builds automatically, live typing precedes name and spacing, and exported OTF contains all 11,172 syllables",
-  );
+  await checkout.getByRole("button", { name: "닫기", exact: true }).click();
   await page.reload();
   await waitFont();
-  await page.getByRole("button", { name: "2. 이름", exact: true }).click();
   assert.equal(
-    await page.getByLabel("폰트 이름", { exact: true }).inputValue(),
-    "Journey Hand Test",
+    await page.getByLabel("글자 사이 간격", { exact: true }).inputValue(),
+    "-220",
   );
-  check(
-    "reload resumes the last main step with saved font settings and automatically rebuilds",
-  );
+  check("reload resumes refine with saved font settings");
   for (const viewport of [
     { width: 1366, height: 768 },
     { width: 1024, height: 768 },

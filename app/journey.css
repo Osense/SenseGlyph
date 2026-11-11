@@ -679,59 +679,6 @@
   border-color: var(--accent);
   color: var(--ink);
 }
-.finish-description {
-  font-size: 13px;
-  color: #717669;
-  line-height: 1.9;
-  margin: 0 0 20px;
-}
-.guided-workshop .font-settings[data-setting-step="0"] {
-  display: none;
-}
-.guided-workshop .font-settings[data-setting-step="1"] {
-  display: block;
-  max-width: 500px;
-}
-.guided-workshop
-  .font-settings[data-setting-step="1"]
-  > label:not(.font-name-field) {
-  display: none;
-}
-.guided-workshop .font-settings[data-setting-step="1"] input {
-  font-size: 25px;
-  padding: 18px;
-  background: white;
-  min-height: 70px;
-}
-.guided-workshop .font-settings[data-setting-step="2"] {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-.guided-workshop .font-settings[data-setting-step="2"] > .font-name-field {
-  display: none;
-}
-.guided-workshop .font-settings[data-setting-step="4"] {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  max-width: 760px;
-}
-.guided-workshop .font-settings[data-setting-step="4"] > .font-name-field,
-.guided-workshop .font-settings[data-setting-step="4"] > label:last-child {
-  display: none;
-}
-.guided-workshop .font-preview {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  padding: 0;
-}
-.guided-workshop[data-finish-step="0"] .font-install-help {
-  display: none;
-}
-.guided-workshop[data-finish-step="0"] .preview-heading > span {
-  display: none;
-}
-.guided-workshop .build-progress progress {
-  accent-color: var(--accent);
-}
 .guided-workshop .generated-preview {
   background: white;
   border: 1px solid var(--line);
@@ -745,9 +692,6 @@
   border-left: 2px solid #bb8a65;
   border-radius: 0;
   padding: 12px 16px;
-}
-.guided-workshop .font-build-actions:empty {
-  display: none;
 }
 .finish-navigation {
   display: flex;

@@ -3,10 +3,13 @@ import { zipSync, zlibSync } from "fflate";
 import { compress } from "woff2-encoder";
 import { replaceSfntTables, sfntTable } from "./cmap";
 
+import { nameOutputFont, type OutputNames } from "./output-names";
+
 export type ExportFormat = "ttf" | "otf" | "woff" | "woff2" | "zip";
 export type ConversionRequest = {
   buffer: ArrayBuffer;
-  format: Exclude<ExportFormat, "otf">;
+  format: ExportFormat;
+  names?: OutputNames;
   filename: string;
 };
 export type ConversionReply = { buffer: ArrayBuffer } | { error: string };
@@ -15,7 +18,10 @@ export async function convertFont({
   buffer,
   format,
   filename,
+  names,
 }: ConversionRequest) {
+  if (names) buffer = nameOutputFont(buffer, names);
+  if (format === "otf") return buffer;
   const converted = Font.create(buffer, { type: "otf" }).write({
     type: "ttf",
     toBuffer: false,

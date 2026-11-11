@@ -581,3 +581,37 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+
+.handwriting-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 420px;
+}
+.handwriting-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(155px, 100%), 1fr));
+  gap: 10px;
+}
+.handwriting-result {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--sheet);
+}
+.handwriting-result > button {
+  display: grid;
+  width: 100%;
+  justify-items: center;
+  padding: 8px;
+}
+.handwriting-result > button[aria-expanded="true"] {
+  border-color: var(--accent);
+}
+.handwriting-result-actions {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+}
+.handwriting-result-actions > button {
+  padding-inline: 4px;
+}

@@ -27,3 +27,53 @@ export function slotKeys(ch: string): string[] {
     ...(hasJong ? ["jong:" + d.jong + ":" + type] : []),
   ];
 }
+
+export const JAMO = {
+  cho: "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",
+  jung: "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ",
+  jong: " ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ",
+} as const;
+
+const typedJamo: Record<string, string> = {
+  ㄱㄱ: "ㄲ",
+  ㄷㄷ: "ㄸ",
+  ㅂㅂ: "ㅃ",
+  ㅅㅅ: "ㅆ",
+  ㅈㅈ: "ㅉ",
+  ㄱㅅ: "ㄳ",
+  ㄴㅈ: "ㄵ",
+  ㄴㅎ: "ㄶ",
+  ㄹㄱ: "ㄺ",
+  ㄹㅁ: "ㄻ",
+  ㄹㅂ: "ㄼ",
+  ㄹㅅ: "ㄽ",
+  ㄹㅌ: "ㄾ",
+  ㄹㅍ: "ㄿ",
+  ㄹㅎ: "ㅀ",
+  ㅂㅅ: "ㅄ",
+  ㅗㅏ: "ㅘ",
+  ㅗㅐ: "ㅙ",
+  ㅗㅣ: "ㅚ",
+  ㅜㅓ: "ㅝ",
+  ㅜㅔ: "ㅞ",
+  ㅜㅣ: "ㅟ",
+  ㅡㅣ: "ㅢ",
+};
+
+export function jamoFilterIndex(value: string, part: keyof typeof JAMO) {
+  const raw = value.replace(/\s/g, "");
+  if (!raw) return null;
+  const text = [...raw]
+    .map((char) => {
+      const code = char.charCodeAt(0);
+      return (
+        JAMO.cho[code - 0x1100] ??
+        JAMO.jung[code - 0x1161] ??
+        JAMO.jong[code - 0x11a7] ??
+        char
+      );
+    })
+    .join("");
+  const jamo = typedJamo[text] ?? text;
+  return [...jamo].length === 1 ? JAMO[part].indexOf(jamo) : -1;
+}

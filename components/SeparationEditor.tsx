@@ -60,6 +60,7 @@ interface Props {
   char: string;
   chars: string[];
   onSelect: (char: string) => void;
+  onWrite: () => void;
   onChange: (prep: FontPreparation) => void;
 }
 type Gesture = {
@@ -80,6 +81,7 @@ export default function SeparationEditor({
   char,
   chars,
   onSelect,
+  onWrite,
   onChange,
 }: Props) {
   const sample = project.samples[char];
@@ -488,6 +490,9 @@ export default function SeparationEditor({
           선택 해제
         </button>
       </div>
+      <button className="font-secondary" type="button" onClick={onWrite}>
+        이 글자 다시 쓰러 가기
+      </button>
       <p className="font-help">
         올가미로 원하는 획을 둘러싸세요. 선택한 획은 오른쪽 목록 맨 위로
         모입니다. 초·중·종성 버튼을 누르면 한 번에 배정돼요. 선택된 획을 끌면

@@ -1270,6 +1270,7 @@ export default function Page() {
           }}
           onWrite={(next) => {
             changeStep(2);
+            setListFilter("all");
             setIndex(CHARSET.findIndex((c) => c.char === next));
           }}
         />

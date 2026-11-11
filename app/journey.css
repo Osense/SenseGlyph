@@ -709,12 +709,12 @@
 .guided-workshop .font-settings[data-setting-step="2"] > .font-name-field {
   display: none;
 }
-.guided-workshop .font-settings[data-setting-step="3"] {
+.guided-workshop .font-settings[data-setting-step="4"] {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   max-width: 760px;
 }
-.guided-workshop .font-settings[data-setting-step="3"] > .font-name-field,
-.guided-workshop .font-settings[data-setting-step="3"] > label:last-child {
+.guided-workshop .font-settings[data-setting-step="4"] > .font-name-field,
+.guided-workshop .font-settings[data-setting-step="4"] > label:last-child {
   display: none;
 }
 .guided-workshop .font-preview {
@@ -1147,7 +1147,7 @@
     font-size: 11px;
   }
   .guided-workshop .font-settings[data-setting-step="2"],
-  .guided-workshop .font-settings[data-setting-step="3"] {
+  .guided-workshop .font-settings[data-setting-step="4"] {
     grid-template-columns: 1fr;
   }
 }

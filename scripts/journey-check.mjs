@@ -206,7 +206,16 @@ try {
   await page.getByLabel("출력 글자 크기", { exact: true }).fill("900");
   await page.getByLabel("글자 사이 간격", { exact: true }).fill("35");
   await page.screenshot({ path: "artifacts/journey-06-spacing.png" });
-  await page.getByRole("button", { name: "내보내기로 →", exact: true }).click();
+  await page.getByRole("button", { name: "원본 찾기 →", exact: true }).click();
+  await page.getByLabel("중성", { exact: true }).fill("ㅏ");
+  await page.getByLabel("종성", { exact: true }).fill("ㅎ");
+  await page.getByRole("button", { name: /^갛 / }).click();
+  await page.getByRole("button", { name: "자모 나누기", exact: true }).click();
+  await page.getByLabel("갛 자모 분리 화면", { exact: true }).waitFor();
+  await page.getByRole("button", { name: "이 글자 다시 쓰러 가기" }).click();
+  await page.getByLabel("갛 쓰기 칸", { exact: true }).waitFor();
+  await step(4);
+  await page.getByRole("button", { name: "5. 내보내기", exact: true }).click();
   await page.getByLabel("출력 글자 크기", { exact: true }).fill("1200");
   await page.getByLabel("글자 사이 간격", { exact: true }).fill("-220");
   await waitFont();

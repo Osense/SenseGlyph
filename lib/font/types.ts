@@ -44,6 +44,7 @@ export interface ComponentSample {
   key: string;
   char: string;
   part: Part;
+  confirmed?: true;
   strokes: Stroke[];
   box: Box;
 }

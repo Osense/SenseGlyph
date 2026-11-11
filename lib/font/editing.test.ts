@@ -113,3 +113,19 @@ it("saves corrected vectors in backups, feeds components, and invalidates correc
   correction.strokes[0].points[0].p = 2;
   expect(() => parseProject(JSON.stringify(p))).toThrow("폰트 제작 설정");
 });
+
+it("ignores edited strokes detached from the current written sample even in legacy backups", () => {
+  const project = completeFixture();
+  const sample = project.samples["겨"];
+  const foreign = project.samples["구"].strokes;
+  expect(effectiveStrokes(sample, { assignments: {}, strokes: foreign })).toBe(
+    sample.strokes,
+  );
+  expect(
+    effectiveStrokes(sample, {
+      assignments: {},
+      sourceUpdatedAt: sample.updatedAt,
+      strokes: foreign,
+    }),
+  ).toBe(sample.strokes);
+});

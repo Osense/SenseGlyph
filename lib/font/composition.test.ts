@@ -69,3 +69,48 @@ describe("Hangul component assembly", () => {
     expect(JSON.stringify(component.strokes)).toBe(original);
   });
 });
+
+it("keeps a confirmed final consonant from the current project's source", () => {
+  const project = completeFixture();
+  const prep = defaultPreparation(project.name);
+  const source = {
+    ...project.samples["펭"],
+    char: "뱅",
+    strokes: project.samples["펭"].strokes.map((stroke) => ({
+      ...stroke,
+      id: stroke.id.replace("펭", "뱅"),
+    })),
+  };
+  project.samples[source.char] = source;
+  prep.settings.positionCorrection = prep.settings.shapeInterpolation = 0;
+  expect(componentLibrary(project, prep).get("jong:21:V")?.char).toBe("펭");
+  prep.separations[source.char] = {
+    sourceUpdatedAt: source.updatedAt,
+    assignments: Object.fromEntries(
+      source.strokes.map((stroke) => [
+        stroke.id,
+        stroke.id.endsWith("-jong")
+          ? "jong"
+          : stroke.id.endsWith("-jung")
+            ? "jung"
+            : "cho",
+      ]),
+    ),
+  };
+  const finalStroke = source.strokes.find((stroke) =>
+    stroke.id.endsWith("-jong"),
+  )!;
+  const component = componentLibrary(project, prep).get("jong:21:V")!;
+  expect(component.char).toBe(source.char);
+  expect(component.strokes).toEqual([finalStroke]);
+  expect(component.strokes[0]).toBe(finalStroke);
+  const target = { ...component.box, width: component.box.width * 2 };
+  const [fitted] = transformComponent(component, target);
+  expect(fitted.params.size).toBe(finalStroke.params.size);
+  fitted.points.forEach((point, i) => {
+    expect(point.x).toBeCloseTo(
+      finalStroke.points[i].x + component.box.width / 2,
+    );
+    expect(point.y).toBeCloseTo(finalStroke.points[i].y);
+  });
+});

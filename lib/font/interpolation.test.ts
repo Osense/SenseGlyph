@@ -69,14 +69,16 @@ it("rejects different stroke topology and selects a majority prototype instead o
   reversed.strokes[0].points.reverse();
   expect(refinePool([a, reversed], s).refine(a).strokes).toEqual(a.strokes);
 });
-it("shares correction for written/composed glyphs, keeps manual geometry and supports exact legacy comparison", () => {
+it("keeps directly written strokes and manual geometry independent from composition", () => {
   const project = completeFixture(),
     prep = defaultPreparation("test");
   const original = JSON.stringify(project);
   const result = prepareHandwriting(project, prep);
   expect(result.library.size).toBe(237);
-  for (const [char, strokes] of result.direct)
+  for (const [char, strokes] of result.direct) {
+    expect(strokes).toBe(project.samples[char].strokes);
     expect(strokesAreSafe(strokes, project.samples[char].category)).toBe(true);
+  }
   expect(JSON.stringify(project)).toBe(original);
   const char = "겨";
   prep.separations[char] = {

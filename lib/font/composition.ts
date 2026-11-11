@@ -1,13 +1,7 @@
 import { HANGUL } from "../../data/charset";
 import { decompose, slotKeys, vowelType } from "../hangul";
 import { activeSeparation, effectiveSample, strokeBounds } from "./editing";
-import {
-  refinePool,
-  correction,
-  interpolation,
-  widthCorrection,
-} from "./interpolation";
-import { strokesAreSafe } from "../safety";
+import { refinePool } from "./interpolation";
 import {
   referenceGuide,
   referencePart,
@@ -143,8 +137,20 @@ export function separateSample(
         bottom = Math.max(box.y + box.height, ink.y + ink.height + 12);
       box = { x: left, y: top, width: right - left, height: bottom - top };
     }
+    const confirmed = strokes.every(
+      (stroke) => separation?.assignments[stroke.id] === part,
+    );
     return strokes.length
-      ? [{ key, part, char: sample.char, strokes, box }]
+      ? [
+          {
+            key,
+            part,
+            char: sample.char,
+            strokes,
+            box,
+            ...(confirmed ? { confirmed: true as const } : {}),
+          },
+        ]
       : [];
   });
 }
@@ -159,7 +165,6 @@ export function prepareHandwriting(
 ) {
   const library = new Map<string, ComponentSample>();
   const pools = new Map<string, ComponentSample[]>();
-  const partsByChar = new Map<string, ComponentSample[]>();
   const direct = new Map<string, Stroke[]>();
   const chars = [
     ...new Set([...HANGUL, ...Object.keys(project.samples).sort()]),
@@ -167,45 +172,30 @@ export function prepareHandwriting(
   for (const char of chars) {
     const sample = project.samples[char];
     if (!sample?.strokes.length) continue;
+    // A written glyph keeps its own strokes. Component interpolation only feeds unwritten glyphs.
     direct.set(char, effectiveSample(sample, prep.separations[char]).strokes);
     const parts = separateSample(
       sample,
       prep.separations[char],
       project.settings,
     );
-    partsByChar.set(char, parts);
     for (const part of parts)
       pools.set(part.key, [...(pools.get(part.key) ?? []), part]);
   }
-  const refiners = new Map<string, ReturnType<typeof refinePool>>();
   for (const [key, pool] of pools) {
-    const model = refinePool(pool, prep.settings);
-    refiners.set(key, model);
-    // Zero is a genuine comparison against the previous first-sample algorithm.
+    const confirmed = pool.filter((component) => component.confirmed);
+    const model = refinePool(
+      confirmed.length ? confirmed : pool,
+      prep.settings,
+    );
     library.set(
       key,
-      !correction(prep.settings) &&
-        !interpolation(prep.settings) &&
-        !widthCorrection(prep.settings)
-        ? pool[0]
+      confirmed.length
+        ? confirmed.find(
+            (component) => component.char === model.representative.char,
+          )!
         : model.representative,
     );
-  }
-  for (const [char, parts] of partsByChar) {
-    const sample = project.samples[char];
-    const edit = activeSeparation(sample, prep.separations[char]);
-    // Explicit geometry edits win; never silently undo the user's manual work.
-    if (edit?.boxes || edit?.strokes || !parts.length) continue;
-    const replacements = new Map(
-      parts.flatMap((part) =>
-        refiners
-          .get(part.key)!
-          .refine(part)
-          .strokes.map((s) => [s.id, s] as const),
-      ),
-    );
-    const strokes = direct.get(char)!.map((s) => replacements.get(s.id) ?? s);
-    if (strokesAreSafe(strokes, sample.category)) direct.set(char, strokes);
   }
   return { library, direct };
 }
@@ -251,15 +241,16 @@ export function transformComponent(
   target: Box,
 ): Stroke[] {
   const from = component.box,
-    sx = target.width / from.width,
-    sy = target.height / from.height;
+    scale = Math.min(target.width / from.width, target.height / from.height),
+    x = target.x + (target.width - from.width * scale) / 2,
+    y = target.y + (target.height - from.height * scale) / 2;
   return component.strokes.map((stroke) => ({
     ...stroke,
-    params: { ...stroke.params, size: stroke.params.size * Math.sqrt(sx * sy) },
+    params: { ...stroke.params, size: stroke.params.size * scale },
     points: stroke.points.map((p) => ({
       ...p,
-      x: target.x + (p.x - from.x) * sx,
-      y: target.y + (p.y - from.y) * sy,
+      x: x + (p.x - from.x) * scale,
+      y: y + (p.y - from.y) * scale,
     })),
   }));
 }

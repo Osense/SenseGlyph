@@ -228,7 +228,7 @@ export default function FontWorkshop({
           nextWorker.terminate();
           worker.current = null;
           try {
-            const family = "HanhoekPreview" + Date.now();
+            const family = "HanhoekPreview-" + crypto.randomUUID();
             const loaded = await new FontFace(family, reply.buffer).load();
             if (token !== generation.current) return;
             document.fonts.add(loaded);
@@ -654,7 +654,7 @@ export default function FontWorkshop({
                         className="font-field-note"
                         id={`${controlId}-font-range-note-2`}
                       >
-                        같은 자모의 위치와 크기를 표본의 중앙값에 맞춥니다.
+                        조합용 자모의 위치와 크기를 표본의 중앙값에 맞춥니다.
                       </small>
                     </label>
                     <label className="font-field">
@@ -676,8 +676,7 @@ export default function FontWorkshop({
                         className="font-field-note"
                         id={`${controlId}-font-range-note-3`}
                       >
-                        획 순서와 형태가 비슷한 표본을 모아 획의 흔들림을
-                        줄입니다.
+                        조합용 자모에서 형태가 비슷한 획의 흔들림을 줄입니다.
                       </small>
                     </label>
                     <label className="font-field">

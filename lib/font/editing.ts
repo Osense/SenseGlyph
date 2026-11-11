@@ -3,10 +3,31 @@ import type { Box, Separation } from "./types";
 import { outline, outlines } from "../brushes";
 
 export function activeSeparation(sample: GlyphSample, separation?: Separation) {
-  return separation?.sourceUpdatedAt !== undefined &&
-    separation.sourceUpdatedAt !== sample.updatedAt
-    ? undefined
-    : separation;
+  if (
+    !separation ||
+    (separation.sourceUpdatedAt !== undefined &&
+      separation.sourceUpdatedAt !== sample.updatedAt)
+  )
+    return undefined;
+  if (separation.strokes) {
+    const originals = new Map(
+      sample.strokes.map((stroke) => [stroke.id, stroke]),
+    );
+    if (
+      separation.strokes.length !== originals.size ||
+      new Set(separation.strokes.map((stroke) => stroke.id)).size !==
+        originals.size ||
+      !separation.strokes.every((stroke) => {
+        const original = originals.get(stroke.id);
+        return (
+          original?.createdAt === stroke.createdAt &&
+          original.brush === stroke.brush
+        );
+      })
+    )
+      return undefined;
+  }
+  return separation;
 }
 export function effectiveStrokes(
   sample: GlyphSample,

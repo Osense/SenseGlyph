@@ -78,6 +78,15 @@ export default function MetricPreview({
       ),
     [project.samples, separations],
   );
+  const writtenContours = useMemo(
+    () =>
+      new Map(
+        Object.values(project.samples)
+          .filter((sample) => sample.strokes.length)
+          .map((sample) => [sample.char, strokeContours(sample.strokes)]),
+      ),
+    [project.samples],
+  );
   const plan = useMemo(
     () => createLayoutPlan(originals, settings),
     [originals, settings.bodySize, settings.letterSpacing],
@@ -117,7 +126,12 @@ export default function MetricPreview({
               : plan.spaceWidth
             : plan.bodySize + 2 * plan.sideBearing,
         };
-      const original = layoutGlyph(char, reference, plan);
+      const original = layoutGlyph(
+        char,
+        writtenContours.get(char) ?? reference,
+        plan,
+        reference,
+      );
       const styled = layoutGlyph(char, renderer(strokes), plan, reference);
       return {
         char,
@@ -165,6 +179,7 @@ export default function MetricPreview({
     text,
     ready,
     originals,
+    writtenContours,
     handwriting,
     plan,
     renderer,

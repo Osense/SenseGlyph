@@ -107,9 +107,14 @@ export default function FontWorkshop({
     stats: FontStats;
     family: string;
   } | null>(null);
-  const [text, setText] = useState(
-    "나의 글씨로 쓰는 새로운 이야기\n안녕하세요. 한 획씩 나답게! 0123456789",
-  );
+  const [previewText, setText] = useState<string | null>(null);
+  const text =
+    previewText ??
+    Object.values(project.samples)
+      .filter((sample) => sample.strokes.length)
+      .slice(0, 16)
+      .map((sample) => sample.char)
+      .join("");
   const [previewSize, setPreviewSize] = useState(42);
   const worker = useRef<Worker | null>(null),
     exportWorker = useRef<Worker | null>(null),
@@ -261,7 +266,9 @@ export default function FontWorkshop({
     }
   };
   const latestBuild = useRef(build);
-  latestBuild.current = build;
+  latestBuild.current = () => {
+    if (!result && !building) build();
+  };
   useEffect(() => {
     if (
       !guided ||
@@ -275,7 +282,7 @@ export default function FontWorkshop({
     return () => clearTimeout(timer);
   }, [guided, stage, finishStep, project.samples, prep, report.direct]);
 
-  // Build once on entering export. Slider changes update only the comparison.
+  // Reuse the current font when opening export. Slider changes update only the comparison.
   useEffect(() => {
     if (!guided || stage !== "build" || finishStep !== 4) return;
     const timer = setTimeout(() => latestBuild.current(), 0);
@@ -849,12 +856,16 @@ export default function FontWorkshop({
                       <div className="preview-heading">
                         <h3>내 폰트로 써보기</h3>
                         <span>
-                          {result.stats.direct}자 원본 +{" "}
+                          {result.stats.direct}자 직접 작성 +{" "}
                           {result.stats.composed.toLocaleString()}자 조합 ·{" "}
                           {(result.buffer.byteLength / 1024 / 1024).toFixed(2)}{" "}
                           MB
                         </span>
                       </div>
+                      <p className="font-help">
+                        현재 보정 설정으로 만든 폰트입니다. 직접 쓴 글자가 없는
+                        경우 저장된 자모로 조합합니다.
+                      </p>
                       <label className="font-field">
                         미리 볼 문장
                         <textarea

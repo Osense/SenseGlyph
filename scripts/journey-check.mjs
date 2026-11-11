@@ -194,7 +194,7 @@ try {
     .click();
   await page.getByLabel("폰트 이름", { exact: true }).fill("Journey Hand Test");
   await page
-    .getByRole("button", { name: "간격 맞추기 →", exact: true })
+    .getByRole("button", { name: "간격 다듬기 →", exact: true })
     .click();
   await page.getByLabel("출력 글자 크기", { exact: true }).fill("900");
   await page.getByLabel("글자 사이 간격", { exact: true }).fill("35");

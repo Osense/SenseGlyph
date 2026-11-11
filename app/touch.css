@@ -402,32 +402,56 @@
 .separation-welcome[open] .welcome-toggle {
   display: none;
 }
-/* Assign every selected stroke from right under the canvas. */
-.quick-assign {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-  font-size: 13px;
+/* The popup is positioned in the SVG's square, independently of the side rails. */
+.separation-assignment-overlay {
+  position: absolute;
+  grid-column: 2;
+  grid-row: 1;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
 }
-.quick-assign span {
-  flex: 0 0 auto;
-  color: var(--ink);
+.quick-assign {
+  pointer-events: auto;
+  --half-toolbar: min(84px, 50%);
+  position: absolute;
+  top: calc(var(--selection-top) - 5px);
+  left: clamp(
+    var(--half-toolbar),
+    var(--selection-center),
+    calc(100% - var(--half-toolbar))
+  );
+  transform: translate(-50%, -100%);
+  width: min(168px, 100%);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--paper);
+  box-shadow: 0 3px 12px #1b241e29;
 }
 .quick-assign button {
-  flex: 1;
+  min-width: 0;
   min-height: 44px;
+  padding: 2px;
   border: 1px solid var(--part-color);
   color: #fff;
   background: var(--part-color);
   border-radius: 3px;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
+  touch-action: manipulation;
+}
+.quick-assign button:hover:not(:disabled) {
+  background: var(--part-color);
+  filter: brightness(0.85);
 }
 .quick-assign button:disabled {
   background: transparent;
   color: var(--part-color);
-  opacity: 0.35;
+  opacity: 0.45;
 }
 @media (max-width: 1279px), (max-height: 900px), (pointer: coarse) {
   .font-workshop .separation-layout > div:first-child {

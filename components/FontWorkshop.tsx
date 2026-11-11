@@ -341,7 +341,7 @@ export default function FontWorkshop({
                   잡아요.
                 </li>
                 <li>
-                  <b>한 번에 배정</b> 선택한 획 목록에서 초성·중성·종성 버튼을
+                  <b>한 번에 배정</b> 선택 테두리 위에서 초성·중성·종성 버튼을
                   누르세요.
                 </li>
                 <li>

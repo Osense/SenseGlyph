@@ -698,28 +698,38 @@ export default function SeparationEditor({
                   );
                 })}
             </svg>
-          </div>
-          {selection.length > 0 && (
-            <div
-              className="quick-assign"
-              role="group"
-              aria-label="선택한 획 한 번에 배정"
-            >
-              <span>선택한 {selection.length}획을</span>
-              {(["cho", "jung", "jong"] as Part[]).map((part) => (
-                <button
-                  key={part}
-                  disabled={!parts.includes(part)}
+            {bounds && !lasso && !draft && (
+              <div className="separation-assignment-overlay">
+                <div
+                  className="quick-assign"
+                  role="group"
+                  aria-label={`선택한 획 한 번에 배정 (${selection.length}획)`}
                   style={
-                    { "--part-color": PART_COLORS[part] } as React.CSSProperties
+                    {
+                      "--selection-center": `${(bounds.x + bounds.width / 2) / 10}%`,
+                      "--selection-top": `${(bounds.y - 10) / 10}%`,
+                    } as React.CSSProperties
                   }
-                  onClick={() => assign(selection[0], part)}
                 >
-                  {PART_LABELS[part]}
-                </button>
-              ))}
-            </div>
-          )}
+                  {(["cho", "jung", "jong"] as Part[]).map((part) => (
+                    <button
+                      type="button"
+                      key={part}
+                      disabled={!parts.includes(part)}
+                      style={
+                        {
+                          "--part-color": PART_COLORS[part],
+                        } as React.CSSProperties
+                      }
+                      onClick={() => assign(selection[0], part)}
+                    >
+                      {PART_LABELS[part]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <div className="part-legend">
             {parts.map((part) => (
               <span key={part} style={{ color: PART_COLORS[part] }}>

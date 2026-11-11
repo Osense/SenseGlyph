@@ -165,9 +165,18 @@ try {
     await page.getByLabel("2번 획 선택", { exact: true }).isChecked(),
     true,
   );
-  await page
-    .getByRole("button", { name: "1번 획 종성 지정", exact: true })
-    .click();
+  const quickAssign = page.getByRole("group", {
+    name: /선택한 획 한 번에 배정/,
+  });
+  const toolbarBox = await quickAssign.boundingBox();
+  const selectionBox = await svg
+    .locator('rect[stroke-dasharray="8 5"]')
+    .boundingBox();
+  assert.ok(toolbarBox && selectionBox);
+  assert.ok(toolbarBox.y + toolbarBox.height <= selectionBox.y);
+  assert.ok(toolbarBox.x >= svgBox.x - 1);
+  assert.ok(toolbarBox.x + toolbarBox.width <= svgBox.x + svgBox.width + 1);
+  await quickAssign.getByRole("button", { name: "종성", exact: true }).click();
   assert.equal(
     await page
       .getByRole("button", { name: "2번 획 종성 지정", exact: true })
@@ -176,9 +185,7 @@ try {
   );
   await page.getByRole("button", { name: "보정 실행 취소" }).click();
   await page.screenshot({ path: "artifacts/journey-04-separation.png" });
-  check(
-    "separation has plain instructions and mouse lasso bulk assigns with undo",
-  );
+  check("the lasso popup sits above the selection and bulk assigns with undo");
   await page
     .getByRole("button", { name: "내 폰트로 써보기 →", exact: true })
     .click();

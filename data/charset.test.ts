@@ -14,11 +14,11 @@ it("covers all 237 positional slots", () => {
   expect([...slots].filter((k) => k.startsWith("jong:"))).toHaveLength(81);
   expect(slots.size).toBe(237);
 });
-it("has 180 required and 465 unique characters including optional symbols", () => {
+it("has 180 required and 422 unique characters including optional symbols", () => {
   expect(
     CATEGORIES.filter((c) => c.required).flatMap((c) => c.chars),
   ).toHaveLength(180);
-  expect(CHARSET).toHaveLength(465);
-  expect(new Set(CHARSET.map((c) => c.char)).size).toBe(465);
+  expect(CHARSET).toHaveLength(422);
+  expect(new Set(CHARSET.map((c) => c.char)).size).toBe(422);
   expect(CATEGORIES[2].chars).toHaveLength(32);
 });

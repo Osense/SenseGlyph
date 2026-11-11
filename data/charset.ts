@@ -4,16 +4,20 @@ export const HANGUL =
     " ",
   );
 export const SPECIAL_SYMBOLS = [
-  ..."①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳",
-  ..."㉠㉡㉢㉣㉤㉥㉦㉧㉨㉩㉪㉫㉬㉭㉮㉯㉰㉱㉲㉳㉴㉵㉶㉷㉸㉹㉺㉻",
+  ..."①②③④⑤⑥⑦⑧⑨⑩",
+  ..."㉠㉡㉢㉣㉤㉥㉦㉧㉨㉩㉪㉫㉬㉭",
   ..."ⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ",
   ..."•○●□■✓✔✕✗☑☒",
   ..."←↑→↓↔↕↖↗↘↙⇒⇔↳☜☞",
   ..."×÷≠≤≥−±≈≡√∞∠⊥∥∝",
-  ..."½⅓¼¾⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞",
-  ..."℃℉㎜㎝㎞㎎㎏㎖㎥㎠㎡ℓ¹²³⁴",
+  ..."℃℉㎜㎝㎞㎎㎏㎖㎥㎠㎡ℓ",
   ..."★☆♡♥✦✧△▲▽▼◇◆▷▶◁◀◎▪▫⊙◈▣◐◑▒▤▥▦▧▨▩",
 ];
+
+// Recognize retired samples in older project backups without offering them for export.
+export const RETIRED_SPECIAL_SYMBOLS = new Set(
+  "⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉮㉯㉰㉱㉲㉳㉴㉵㉶㉷㉸㉹㉺㉻½⅓¼¾⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞¹²³⁴",
+);
 
 export const CATEGORIES: {
   id: CharCategory;

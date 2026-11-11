@@ -1,4 +1,4 @@
-import { HANGUL } from "../../data/charset";
+import { HANGUL, RETIRED_SPECIAL_SYMBOLS } from "../../data/charset";
 import { strokesAreSafe } from "../safety";
 import { refinePool } from "./interpolation";
 import { decompose, slotKeys, vowelType } from "../hangul";
@@ -257,7 +257,7 @@ export function coverage(
   const library = componentLibrary(project, prep);
   const direct = Object.values(project.samples)
     .map((sample) => effectiveSample(sample, prep.separations[sample.char]))
-    .filter((s) => s.strokes.length)
+    .filter((s) => s.strokes.length && !RETIRED_SPECIAL_SYMBOLS.has(s.char))
     .map((s) => s.char);
   const available = new Set(direct);
   let composed = 0;

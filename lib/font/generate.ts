@@ -1,3 +1,4 @@
+import { RETIRED_SPECIAL_SYMBOLS } from "../../data/charset";
 import opentype from "opentype.js";
 import { prepareHandwriting, composeGlyph } from "./composition";
 import type { BuildRequest, FontStats } from "./types";
@@ -78,7 +79,9 @@ export function generateFont(
     )
     .filter(
       (s) =>
-        s.strokes.length && (includeSpecial || s.category !== "special-symbol"),
+        s.strokes.length &&
+        !RETIRED_SPECIAL_SYMBOLS.has(s.char) &&
+        (includeSpecial || s.category !== "special-symbol"),
     );
   if (!samples.length) throw new Error("먼저 한 글자 이상 써주세요.");
   const unsafe = samples.filter(

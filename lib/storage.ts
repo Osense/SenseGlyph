@@ -1,6 +1,6 @@
 import { openDB } from "idb";
 import type { BrushParams, FontProject } from "./types";
-import { CHARSET } from "../data/charset";
+import { CHARSET, RETIRED_SPECIAL_SYMBOLS } from "../data/charset";
 import { validPreparation } from "./font/validate";
 import { REFERENCE_FONTS } from "./reference-fonts";
 import { newProject, defaultSettings } from "./defaults";
@@ -160,12 +160,14 @@ export function parseProject(text: string): FontProject {
       typeof g.rewritePending !== "boolean"
     )
       throw new Error("다시 작성 표시 데이터 오류");
-    const entry = CHARSET.find((c) => c.char === char);
+    const category = RETIRED_SPECIAL_SYMBOLS.has(char)
+      ? "special-symbol"
+      : CHARSET.find((c) => c.char === char)?.category;
     if (
-      !entry ||
+      !category ||
       !record(g) ||
       g.char !== char ||
-      g.category !== entry.category ||
+      g.category !== category ||
       !finite(g.updatedAt) ||
       !["empty", "done", "skipped"].includes(String(g.status)) ||
       !Array.isArray(g.strokes)

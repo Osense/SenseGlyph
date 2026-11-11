@@ -223,24 +223,51 @@ export function composeGlyph(
   if (!keys.length || !keys.every((key) => library.has(key))) return null;
   if (!pools) return keys.flatMap((key) => library.get(key)!.strokes);
 
-  // Use one original for as many parts as possible. For example, 졺 can
-  // supply both the initial and medial of 좋 in their original relationship.
-  const matches = new Map<string, { count: number; confirmed: number }>();
-  for (const key of keys)
+  const target = decompose(char)!;
+  const [initialKey, medialKey] = keys;
+  const matches = new Map<string, Map<string, ComponentSample>>();
+  for (const key of keys) {
     for (const component of pools.get(key) ?? []) {
-      const match = matches.get(component.char) ?? { count: 0, confirmed: 0 };
-      match.count++;
-      match.confirmed += Number(!!component.confirmed);
-      matches.set(component.char, match);
+      const parts = matches.get(component.char) ?? new Map();
+      parts.set(key, component);
+      matches.set(component.char, parts);
     }
-  const anchor = [...matches].sort(
-    ([, a], [, b]) => b.count - a.count || b.confirmed - a.confirmed,
-  )[0]?.[0];
-  return keys.flatMap(
-    (key) =>
-      (
-        (anchor && pools.get(key)?.find((part) => part.char === anchor)) ||
-        library.get(key)!
-      ).strokes,
-  );
+  }
+
+  // Keep the upper pair together when sources supply the same number of parts.
+  // 졺 preserves the ㅈ–ㅗ relationship in 좋 even if a source with ㅈ–ㅎ
+  // and a different horizontal vowel has confirmed assignments.
+  const anchorRank = (parts: Map<string, ComponentSample>) =>
+    parts.size * 8 +
+    Number(parts.has(initialKey) && parts.has(medialKey)) * 4 +
+    [...parts.values()].filter((part) => part.confirmed).length;
+  let anchor: Map<string, ComponentSample> | undefined;
+  let bestRank = 0;
+  for (const parts of matches.values()) {
+    if (parts.size < 2) continue;
+    const rank = anchorRank(parts);
+    if (rank > bestRank) {
+      anchor = parts;
+      bestRank = rank;
+    }
+  }
+
+  const sourceRank = (component: ComponentSample) => {
+    const source = decompose(component.char)!;
+    return (
+      Number(!!component.confirmed) * 4 +
+      Number(source.jung === target.jung) * 2 +
+      Number(source.cho === target.cho)
+    );
+  };
+  return keys.flatMap((key) => {
+    const original = anchor?.get(key);
+    if (original) return original.strokes;
+    const source = (pools.get(key) ?? []).reduce(
+      (best, candidate) =>
+        sourceRank(candidate) > sourceRank(best) ? candidate : best,
+      library.get(key)!,
+    );
+    return source.strokes;
+  });
 }

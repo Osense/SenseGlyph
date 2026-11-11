@@ -104,3 +104,55 @@ it("keeps a confirmed final consonant from the current project's source", () => 
   expect(component.strokes).toEqual([finalStroke]);
   expect(component.strokes[0]).toBe(finalStroke);
 });
+
+it("keeps the original upper pair ahead of a confirmed initial-final pair", () => {
+  const project = completeFixture();
+  const prep = defaultPreparation(project.name);
+  const source = {
+    ...project.samples["졺"],
+    char: "즣",
+    strokes: project.samples["졺"].strokes.map((stroke) => ({
+      ...stroke,
+      id: stroke.id.replace("졺", "즣"),
+    })),
+  };
+  project.samples[source.char] = source;
+  prep.separations[source.char] = {
+    sourceUpdatedAt: source.updatedAt,
+    assignments: {
+      "즣-cho": "cho",
+      "즣-jung": "jung",
+      "즣-jong": "jong",
+    },
+  };
+  const { library, pools } = prepareHandwriting(project, prep);
+  const strokes = composeGlyph("좋", library, pools)!;
+  expect(strokes[0]).toBe(project.samples["졺"].strokes[0]);
+  expect(strokes[1]).toBe(project.samples["졺"].strokes[1]);
+  expect(strokes[2]).toBe(source.strokes[2]);
+});
+
+it("prefers the same vowel layout when borrowing a final with equal confirmation", () => {
+  const project = completeFixture();
+  const prep = defaultPreparation(project.name);
+  const original = project.samples["흖"];
+  const source = {
+    ...original,
+    char: "콯",
+    strokes: original.strokes.map((stroke) => ({
+      ...stroke,
+      id: stroke.id.replace("흖", "콯"),
+    })),
+  };
+  project.samples[source.char] = source;
+  prep.separations[source.char] = {
+    sourceUpdatedAt: source.updatedAt,
+    assignments: { "콯-cho": "cho", "콯-jung": "jung", "콯-jong": "jong" },
+  };
+  prep.separations[original.char] = {
+    sourceUpdatedAt: original.updatedAt,
+    assignments: { "흖-cho": "cho", "흖-jung": "jung", "흖-jong": "jong" },
+  };
+  const { library, pools } = prepareHandwriting(project, prep);
+  expect(composeGlyph("좋", library, pools)?.at(-1)).toBe(source.strokes[2]);
+});

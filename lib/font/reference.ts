@@ -10,6 +10,8 @@ interface Entry {
   regions: number[];
 }
 const fonts = data.fonts as unknown as Record<string, Record<string, Entry>>;
+const referenceEntry = (char: string, font = "sans") =>
+  fonts[font]?.[char] ?? fonts.fallback?.[char];
 const guides = new Map<string, ReturnType<typeof createGuide>>();
 const parts: Part[] = ["cho", "jung", "jong"];
 function createGuide(entry: Entry, diamond: boolean) {
@@ -57,7 +59,7 @@ export function referenceGuide(char: string, settings?: ReferenceSettings) {
   const font = settings.referenceFont ?? "sans",
     diamond = settings.grid.diamond,
     key = font + ":" + diamond + ":" + char;
-  const entry = fonts[font]?.[char];
+  const entry = referenceEntry(char, font);
   if (!entry) return null;
   if (!guides.has(key)) guides.set(key, createGuide(entry, diamond));
   return guides.get(key)!;
@@ -105,7 +107,10 @@ export function referencePart(
   }
   return parts[votes.indexOf(Math.max(...votes))];
 }
+export function referenceUsesFallback(char: string, font = "sans") {
+  return !fonts[font]?.[char] && !!fonts.fallback?.[char];
+}
 /** How snugly this glyph's ink fills the diamond (see sampleFontSize). */
 export function referenceFit(char: string, font?: string) {
-  return fonts[font ?? "sans"]?.[char]?.fit ?? 1;
+  return referenceEntry(char, font)?.fit ?? 1;
 }

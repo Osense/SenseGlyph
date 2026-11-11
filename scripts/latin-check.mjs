@@ -72,11 +72,13 @@ try {
   check("truly out-of-bounds English strokes are still rejected");
   const referenceStats = [];
   for (const name of [
-    "단정한 고딕",
-    "또렷한 명조",
-    "부드러운 고운돋움",
-    "편안한 손글씨",
-    "자유로운 붓글씨",
+    "정갈한 고딕",
+    "책에 쓰는 명조",
+    "통통한 캐릭터 글씨",
+    "또박또박 칠판 글씨",
+    "굵기가 살아 있는 붓글씨",
+    "묵직한 포스터",
+    "레트로 픽셀",
   ]) {
     await page.getByRole("radio", { name: new RegExp(name) }).click();
     await page.evaluate(() => document.fonts.ready);
@@ -111,7 +113,7 @@ try {
   }
   await page.screenshot({ path: "artifacts/latin-descender.png" });
   check(
-    "all five English reference fonts fit the Latin safety area with a visible descender guide",
+    "all seven English reference fonts fit the Latin safety area with a visible descender guide",
   );
   await page
     .getByLabel("카테고리로 이동", { exact: true })

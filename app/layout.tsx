@@ -9,6 +9,7 @@ import "./mobile.css";
 import "./canvas-navigation.css";
 import "./paper-workspace.css";
 import { BASE_PATH } from "../lib/base-path";
+import { REFERENCE_FONTS } from "../lib/reference-fonts";
 
 // Bundled reference fonts. Declared here (not in CSS) so their URLs follow the
 // deployment base path.
@@ -20,30 +21,22 @@ const FONT_FACES = `
   font-display: swap;
 }
 @font-face {
-  font-family: "Gowun Dodum";
-  src: url("${BASE_PATH}/fonts/GowunDodum.ttf") format("truetype");
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Nanum Pen Script";
-  src: url("${BASE_PATH}/fonts/NanumPenScript.ttf") format("truetype");
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Nanum Brush Script";
-  src: url("${BASE_PATH}/fonts/NanumBrushScript.ttf") format("truetype");
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
   font-family: "Noto Sans KR";
   src: url("${BASE_PATH}/fonts/NotoSansKR.ttf") format("truetype");
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
 }
+${REFERENCE_FONTS.map(({ family, file }) => {
+  const format = file.endsWith(".ttf") ? "truetype" : file.split(".").at(-1);
+  return `
+@font-face {
+  font-family: "${family}";
+  src: url("${BASE_PATH}/fonts/${file}") format("${format}");
+  font-display: swap;
+}
+`;
+}).join("")}
 `;
 const title = "쎈스 글리프 — 손글씨 폰트 작업실";
 const description =

@@ -21,14 +21,15 @@ cho/jung/jong (used to draw the reference silhouette).
 import sys, re, json
 from pathlib import Path
 from collections import deque
+from concurrent.futures import ProcessPoolExecutor
 sys.path.insert(0, str(Path('.cache/reference-tools').resolve()))
 import numpy as np
 from fontTools.ttLib import TTFont
 from fontTools.pens.basePen import BasePen
 from PIL import Image, ImageFilter
 
-FONTS = dict(sans='NotoSansKR.ttf', serif='NotoSerifKR.ttf', round='GowunDodum.ttf',
-             hand='NanumPenScript.ttf', calligraphy='NanumBrushScript.ttf')
+FONTS = dict(re.findall(r'id:\s*"([^"]+)"[^}]*?file:\s*"([^"]+)"',
+                        Path('lib/reference-fonts.ts').read_text(encoding='utf-8')))
 CHARS = re.search(r'export const HANGUL\s*=\s*"([^"]+)"',
                   Path('data/charset.ts').read_text(encoding='utf-8')).group(1).split()
 N = 96    # stored resolution (runtime contract)
@@ -251,6 +252,8 @@ def diamond_fit(contours):
 
 def build(char, glyphs, cmap, priors):
     contours = outline(glyphs, cmap, char)
+    if not contours:
+        raise ValueError('empty glyph outline')
     mask, frame = rasterise(contours, R)
     total = mask.sum()
     code = ord(char) - 0xac00; ci = code // 588; vi = code // 28 % 21; ji = code % 28
@@ -355,19 +358,45 @@ def jamo_priors(glyphs, cmap):
     return priors
 
 
+def build_font(job):
+    key, file, chars, preview = job
+    font = TTFont('public/fonts/' + file)
+    glyphs = font.getGlyphSet(location={'wght': 400} if 'fvar' in font else None)
+    cmap = font.getBestCmap(); priors = jamo_priors(glyphs, cmap)
+    output = {}; previews = {}
+    for char in chars:
+        if ord(char) not in cmap:
+            continue
+        try:
+            output[char], image = build(char, glyphs, cmap, priors)
+        except ValueError as error:
+            if key == 'fallback':
+                raise ValueError(f'{key}: {char}: {error}') from error
+            print(f'{key}: using fallback for {char} ({error})', file=sys.stderr)
+            continue
+        if preview:
+            previews[char] = image
+    print(key, len(output), flush=True)
+    return key, output, previews
+
+
 if __name__ == '__main__':
     only = sys.argv[1:]  # optional: chars to preview
-    output = {}; previews = {}
-    for key, file in FONTS.items():
-        font = TTFont('public/fonts/' + file)
-        glyphs = font.getGlyphSet(location={'wght': 400} if 'fvar' in font else None)
-        cmap = font.getBestCmap(); priors = jamo_priors(glyphs, cmap)
-        chars = only or CHARS; output[key] = {}; previews[key] = {}
-        for char in chars:
-            output[key][char], previews[key][char] = build(char, glyphs, cmap, priors)
-        print(key, len(output[key]), flush=True)
-    np.save('.cache/region-preview.npy', previews, allow_pickle=True)  # for contact sheets
-    if not only:
+    chars = only or CHARS
+    with ProcessPoolExecutor(max_workers=4) as workers:
+        results = list(workers.map(build_font, [
+            (key, file, chars, bool(only)) for key, file in FONTS.items()
+        ]))
+    output = {key: entries for key, entries, _ in results}
+    missing = [char for char in chars if any(char not in entries for entries in output.values())]
+    if missing:
+        key, entries, previews = build_font(('fallback', 'NotoSansKR.ttf', missing, bool(only)))
+        output[key] = entries
+        results.append((key, entries, previews))
+    if only:
+        Path('.cache').mkdir(exist_ok=True)
+        np.save('.cache/region-preview.npy', {key: frames for key, _, frames in results}, allow_pickle=True)
+    else:
         Path('data/reference-regions.json').write_text(
             json.dumps({'resolution': N, 'fonts': output}, ensure_ascii=False, separators=(',', ':')),
             encoding='utf-8')

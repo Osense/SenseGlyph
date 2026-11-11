@@ -5,6 +5,7 @@ export interface CanvasNavigation {
   onNext: () => void;
   previousDisabled: boolean;
   nextDisabled: boolean;
+  inkLocked?: boolean;
 }
 
 export default function CanvasStepButtons({
@@ -21,7 +22,10 @@ export default function CanvasStepButtons({
         className="canvas-step-button canvas-step-previous"
         aria-label={`이전 ${context} 글자`}
         title="이전 글자"
-        disabled={navigation.previousDisabled}
+        data-ink-locked={
+          (navigation.inkLocked && !navigation.previousDisabled) || undefined
+        }
+        disabled={navigation.inkLocked || navigation.previousDisabled}
         onClick={navigation.onPrevious}
       >
         <span aria-hidden="true">‹</span>
@@ -32,7 +36,10 @@ export default function CanvasStepButtons({
         className="canvas-step-button canvas-step-next"
         aria-label={`다음 ${context} 글자`}
         title="다음 글자"
-        disabled={navigation.nextDisabled}
+        data-ink-locked={
+          (navigation.inkLocked && !navigation.nextDisabled) || undefined
+        }
+        disabled={navigation.inkLocked || navigation.nextDisabled}
         onClick={navigation.onNext}
       >
         <span aria-hidden="true">›</span>

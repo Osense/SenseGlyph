@@ -210,7 +210,7 @@ export default function JourneySetup({
               onClick={() => update({ referenceFont: f.id })}
             >
               <span className="font-choice-label">
-                0{i + 1} / {f.label}
+                {i + 1}. {f.label} · {f.name}
                 <span>
                   {(settings.referenceFont ?? "sans") === f.id
                     ? "선택됨 ✓"

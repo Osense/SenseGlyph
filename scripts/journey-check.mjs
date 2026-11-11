@@ -70,7 +70,7 @@ try {
   );
   await page.screenshot({ path: "artifacts/journey-01-brush.png" });
   await page.getByRole("button", { name: "이 브러시로 할게요" }).click();
-  await page.getByRole("radio", { name: /편안한 손글씨/ }).click();
+  await page.getByRole("radio", { name: /또박또박 칠판 글씨/ }).click();
   await page.getByLabel("견본 비교 문장").fill("나답게 쓰는 오늘, Hello!");
   assert.equal(
     await page

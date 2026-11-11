@@ -172,7 +172,7 @@ try {
       filters.getByRole("button", { name: /다시 확인/ }),
       page.getByRole("button", { name: "다음 →", exact: true }),
       page.getByRole("button", { name: "실행 취소", exact: true }),
-      page.getByRole("radio", { name: /자유로운 붓글씨/ }),
+      page.getByRole("radio", { name: /굵기가 살아 있는 붓글씨/ }),
     ]) {
       const box = await locator.boundingBox();
       assert.ok(

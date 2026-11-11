@@ -2,7 +2,11 @@ import { it, expect } from "vitest";
 import { HANGUL } from "../../data/charset";
 import { defaultSettings } from "../defaults";
 import { REFERENCE_FONTS } from "../reference-fonts";
-import { referenceGuide, referencePart } from "./reference";
+import {
+  referenceGuide,
+  referencePart,
+  referenceUsesFallback,
+} from "./reference";
 import { decompose } from "../hangul";
 import type { Stroke } from "../types";
 it("provides glyph- and font-specific ink-derived guides for all writing samples", () => {
@@ -61,4 +65,17 @@ it("uses the same input-frame fit and lets actual ink regions assign a stroke", 
   })!;
   expect(square.width).toBeGreaterThan(guide.width);
   expect(square.width / square.height).toBeCloseTo(guide.width / guide.height);
+});
+
+it("keeps the fallback outline, dimensions and 판정 범위 in sync when a font lacks a glyph", () => {
+  const settings = { ...defaultSettings(), referenceFont: "poster" as const };
+  const char = [...HANGUL].find((value) =>
+    referenceUsesFallback(value, "poster"),
+  )!;
+  expect(char).toBeTruthy();
+  expect(referenceUsesFallback(char, "sans")).toBe(false);
+  expect(referenceGuide(char, settings)?.ink.some(Boolean)).toBe(true);
+  expect(referenceGuide(char, settings)?.boxes).not.toEqual(
+    referenceGuide(char, defaultSettings())?.boxes,
+  );
 });

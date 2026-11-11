@@ -81,7 +81,18 @@ try {
   check(
     "repeated draw, erase, undo and redo repaint actual canvas pixels without stale frames",
   );
-  for(const brush of ['펜','마커','붓','연필','납작펜']){await page.getByRole('button',{name:brush,exact:true}).click();await page.mouse.click(pad.x+pad.width*.45,pad.y+pad.height*.5);await frames();assert.ok(await pixels('ink')>0);await page.keyboard.press('Control+z');await frames();assert.equal(await pixels('ink'),0);}check('all five brushes show a short tap immediately and undo clears its actual pixels');
+  for (const brush of ["펜", "마커", "붓", "연필", "납작펜"]) {
+    await page.getByRole("button", { name: brush, exact: true }).click();
+    await page.mouse.click(pad.x + pad.width * 0.45, pad.y + pad.height * 0.5);
+    await frames();
+    assert.ok((await pixels("ink")) > 0);
+    await page.keyboard.press("Control+z");
+    await frames();
+    assert.equal(await pixels("ink"), 0);
+  }
+  check(
+    "all five brushes show a short tap immediately and undo clears its actual pixels",
+  );
   await page.mouse.move(pad.x + pad.width * 0.98, pad.y + pad.height * 0.5);
   await page.mouse.down();
   await page.mouse.move(pad.x + pad.width * 0.99, pad.y + pad.height * 0.6, {
@@ -97,11 +108,13 @@ try {
     "out-of-safety strokes show an error and are rejected without damaging existing ink",
   );
   for (const name of [
-    "단정한 고딕",
-    "또렷한 명조",
-    "부드러운 고운돋움",
-    "편안한 손글씨",
-    "자유로운 붓글씨",
+    "정갈한 고딕",
+    "책에 쓰는 명조",
+    "통통한 캐릭터 글씨",
+    "또박또박 칠판 글씨",
+    "굵기가 살아 있는 붓글씨",
+    "묵직한 포스터",
+    "레트로 픽셀",
   ]) {
     const radio = page.getByRole("radio", { name: new RegExp(name) });
     await radio.click();
@@ -129,15 +142,15 @@ try {
   assert.ok(extent <= 490);
   await page.waitForTimeout(700);
   await page.reload();
-  await page.getByRole("radio", { name: /자유로운 붓글씨/ }).waitFor();
+  await page.getByRole("radio", { name: /굵기가 살아 있는 붓글씨/ }).waitFor();
   assert.equal(
     await page
-      .getByRole("radio", { name: /자유로운 붓글씨/ })
+      .getByRole("radio", { name: /굵기가 살아 있는 붓글씨/ })
       .getAttribute("aria-checked"),
     "true",
   );
   check(
-    "five local reference fonts render, persist and fit within the diamond",
+    "seven local reference fonts render, persist and fit within the diamond",
   );
   await page.getByRole("button", { name: "설정 열기" }).click();
   await page

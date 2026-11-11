@@ -15,6 +15,7 @@ import WritingPad from "../components/WritingPad";
 import PixelSizeControl from "../components/PixelSizeControl";
 import FontWorkshop from "../components/FontWorkshop";
 import { REFERENCE_FONTS, referenceStack } from "../lib/reference-fonts";
+import { referenceUsesFallback } from "../lib/font/reference";
 import { projectIssues } from "../lib/review";
 import { BrushPreview, Reference, Thumbnail } from "../components/Preview";
 import type { BrushId, CharCategory, ProjectSettings } from "../lib/types";
@@ -134,6 +135,11 @@ export default function Page() {
   const currentPosition = navigationChars.findIndex(
     (entry) => entry.char === char,
   );
+  const previousUnavailable =
+    listFilter === "all"
+      ? currentPosition <= 0
+      : navigationChars.every((entry) => entry.char === char);
+
   const currentIssues = issues[char] ?? [];
   const strokes = project?.samples[char]?.strokes ?? [],
     s = project?.settings;
@@ -466,6 +472,7 @@ export default function Page() {
           <button
             className="new-project-trigger"
             aria-label="처음부터 다시하기"
+            data-ink-locked={busy || undefined}
             disabled={busy}
             onClick={() => setProjectsOpen(true)}
           >
@@ -477,6 +484,7 @@ export default function Page() {
           </span>
           <button
             className="make-font-button"
+            data-ink-locked={busy || undefined}
             disabled={busy}
             onClick={() => changeStep(3)}
           >
@@ -485,6 +493,7 @@ export default function Page() {
           <button
             className="icon-button"
             onClick={() => setModal(true)}
+            data-ink-locked={busy || undefined}
             disabled={busy}
             aria-label="설정 열기"
           >
@@ -504,6 +513,7 @@ export default function Page() {
                   : ""
             }
             aria-current={step === position ? "step" : undefined}
+            data-ink-locked={busy || undefined}
             disabled={busy}
             onClick={() => changeStep(position)}
           >
@@ -529,7 +539,11 @@ export default function Page() {
               <span className="step-kicker">03 / 한 글자씩, 차근차근</span>
               <h1 tabIndex={-1}>이제 한 글자씩 써봅시다!</h1>
             </div>
-            <button onClick={() => changeStep(3)} disabled={busy}>
+            <button
+              onClick={() => changeStep(3)}
+              data-ink-locked={busy || undefined}
+              disabled={busy}
+            >
               쓴 글자로 자모 나누기 →
             </button>
           </section>
@@ -551,6 +565,7 @@ export default function Page() {
                         ? "selected"
                         : "")
                     }
+                    data-ink-locked={busy || undefined}
                     disabled={busy}
                     onClick={() => {
                       update({ activeBrush: b.id });
@@ -572,6 +587,7 @@ export default function Page() {
                     min="20"
                     max="120"
                     value={params.size}
+                    data-ink-locked={busy || undefined}
                     disabled={busy}
                     onChange={(e) =>
                       update({
@@ -587,6 +603,7 @@ export default function Page() {
                   <input
                     type="checkbox"
                     checked={params.usePressure}
+                    data-ink-locked={busy || undefined}
                     disabled={busy}
                     onChange={(e) =>
                       update({
@@ -605,6 +622,7 @@ export default function Page() {
                 {s.activeBrush === "pixel" && (
                   <PixelSizeControl
                     params={params}
+                    data-ink-locked={busy || undefined}
                     disabled={busy}
                     onChange={(pixel) =>
                       update({ brushParams: { ...s.brushParams, pixel } })
@@ -636,6 +654,7 @@ export default function Page() {
                 className={
                   "wide-button " + (tool === "eraser" ? "selected" : "")
                 }
+                data-ink-locked={busy || undefined}
                 disabled={busy}
                 onClick={() => setTool(tool === "eraser" ? "pen" : "eraser")}
               >
@@ -646,6 +665,7 @@ export default function Page() {
                   <select
                     aria-label="지우개 모드"
                     value={s.eraserMode}
+                    data-ink-locked={busy || undefined}
                     disabled={busy}
                     onChange={(e) =>
                       update({
@@ -663,6 +683,7 @@ export default function Page() {
                       min="20"
                       max="200"
                       value={s.eraserSize}
+                      data-ink-locked={busy || undefined}
                       disabled={busy}
                       onChange={(e) => update({ eraserSize: +e.target.value })}
                     />
@@ -671,6 +692,9 @@ export default function Page() {
               )}
               <div className="history-buttons">
                 <button
+                  data-ink-locked={
+                    (busy && !!history?.past.length) || undefined
+                  }
                   disabled={busy || !history?.past.length}
                   onClick={() => undo(char)}
                   aria-label="실행 취소"
@@ -678,6 +702,9 @@ export default function Page() {
                   ↶
                 </button>
                 <button
+                  data-ink-locked={
+                    (busy && !!history?.future.length) || undefined
+                  }
                   disabled={busy || !history?.future.length}
                   onClick={() => redo(char)}
                   aria-label="다시 실행"
@@ -687,6 +714,7 @@ export default function Page() {
               </div>
               <button
                 className="reset-button"
+                data-ink-locked={(busy && !!strokes.length) || undefined}
                 disabled={busy || !strokes.length}
                 onClick={() => {
                   commit(char, category, []);
@@ -722,6 +750,7 @@ export default function Page() {
                 <button
                   aria-pressed={tool === "pen"}
                   onClick={() => setTool("pen")}
+                  data-ink-locked={busy || undefined}
                   disabled={busy}
                 >
                   펜
@@ -729,6 +758,7 @@ export default function Page() {
                 <button
                   aria-pressed={tool === "eraser"}
                   onClick={() => setTool("eraser")}
+                  data-ink-locked={busy || undefined}
                   disabled={busy}
                 >
                   지우개
@@ -736,6 +766,9 @@ export default function Page() {
                 <button
                   aria-label="간단 실행 취소"
                   onClick={() => undo(char)}
+                  data-ink-locked={
+                    (busy && !!history?.past.length) || undefined
+                  }
                   disabled={busy || !history?.past.length}
                 >
                   ↶
@@ -743,6 +776,9 @@ export default function Page() {
                 <button
                   aria-label="간단 다시 실행"
                   onClick={() => redo(char)}
+                  data-ink-locked={
+                    (busy && !!history?.future.length) || undefined
+                  }
                   disabled={busy || !history?.future.length}
                 >
                   ↷
@@ -752,6 +788,7 @@ export default function Page() {
                     commit(char, category, []);
                     notify("다시 쓸 준비가 됐어요", true);
                   }}
+                  data-ink-locked={(busy && !!strokes.length) || undefined}
                   disabled={busy || !strokes.length}
                 >
                   다시쓰기
@@ -767,6 +804,7 @@ export default function Page() {
                   ).map((m) => (
                     <button
                       key={m.id}
+                      data-ink-locked={busy || undefined}
                       disabled={busy}
                       className={s.sampleMode === m.id ? "active" : ""}
                       onClick={() => update({ sampleMode: m.id })}
@@ -784,11 +822,13 @@ export default function Page() {
                     max="900"
                     step="20"
                     value={s.writingSize ?? 400}
+                    data-ink-locked={busy || undefined}
                     disabled={busy}
                     onChange={(e) => update({ writingSize: +e.target.value })}
                   />
                   <button
                     type="button"
+                    data-ink-locked={busy || undefined}
                     disabled={busy}
                     onClick={() => update({ writingSize: undefined })}
                   >
@@ -806,12 +846,9 @@ export default function Page() {
                 dark={dark}
                 onBusy={setBusy}
                 navigation={{
-                  previousDisabled:
-                    busy ||
-                    (listFilter === "all"
-                      ? currentPosition <= 0
-                      : navigationChars.every((entry) => entry.char === char)),
-                  nextDisabled: busy,
+                  previousDisabled: previousUnavailable,
+                  nextDisabled: false,
+                  inkLocked: busy,
                   onPrevious: () => go(-1),
                   onNext: () =>
                     listFilter !== "all"
@@ -841,6 +878,7 @@ export default function Page() {
                   <>
                     <span>가이드</span>
                     <button
+                      data-ink-locked={busy || undefined}
                       disabled={busy}
                       className={
                         s.grid.halfVertical || s.grid.halfHorizontal
@@ -863,6 +901,7 @@ export default function Page() {
                       ⊞ 2분할
                     </button>
                     <button
+                      data-ink-locked={busy || undefined}
                       disabled={busy}
                       className={s.grid.diamond ? "active" : ""}
                       onClick={() => setGrid("diamond")}
@@ -870,6 +909,7 @@ export default function Page() {
                       ◇ 다이아몬드
                     </button>
                     <button
+                      data-ink-locked={busy || undefined}
                       disabled={busy}
                       className={s.grid.sizeGuide ? "active" : ""}
                       onClick={() => setGrid("sizeGuide")}
@@ -900,6 +940,7 @@ export default function Page() {
                     key={font.id}
                     role="radio"
                     aria-checked={(s.referenceFont ?? "sans") === font.id}
+                    data-ink-locked={busy || undefined}
                     disabled={busy}
                     className={
                       (s.referenceFont ?? "sans") === font.id ? "selected" : ""
@@ -915,6 +956,12 @@ export default function Page() {
               </div>
 
               <div className="section-label">YOUR HANDWRITING</div>
+              {s.sampleMode !== "hidden" &&
+                referenceUsesFallback(char, s.referenceFont) && (
+                  <small className="reference-region-note">
+                    ‘{char}’은 대체 견본으로 표시됩니다.
+                  </small>
+                )}
               {s.sampleMode === "outside" && (
                 <Reference
                   char={char}
@@ -963,6 +1010,7 @@ export default function Page() {
                 )}
                 <div className="review-actions">
                   <button
+                    data-ink-locked={busy || undefined}
                     disabled={busy}
                     aria-pressed={!!project.samples[char]?.needsReview}
                     onClick={() =>
@@ -981,6 +1029,7 @@ export default function Page() {
                     (issue) => issue.kind === "components",
                   ) && (
                     <button
+                      data-ink-locked={busy || undefined}
                       disabled={busy}
                       onClick={() => {
                         changeStep(3);
@@ -1002,18 +1051,17 @@ export default function Page() {
                 </span>
                 <div className="navigation">
                   <button
-                    disabled={
-                      busy ||
-                      (listFilter === "all"
-                        ? currentPosition <= 0
-                        : navigationChars.every((entry) => entry.char === char))
+                    data-ink-locked={
+                      (busy && !previousUnavailable) || undefined
                     }
+                    disabled={busy || previousUnavailable}
                     onClick={() => go(-1)}
                   >
                     ← 이전
                   </button>
                   <button
                     className="primary"
+                    data-ink-locked={busy || undefined}
                     disabled={busy}
                     onClick={() =>
                       listFilter !== "all"
@@ -1034,6 +1082,7 @@ export default function Page() {
                 </div>
                 <button
                   className="skip-button"
+                  data-ink-locked={busy || undefined}
                   disabled={busy}
                   onClick={() => {
                     commit(char, category, strokes, "skipped");
@@ -1062,6 +1111,7 @@ export default function Page() {
                 aria-label="글자 목록 필터"
               >
                 <button
+                  data-ink-locked={busy || undefined}
                   disabled={busy}
                   aria-pressed={listFilter === "all"}
                   onClick={() => selectFilter("all")}
@@ -1069,6 +1119,7 @@ export default function Page() {
                   전체 <b>{chars.length}</b>
                 </button>
                 <button
+                  data-ink-locked={busy || undefined}
                   disabled={busy}
                   aria-pressed={listFilter === "review"}
                   onClick={() => selectFilter("review")}
@@ -1076,6 +1127,7 @@ export default function Page() {
                   다시 확인 <b>{reviewChars.length}</b>
                 </button>
                 <button
+                  data-ink-locked={busy || undefined}
                   disabled={busy}
                   aria-pressed={listFilter === "unsafe"}
                   onClick={() => selectFilter("unsafe")}
@@ -1086,6 +1138,9 @@ export default function Page() {
               <select
                 aria-label="카테고리로 이동"
                 value={category}
+                data-ink-locked={
+                  (busy && !!navigationChars.length) || undefined
+                }
                 disabled={busy || !navigationChars.length}
                 onChange={(e) => {
                   const target = navigationChars.find(
@@ -1139,6 +1194,7 @@ export default function Page() {
                   <button
                     id={"glyph-" + c.char}
                     key={c.char}
+                    data-ink-locked={busy || undefined}
                     disabled={busy}
                     aria-label={
                       c.char +

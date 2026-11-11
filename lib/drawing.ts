@@ -1,7 +1,7 @@
 import { METRICS } from "../config/metrics";
 import type { CharCategory, ProjectSettings } from "./types";
 import { referenceStack } from "./reference-fonts";
-import { referenceFit } from "./font/reference";
+import { referenceFit, referenceUsesFallback } from "./font/reference";
 import { categoryForChar, safetyBounds, sampleFontSize } from "./safety";
 export function drawGrid(
   ctx: CanvasRenderingContext2D,
@@ -102,7 +102,9 @@ export function drawSample(
   ctx.globalAlpha = opacity;
   ctx.fillStyle = dark ? "#f4f1e7" : "#333d36";
   ctx.textBaseline = "alphabetic";
-  const family = referenceStack(settings?.referenceFont);
+  const family = referenceUsesFallback(char, settings?.referenceFont)
+    ? '"Noto Sans KR"'
+    : referenceStack(settings?.referenceFont);
   ctx.font = "840px " + family;
   let m = ctx.measureText(char);
   const w = m.actualBoundingBoxLeft + m.actualBoundingBoxRight,

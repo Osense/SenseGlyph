@@ -76,11 +76,11 @@ try {
   const boxes = () => regionsOf(svg);
   const sansBoxes = await boxes();
   await step(1);
-  await page.getByRole("radio", { name: /편안한 손글씨/ }).click();
+  await page.getByRole("radio", { name: /또박또박 칠판 글씨/ }).click();
   await step(3);
   await page.getByRole("option", { name: "갛 보정", exact: true }).click();
   assert.notDeepEqual(await boxes(), sansBoxes);
-  await page.getByText(/편안한 손글씨 견본의 실제 ‘갛’ 자모 모양/).waitFor();
+  await page.getByText(/학교안심 분필의 ‘갛’ 자모 판정 범위/).waitFor();
   await page.getByRole("option", { name: "겪 보정", exact: true }).click();
   const otherBoxes = await regionsOf(
     page.getByLabel("겪 자모 분리 화면", { exact: true }),

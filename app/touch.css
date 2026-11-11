@@ -165,7 +165,11 @@
   .studio.journey.journey-step-2 .journey-track .step-number + span {
     display: none;
   }
-  .studio.journey.journey-step-2 .journey-track .is-current .step-number + span {
+  .studio.journey.journey-step-2
+    .journey-track
+    .is-current
+    .step-number
+    + span {
     display: inline;
   }
   .studio.journey.journey-step-2 > .topbar {
@@ -294,7 +298,9 @@
   border-color: var(--ink);
   color: var(--paper);
 }
-.studio.journey.journey-step-2 .mobile-ink-tools button:disabled {
+.studio.journey.journey-step-2
+  .mobile-ink-tools
+  button:disabled:not([data-ink-locked]) {
   opacity: 0.4;
 }
 @media (orientation: landscape) and (max-height: 500px) {

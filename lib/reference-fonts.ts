@@ -1,48 +1,67 @@
 export const REFERENCE_FONTS = [
   {
     id: "sans",
-    family: "Noto Sans KR",
-    label: "단정한 고딕",
-    file: "NotoSansKR.ttf",
+    family: "Gmarket Sans",
+    label: "정갈한 고딕",
+    name: "G마켓 산스",
+    file: "GmarketSansMedium.woff",
   },
   {
     id: "serif",
-    family: "Noto Serif KR",
-    label: "또렷한 명조",
-    file: "NotoSerifKR.ttf",
+    family: "Nanum Myeongjo",
+    label: "책에 쓰는 명조",
+    name: "나눔명조",
+    file: "NanumMyeongjo-Regular.ttf",
+  },
+  {
+    id: "poster",
+    family: "Black Han Sans",
+    label: "묵직한 포스터",
+    name: "검은고딕",
+    file: "BlackHanSans-Regular.ttf",
   },
   {
     id: "round",
-    family: "Gowun Dodum",
-    label: "부드러운 고운돋움",
-    file: "GowunDodum.ttf",
+    family: "Samlip Hobbang",
+    label: "통통한 캐릭터 글씨",
+    name: "산돌 삼립호빵체",
+    file: "SDSamliphopangche_Basic.woff",
   },
   {
     id: "hand",
-    family: "Nanum Pen Script",
-    label: "편안한 손글씨",
-    file: "NanumPenScript.ttf",
+    family: "School Safety Chalk",
+    label: "또박또박 칠판 글씨",
+    name: "학교안심 분필",
+    file: "HakgyoansimBunpilR.woff2",
   },
   {
     id: "calligraphy",
-    family: "Nanum Brush Script",
-    label: "자유로운 붓글씨",
-    file: "NanumBrushScript.ttf",
+    family: "School Safety Brush Pen",
+    label: "굵기가 살아 있는 붓글씨",
+    name: "학교안심 붓펜",
+    file: "HakgyoansimButpenM.woff2",
+  },
+  {
+    id: "pixel",
+    family: "Galmuri11",
+    label: "레트로 픽셀",
+    name: "갈무리11",
+    file: "Galmuri11.woff2",
   },
 ] as const;
 export type ReferenceFontId = (typeof REFERENCE_FONTS)[number]["id"];
-export function referenceFamily(id?: string) {
-  return (
-    REFERENCE_FONTS.find((font) => font.id === id)?.family ??
-    REFERENCE_FONTS[0].family
-  );
+
+export function referenceFont(id?: string) {
+  return REFERENCE_FONTS.find((font) => font.id === id) ?? REFERENCE_FONTS[0];
 }
+
 export function referenceStack(id?: string) {
-  return '"' + referenceFamily(id) + '", "Noto Sans KR"';
+  return '"' + referenceFont(id).family + '", "Noto Sans KR"';
 }
+
 export async function loadReferenceFont(id?: string, char = "가") {
   await Promise.all([
     document.fonts.load('600px "Noto Sans KR"', char),
-    document.fonts.load('600px "' + referenceFamily(id) + '"', char),
+    document.fonts.load('600px "' + referenceFont(id).family + '"', char),
   ]);
 }

@@ -25,8 +25,8 @@ import { SAFE_INSET, strokesAreSafe } from "../lib/safety";
 import type { FontProject, Stroke } from "../lib/types";
 import type { FontPreparation, Part, Separation } from "../lib/font/types";
 import { Thumbnail } from "./Preview";
-import { REFERENCE_FONTS } from "../lib/reference-fonts";
-import { referenceGuide } from "../lib/font/reference";
+import { referenceFont } from "../lib/reference-fonts";
+import { referenceGuide, referenceUsesFallback } from "../lib/font/reference";
 
 /** Paints the reference font's real jamo regions: faint area = where a stroke
  * counts as that part, stronger tone = the font's own ink of that part. */
@@ -520,7 +520,9 @@ export default function SeparationEditor({
       >
         {separation.boxes
           ? "직접 조절한 자모 영역"
-          : `${REFERENCE_FONTS.find((font) => font.id === (project.settings.referenceFont ?? "sans"))?.label} 견본의 실제 ‘${char}’ 자모 모양으로 나눈 판정 영역 · 진한 색은 견본 글자의 획, 옅은 색은 그 자모로 판정되는 범위예요`}
+          : guide
+            ? `${referenceUsesFallback(char, project.settings.referenceFont) ? "대체 견본(Noto Sans KR)" : referenceFont(project.settings.referenceFont).name}의 ‘${char}’ 자모 판정 범위. 진한 색은 견본의 획, 옅은 색은 판정되는 영역입니다.`
+            : `‘${char}’의 자모 배치를 기준으로 나눈 판정 범위입니다.`}
       </p>
       <div className="separation-layout">
         <div>

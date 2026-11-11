@@ -47,14 +47,7 @@ page.on("worker", (worker) => {
 const exportTab = page.getByRole("button", { name: "내보내기", exact: true });
 const waitFont = async () => {
   await page.waitForFunction(
-    () => {
-      const button = [
-        ...document.querySelectorAll(".finish-track button"),
-      ].find((item) => item.textContent === "내보내기");
-      return (
-        (button && !button.disabled) || document.querySelector(".font-error")
-      );
-    },
+    () => document.querySelector('[data-font-current="true"], .font-error'),
     null,
     { timeout: 120000 },
   );
@@ -250,10 +243,19 @@ try {
   await page.getByRole("button", { name: "이 글자 다시 쓰러 가기" }).click();
   await page.getByLabel("갛 쓰기 칸", { exact: true }).waitFor();
   await step(4);
-  await waitFont();
   await page.getByLabel("출력 글자 크기", { exact: true }).fill("1200");
   await page.getByLabel("글자 사이 간격", { exact: true }).fill("-220");
-  assert.equal(await exportTab.isEnabled(), false);
+  assert.equal(await exportTab.isEnabled(), true);
+  await exportTab.click();
+  await page.getByText("마지막으로 생성한 폰트를 표시합니다.").waitFor();
+  assert.equal(
+    await preview
+      .locator("p")
+      .first()
+      .evaluate((el) => el.style.fontFamily),
+    family,
+  );
+  await page.getByRole("button", { name: "다듬기", exact: true }).click();
   await page
     .getByRole("button", { name: "폰트 생성하기", exact: true })
     .click();
@@ -314,7 +316,10 @@ try {
   );
   await checkout.getByRole("button", { name: "닫기", exact: true }).click();
   await page.reload();
-  await waitFont();
+  await exportTab.click();
+  await page.getByText(/아직 생성된 폰트가 없습니다/).waitFor();
+  await page.getByLabel("출력 플랜").waitFor();
+  await page.getByRole("button", { name: "다듬기", exact: true }).click();
   assert.equal(
     await page.getByLabel("글자 사이 간격", { exact: true }).inputValue(),
     "-220",

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import type {
   ProjectSettings,
   Stroke,
@@ -45,6 +45,7 @@ export default function WritingPad({
     ink = useRef<HTMLCanvasElement>(null),
     live = useRef<HTMLCanvasElement>(null);
   const [size, setSize] = useState(500),
+    [sampleRail, setSampleRail] = useState(0),
     [fontReady, setFontReady] = useState(false),
     [warning, setWarning] = useState("");
   const committed = useRef(strokes),
@@ -69,13 +70,19 @@ export default function WritingPad({
     else saveStroke(letter, kind, value);
   };
   const latin = !category.startsWith("hangul");
+  const showOutside = !!navigation && settings.sampleMode === "outside";
   useEffect(() => {
     // The layout may hand the pad a non-square box (e.g. width-driven but
     // height-capped on landscape tablets). The sheet stays square inside it so
     // the em grid, sample and handwriting are never stretched.
     const ob = new ResizeObserver((es) => {
       const { width, height } = es[0].contentRect;
-      const availableWidth = Math.max(1, width - (navigation ? 104 : 0));
+      const rail = showOutside ? Math.min(144, Math.max(76, width * 0.26)) : 0;
+      setSampleRail(rail);
+      const availableWidth = Math.max(
+        1,
+        width - (navigation ? 52 + (rail || 52) : 0),
+      );
       setSize(
         Math.floor(
           height > 0 ? Math.min(availableWidth, height) : availableWidth,
@@ -84,7 +91,7 @@ export default function WritingPad({
     });
     if (wrap.current) ob.observe(wrap.current);
     return () => ob.disconnect();
-  }, [!!navigation]);
+  }, [!!navigation, showOutside]);
   useEffect(() => {
     let alive = true;
     setFontReady(false);
@@ -271,19 +278,31 @@ export default function WritingPad({
     schedule();
   };
   return (
-    <div className="pad" ref={wrap} aria-label={char + " 쓰기 칸"}>
-      {settings.sampleMode === "outside" && (
-        <span
-          className="writing-rail-sample"
-          aria-label={"견본 " + char}
-          style={{
-            fontFamily: referenceUsesFallback(char, settings.referenceFont)
-              ? '"Noto Sans KR"'
-              : referenceStack(settings.referenceFont),
-          }}
-        >
-          {char}
-        </span>
+    <div
+      className={showOutside ? "pad has-outside-sample" : "pad"}
+      ref={wrap}
+      aria-label={char + " 쓰기 칸"}
+      style={
+        showOutside
+          ? ({ "--sample-rail": `${sampleRail || 76}px` } as CSSProperties)
+          : undefined
+      }
+    >
+      {showOutside && (
+        <div className="writing-rail-sample">
+          <span
+            className="writing-rail-character"
+            aria-label={"견본 " + char}
+            style={{
+              fontFamily: referenceUsesFallback(char, settings.referenceFont)
+                ? '"Noto Sans KR"'
+                : referenceStack(settings.referenceFont),
+            }}
+          >
+            {char}
+          </span>
+          <small>위 글자를 써주세요.</small>
+        </div>
       )}
       {navigation && (
         <CanvasStepButtons navigation={navigation} context="쓰기" />

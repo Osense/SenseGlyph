@@ -31,6 +31,18 @@ import type {
   WorkerReply,
 } from "../lib/font/types";
 
+type GeneratedFont = {
+  projectId: string;
+  samples: FontProject["samples"];
+  preparation: FontPreparation;
+  referenceFont: FontProject["settings"]["referenceFont"];
+  buffer: ArrayBuffer;
+  stats: FontStats;
+  face: FontFace;
+};
+
+let lastGeneratedFont: GeneratedFont | null = null;
+
 interface Props {
   guided?: boolean;
   journeyStage?: "separation" | "build";
@@ -103,14 +115,15 @@ export default function FontWorkshop({
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState<ExportFormat | null>(null);
   const [exportError, setExportError] = useState("");
-  const [result, setResult] = useState<{
-    buffer: ArrayBuffer;
-    stats: FontStats;
-    family: string;
-  } | null>(null);
+  const [result, setResult] = useState(() =>
+    lastGeneratedFont?.projectId === project.id ? lastGeneratedFont : null,
+  );
+  const isCurrent =
+    result?.samples === project.samples &&
+    result.preparation === prep &&
+    result.referenceFont === project.settings.referenceFont;
   const worker = useRef<Worker | null>(null),
     exportWorker = useRef<Worker | null>(null),
-    face = useRef<FontFace | null>(null),
     dialog = useRef<HTMLElement>(null);
   useEffect(() => {
     if (guided && dialog.current?.parentElement)
@@ -126,12 +139,7 @@ export default function FontWorkshop({
     setExporting(null);
     setExportError("");
     setBuilding(false);
-    setResult(null);
     setError("");
-    if (face.current) {
-      document.fonts.delete(face.current);
-      face.current = null;
-    }
   };
 
   useEffect(() => {
@@ -178,7 +186,6 @@ export default function FontWorkshop({
       generation.current++;
       worker.current?.terminate();
       exportWorker.current?.terminate();
-      if (face.current) document.fonts.delete(face.current);
       document.removeEventListener("keydown", keydown);
       document.body.style.overflow = overflow;
       previous?.focus();
@@ -189,7 +196,6 @@ export default function FontWorkshop({
       generation.current++;
       worker.current?.terminate();
       exportWorker.current?.terminate();
-      if (face.current) document.fonts.delete(face.current);
     },
     [],
   );
@@ -197,7 +203,7 @@ export default function FontWorkshop({
   const settings = (changes: Partial<FontPreparation["settings"]>) =>
     onChange({ ...prep, settings: { ...prep.settings, ...changes } });
   const build = () => {
-    if (result || building || worker.current || !report.direct) return;
+    if (isCurrent || building || worker.current || !report.direct) return;
     resetResult();
     setBuilding(true);
     setProgress(0);
@@ -225,9 +231,20 @@ export default function FontWorkshop({
             const family = "HanhoekPreview-" + crypto.randomUUID();
             const loaded = await new FontFace(family, reply.buffer).load();
             if (token !== generation.current) return;
+            if (lastGeneratedFont)
+              document.fonts.delete(lastGeneratedFont.face);
             document.fonts.add(loaded);
-            face.current = loaded;
-            setResult({ buffer: reply.buffer, stats: reply.stats, family });
+            const generated = {
+              projectId: project.id,
+              samples: project.samples,
+              preparation: prep,
+              referenceFont: project.settings.referenceFont,
+              buffer: reply.buffer,
+              stats: reply.stats,
+              face: loaded,
+            };
+            lastGeneratedFont = generated;
+            setResult(generated);
             setProgress(100);
             setBuilding(false);
           } catch {
@@ -268,11 +285,8 @@ export default function FontWorkshop({
       );
     }
   };
-  const latestBuild = useRef(build);
-  latestBuild.current = build;
   useEffect(() => {
-    if (stage === "build") latestBuild.current();
-    else setFinishStep("refine");
+    if (stage === "separation") setFinishStep("refine");
   }, [stage]);
 
   const download = (format: ExportFormat, names: OutputNames) => {
@@ -479,13 +493,16 @@ export default function FontWorkshop({
             <button
               className="font-primary"
               disabled={!report.direct}
-              onClick={() => setStage("build")}
+              onClick={() => {
+                setStage("build");
+                build();
+              }}
             >
               손글씨를 이용해 폰트 생성하기 →
             </button>
           </div>
         ) : (
-          <div className="font-build-stage">
+          <div className="font-build-stage" data-font-current={isCurrent}>
             <nav className="finish-track" aria-label="폰트 완성 순서">
               <button
                 aria-current={finishStep === "refine" ? "step" : undefined}
@@ -495,7 +512,6 @@ export default function FontWorkshop({
               </button>
               <button
                 aria-current={finishStep === "export" ? "step" : undefined}
-                disabled={!result || building}
                 onClick={() => setFinishStep("export")}
               >
                 내보내기
@@ -611,44 +627,46 @@ export default function FontWorkshop({
                         글자가 줄 위에 놓이는 세로 위치를 바꿉니다.
                       </small>
                     </label>
+                    <fieldset className="font-correction-controls">
+                      <legend>자동 보정</legend>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={!!prep.settings.alignToReference}
+                          onChange={(event) =>
+                            settings({ alignToReference: event.target.checked })
+                          }
+                        />
+                        견본에 맞춰 자모 위치 다듬기
+                      </label>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={!!prep.settings.averageStrokes}
+                          onChange={(event) =>
+                            settings({ averageStrokes: event.target.checked })
+                          }
+                        />
+                        비슷한 손글씨 획 평균으로 다듬기
+                      </label>
+                      <button
+                        type="button"
+                        className="font-secondary"
+                        onClick={() =>
+                          settings({
+                            alignToReference: !bothCorrections,
+                            averageStrokes: !bothCorrections,
+                          })
+                        }
+                      >
+                        {bothCorrections
+                          ? "자동 보정 끄기"
+                          : "한 번에 보정하기"}
+                      </button>
+                    </fieldset>
                   </div>
                   <MetricPreview project={project} preparation={prep} />
                 </div>
-                <fieldset className="font-correction-controls">
-                  <legend>자동 보정</legend>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={!!prep.settings.alignToReference}
-                      onChange={(event) =>
-                        settings({ alignToReference: event.target.checked })
-                      }
-                    />
-                    견본에 맞춰 자모 위치 다듬기
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={!!prep.settings.averageStrokes}
-                      onChange={(event) =>
-                        settings({ averageStrokes: event.target.checked })
-                      }
-                    />
-                    비슷한 손글씨 획 평균으로 다듬기
-                  </label>
-                  <button
-                    type="button"
-                    className="font-secondary"
-                    onClick={() =>
-                      settings({
-                        alignToReference: !bothCorrections,
-                        averageStrokes: !bothCorrections,
-                      })
-                    }
-                  >
-                    {bothCorrections ? "자동 보정 끄기" : "한 번에 보정하기"}
-                  </button>
-                </fieldset>
                 <HandwritingSearch
                   project={project}
                   preparation={prep}
@@ -673,7 +691,7 @@ export default function FontWorkshop({
                   </p>
                 )}
                 <div className="finish-navigation">
-                  {result ? (
+                  {isCurrent ? (
                     <button
                       className="font-primary"
                       onClick={() => setFinishStep("export")}
@@ -692,19 +710,34 @@ export default function FontWorkshop({
                 </div>
               </>
             ) : null}
-            {result && (
-              <div hidden={finishStep !== "export"}>
-                <FontOutput
-                  family={result.family}
-                  characters={result.stats.characters}
-                  exporting={exporting}
-                  exportError={exportError}
-                  onDownload={download}
-                  onWriteSpecial={onWriteSpecial}
-                />
-              </div>
-            )}
-            {building && (
+            <div hidden={finishStep !== "export"}>
+              {finishStep === "export" && !isCurrent && (
+                <div className="font-notice">
+                  {result
+                    ? "마지막으로 생성한 폰트를 표시합니다."
+                    : "아직 생성된 폰트가 없습니다. 내보내기 설정을 먼저 확인할 수 있어요."}
+                  {building ? (
+                    <p role="status">폰트 만드는 중 · {progress}%</p>
+                  ) : (
+                    report.direct > 0 && (
+                      <button type="button" onClick={build}>
+                        현재 설정으로 폰트 생성하기 →
+                      </button>
+                    )
+                  )}
+                  {error && <p role="alert">{error}</p>}
+                </div>
+              )}
+              <FontOutput
+                family={result?.face.family}
+                characters={result?.stats.characters ?? []}
+                exporting={exporting}
+                exportError={exportError}
+                onDownload={download}
+                onWriteSpecial={onWriteSpecial}
+              />
+            </div>
+            {building && finishStep === "refine" && (
               <FontDialog title="손글씨로 폰트를 만들고 있어요">
                 <div className="font-progress-number" aria-hidden="true">
                   {progress}%
@@ -717,6 +750,12 @@ export default function FontWorkshop({
                 />
                 <p role="status">{message}</p>
                 <div className="font-dialog-actions">
+                  <button
+                    className="font-secondary"
+                    onClick={() => setFinishStep("export")}
+                  >
+                    내보내기 화면 열기
+                  </button>
                   <button className="font-secondary" onClick={resetResult}>
                     생성 취소
                   </button>

@@ -55,7 +55,7 @@ export default function FontOutput({
   onDownload,
   onWriteSpecial,
 }: {
-  family: string;
+  family?: string;
   characters: string[];
   exporting: ExportFormat | null;
   exportError: string;
@@ -80,29 +80,31 @@ export default function FontOutput({
 
   return (
     <section className="font-output" aria-label="폰트 내보내기">
-      <div
-        className="generated-preview output-specimen"
-        aria-label="생성된 폰트 미리보기"
-      >
-        {specimen.map((line) => (
-          <p key={line} style={{ fontFamily: family }}>
-            {[...line].map((char, index) =>
-              /\s/.test(char) || available.has(char) ? (
-                char
-              ) : (
-                <span
-                  className="missing-glyph"
-                  key={index}
-                  title={char + " · 아직 없는 글자"}
-                >
-                  {char}
-                </span>
-              ),
-            )}
-          </p>
-        ))}
-      </div>
-      {missing.length > 0 && (
+      {family && (
+        <div
+          className="generated-preview output-specimen"
+          aria-label="생성된 폰트 미리보기"
+        >
+          {specimen.map((line) => (
+            <p key={line} style={{ fontFamily: family }}>
+              {[...line].map((char, index) =>
+                /\s/.test(char) || available.has(char) ? (
+                  char
+                ) : (
+                  <span
+                    className="missing-glyph"
+                    key={index}
+                    title={char + " · 아직 없는 글자"}
+                  >
+                    {char}
+                  </span>
+                ),
+              )}
+            </p>
+          ))}
+        </div>
+      )}
+      {family && missing.length > 0 && (
         <p className="font-help">
           회색으로 표시된 문자는 생성된 폰트에 없어요. {missing.join(" ")}
         </p>
@@ -320,6 +322,11 @@ export default function FontOutput({
                 : "프로모션 코드를 확인해 주세요."}
             </p>
           )}
+          {!family && (
+            <p className="font-help">
+              실제 파일을 받으려면 폰트 파일이 필요합니다.
+            </p>
+          )}
           {exportError && (
             <p className="font-error" role="alert">
               {exportError}
@@ -337,7 +344,7 @@ export default function FontOutput({
             <button
               type="button"
               className="font-primary"
-              disabled={promo !== "valid" || exporting !== null}
+              disabled={!family || promo !== "valid" || exporting !== null}
               onClick={() => onDownload(format, { korean, english })}
             >
               {exporting ? "파일 준비 중…" : "다운로드 ↓"}

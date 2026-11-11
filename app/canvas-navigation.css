@@ -187,16 +187,33 @@
   grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
 }
 
+.has-outside-sample > .pad-sheet {
+  left: calc(50% + (var(--sample-rail) - 52px) / 2);
+}
+.has-outside-sample > .canvas-step-previous {
+  top: 67%;
+  left: calc((var(--sample-rail) - 44px) / 2);
+}
 .writing-rail-sample {
   position: absolute;
-  top: calc(50% - 43px);
+  bottom: calc(33% + 37px);
   left: 0;
-  transform: translateY(-100%);
-  width: 44px;
-  font-size: 25px;
-  line-height: 1.25;
+  width: calc(var(--sample-rail) - 8px);
+  display: grid;
+  gap: 5px;
   text-align: center;
   pointer-events: none;
+}
+.writing-rail-character {
+  font-size: clamp(38px, calc(var(--sample-rail) * 0.58), 84px);
+  line-height: 1;
+  color: var(--ink, #263c33);
+}
+.writing-rail-sample > small {
+  font-size: clamp(10px, calc(var(--sample-rail) * 0.09), 13px);
+  line-height: 1.25;
+  word-break: keep-all;
+  color: var(--muted, #556455);
 }
 .separation-fixed-grid {
   fill: none;

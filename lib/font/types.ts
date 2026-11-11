@@ -19,7 +19,12 @@ export interface Separation {
   strokes?: Stroke[];
   sourceUpdatedAt?: number;
 }
+export type StrokeFinish = "original" | "round" | "pointed";
+
 export interface FontBuildSettings {
+  widthCorrection?: number;
+  strokeWeight?: number;
+  strokeFinish?: StrokeFinish;
   positionCorrection?: number;
   shapeInterpolation?: number;
   bodySize?: number;

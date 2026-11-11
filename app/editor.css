@@ -412,3 +412,27 @@
   background: #243128;
   border-color: #46533e;
 }
+
+.font-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.font-comparison figure {
+  margin: 0;
+  min-width: 0;
+}
+.font-comparison figcaption {
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+.font-comparison canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+@media (max-width: 640px) {
+  .font-comparison {
+    grid-template-columns: 1fr;
+  }
+}

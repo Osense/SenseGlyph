@@ -1,9 +1,13 @@
+import { brushThinning } from "../brushes";
+import { hitsStroke } from "../geometry";
 import type { Stroke } from "../types";
 import type { ComponentSample, FontBuildSettings } from "./types";
 
+export const widthCorrection = (s: FontBuildSettings) => s.widthCorrection ?? 0;
 export const correction = (s: FontBuildSettings) => s.positionCorrection ?? 35;
 export const interpolation = (s: FontBuildSettings) =>
   s.shapeInterpolation ?? 25;
+const fractions = Array.from({ length: 33 }, (_, i) => i / 32);
 type Point = { x: number; y: number };
 const median = (values: number[]) => {
   const v = [...values].sort((a, b) => a - b),
@@ -58,7 +62,8 @@ function at(points: Point[], lengths: number[], t: number): Point {
   );
   return { x: mix(a.x, b.x, f), y: mix(a.y, b.y, f) };
 }
-function describe(c: ComponentSample) {
+function describe(c: ComponentSample, measureWidth: boolean) {
+  const widths: number[] = [];
   const g = geometry(c);
   const curves = c.strokes.map((s) => {
     const points = s.points.map((p) => ({
@@ -66,9 +71,31 @@ function describe(c: ComponentSample) {
       y: ((p.y - c.box.y) / c.box.height - g.y) / g.h,
     }));
     const lengths = arc(points);
-    return Array.from({ length: 33 }, (_, i) => at(points, lengths, i / 32));
+    if (measureWidth) {
+      // Weight pressure by distance, so slow turns and duplicate points don't bias the estimate.
+      const pressure =
+        lengths.at(-1) === 0
+          ? s.points[0].p
+          : lengths.reduce(
+              (sum, t, i) =>
+                i
+                  ? sum +
+                    ((t - lengths[i - 1]) *
+                      (s.points[i].p + s.points[i - 1].p)) /
+                      2
+                  : sum,
+              0,
+            );
+      const factor = !s.params.usePressure
+        ? 1
+        : s.brush === "nib" || s.brush === "pixel"
+          ? 0.3 + 0.7 * pressure
+          : 1 + brushThinning(s.brush) * (2 * pressure - 1);
+      widths.push(s.params.size * factor);
+    }
+    return fractions.map((t) => at(points, lengths, t));
   });
-  return { component: c, g, curves };
+  return { component: c, g, curves, widths };
 }
 type Description = ReturnType<typeof describe>;
 function compatible(a: Description, b: Description) {
@@ -104,7 +131,18 @@ export function refinePool(
   pool: ComponentSample[],
   settings: FontBuildSettings,
 ) {
-  const entries = pool.map(describe);
+  const position = correction(settings) / 100,
+    shape = interpolation(settings) / 100,
+    width = widthCorrection(settings) / 100;
+  if (!position && !shape && !width)
+    return {
+      representative: pool[0],
+      refine: (source: ComponentSample) => source,
+    };
+  const entries = pool.map((component) => describe(component, width > 0));
+  const descriptions = new Map(
+    entries.map((entry) => [entry.component, entry]),
+  );
   // Largest compatible shape cluster, then its medoid. An early outlier must
   // not become the prototype just because it appeared first in the worksheet.
   const ranked = entries
@@ -125,8 +163,6 @@ export function refinePool(
         a.entry.component.char.localeCompare(b.entry.component.char),
     );
   const prototype = ranked[0].entry;
-  const position = correction(settings) / 100,
-    shape = interpolation(settings) / 100;
   const target = {
     x: median(entries.map((e) => e.g.x)),
     y: median(entries.map((e) => e.g.y)),
@@ -134,12 +170,11 @@ export function refinePool(
     h: median(entries.map((e) => e.g.h)),
   };
   const refine = (source: ComponentSample): ComponentSample => {
-    if (!position && !shape) return source;
-    const d = describe(source);
+    const d = descriptions.get(source) ?? describe(source, width > 0);
     const peers = entries.filter(
       (e) => e.component !== source && distance(d, e) <= 0.12,
     );
-    if (!position && (!shape || !peers.length)) return source;
+    if (!position && ((!shape && !width) || !peers.length)) return source;
     const g = {
       x: mix(
         d.g.x,
@@ -163,7 +198,34 @@ export function refinePool(
         position,
       ),
     };
+    const joints =
+      shape && peers.length
+        ? source.strokes.flatMap((stroke, i) =>
+            [stroke.points[0], stroke.points.at(-1)!].flatMap((point) => {
+              const radius = stroke.params.size / 2;
+              return source.strokes.some(
+                (other, j) =>
+                  i !== j &&
+                  hitsStroke(point, other.points, radius, other.params.size),
+              )
+                ? [{ point, radius: stroke.params.size }]
+                : [];
+            }),
+          )
+        : [];
     const strokes: Stroke[] = source.strokes.map((stroke, i) => {
+      const originalSize = stroke.params.size;
+      const targetSize =
+        width && peers.length >= 2
+          ? (originalSize *
+              median([d.widths[i], ...peers.map((peer) => peer.widths[i])])) /
+            d.widths[i]
+          : originalSize;
+      const size = mix(
+        originalSize,
+        Math.max(originalSize * 0.8, Math.min(originalSize * 1.2, targetSize)),
+        width,
+      );
       const lengths = arc(
         stroke.points.map((p) => ({
           x: (p.x - source.box.x) / source.box.width / d.g.w,
@@ -172,19 +234,29 @@ export function refinePool(
       );
       return {
         ...stroke,
+        params: { ...stroke.params, size },
         points: stroke.points.map((p, j) => {
           let x = ((p.x - source.box.x) / source.box.width - d.g.x) / d.g.w;
           let y = ((p.y - source.box.y) / source.box.height - d.g.y) / d.g.h;
           if (peers.length && shape) {
             const samples = peers.map((e) =>
-              at(
-                e.curves[i],
-                Array.from({ length: 33 }, (_, k) => k / 32),
-                lengths[j],
-              ),
+              at(e.curves[i], fractions, lengths[j]),
             );
-            x = mix(x, median(samples.map((s) => s.x)), shape);
-            y = mix(y, median(samples.map((s) => s.y)), shape);
+            const localStrength = joints.reduce(
+              (strength, joint) =>
+                Math.min(
+                  strength,
+                  shape *
+                    Math.min(
+                      1,
+                      Math.hypot(p.x - joint.point.x, p.y - joint.point.y) /
+                        joint.radius,
+                    ),
+                ),
+              shape,
+            );
+            x = mix(x, median(samples.map((s) => s.x)), localStrength);
+            y = mix(y, median(samples.map((s) => s.y)), localStrength);
           }
           return {
             ...p,

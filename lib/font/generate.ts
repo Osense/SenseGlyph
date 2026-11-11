@@ -1,5 +1,4 @@
 import opentype from "opentype.js";
-import polygonClipping, { type Ring } from "polygon-clipping";
 import { slotKeys } from "../hangul";
 import {
   prepareHandwriting,
@@ -15,6 +14,8 @@ import { strokesAreSafe, SAFE_INSET, SAFE_MAX } from "../safety";
 import {
   bodySize,
   createLayoutPlan,
+  createStrokeRenderer,
+  mergeInk,
   layoutGlyph,
   strokeContours as contours,
 } from "./layout";
@@ -52,9 +53,19 @@ export function generateFont(
   const postScriptName =
     englishName.replace(/[^a-zA-Z0-9]/g, "").slice(0, 55) + "-Regular";
   if (
-    [options.positionCorrection, options.shapeInterpolation].some(
+    [
+      options.positionCorrection,
+      options.shapeInterpolation,
+      options.widthCorrection,
+    ].some(
       (v) => v !== undefined && (!Number.isFinite(v) || v < 0 || v > 100),
     ) ||
+    (options.strokeWeight !== undefined &&
+      (!Number.isFinite(options.strokeWeight) ||
+        options.strokeWeight < 80 ||
+        options.strokeWeight > 120)) ||
+    (options.strokeFinish !== undefined &&
+      !["original", "round", "pointed"].includes(options.strokeFinish)) ||
     !Number.isFinite(options.baseline) ||
     options.baseline < 650 ||
     options.baseline > 900 ||
@@ -83,57 +94,52 @@ export function generateFont(
     );
   progress(2, "손글씨 외곽선을 준비하고 있어요");
   const handwriting = prepareHandwriting(project, preparation);
+  const render = createStrokeRenderer(options);
+  const references = new Map(samples.map((s) => [s.char, contours(s.strokes)]));
   const direct = new Map(
     samples.map((s) => [
       s.char,
-      contours(handwriting.direct.get(s.char) ?? s.strokes),
+      render(handwriting.direct.get(s.char) ?? s.strokes),
     ]),
   );
-  const components = new Map<string, Polygon[]>();
-  if (options.includeComposed)
-    for (const [key, component] of handwriting.library) {
-      components.set(
-        key,
-        contours(
-          transformComponent(
-            component,
-            layoutBoxes(component.char)[component.part]!,
-          ),
+  const components = new Map<string, ReturnType<typeof transformComponent>>();
+  const componentReferences = new Map<string, Polygon[]>();
+  for (const [key, component] of handwriting.library) {
+    const strokes = transformComponent(
+      component,
+      layoutBoxes(component.char)[component.part]!,
+    );
+    const ink = contours(strokes);
+    if (
+      ink.some((polygon) =>
+        polygon.some(
+          ([x, y]) =>
+            x < SAFE_INSET || y < SAFE_INSET || x > SAFE_MAX || y > SAFE_MAX,
         ),
-      );
-      if (
-        components
-          .get(key)!
-          .some((polygon) =>
-            polygon.some(
-              ([x, y]) =>
-                x < SAFE_INSET ||
-                y < SAFE_INSET ||
-                x > SAFE_MAX ||
-                y > SAFE_MAX,
-            ),
-          )
       )
-        throw new Error(
-          component.char +
-            "의 자모 위치 상자가 너무 작아 조합 획이 안전영역을 벗어납니다. 자모 위치 상자를 수정해 주세요.",
-        );
-    }
+    )
+      throw new Error(
+        component.char +
+          "의 자모 위치 상자가 너무 작아 조합 획이 안전영역을 벗어납니다. 자모 위치 상자를 수정해 주세요.",
+      );
+    components.set(key, strokes);
+    componentReferences.set(key, ink);
+  }
   const polygons = new Map(direct);
-  const layout = createLayoutPlan(direct, options);
+  const layout = createLayoutPlan(references, options);
   let composed = 0;
-  if (options.includeComposed)
-    for (let code = 0xac00; code <= 0xd7a3; code++) {
-      const char = String.fromCharCode(code),
-        keys = slotKeys(char);
-      if (!polygons.has(char) && keys.every((key) => components.has(key))) {
-        polygons.set(
-          char,
-          keys.flatMap((key) => components.get(key)!),
-        );
-        composed++;
-      }
+  for (let code = 0xac00; code <= 0xd7a3; code++) {
+    const char = String.fromCharCode(code),
+      keys = slotKeys(char);
+    if (!polygons.has(char) && keys.every((key) => components.has(key))) {
+      polygons.set(char, render(keys.flatMap((key) => components.get(key)!)));
+      references.set(
+        char,
+        keys.flatMap((key) => componentReferences.get(key)!),
+      );
+      composed++;
     }
+  }
   const missingPath = new opentype.Path();
   missingPath.moveTo(160, 0);
   missingPath.lineTo(160, 650);
@@ -173,17 +179,9 @@ export function generateFont(
   for (let i = 0; i < entries.length; i++) {
     const [char, paths] = entries[i],
       path = new opentype.Path();
-    const shaped = layoutGlyph(char, paths, layout);
-    // Merge ink before writing CFF so renderers see the boundary, not stacked faces.
-    const polygons = shaped.contours.map((ring) => [ring as Ring]);
-    if (polygons.length) {
-      for (const polygon of polygonClipping.union(polygons)) {
-        for (const ring of polygon) {
-          // The union winds holes opposite to outer rings. Preserve that winding.
-          appendContour(path, ring.slice(0, -1), options.baseline);
-        }
-      }
-    }
+    const shaped = layoutGlyph(char, paths, layout, references.get(char));
+    for (const ring of mergeInk(shaped.contours))
+      appendContour(path, ring, options.baseline);
     for (const polygon of shaped.contours) {
       for (const p of polygon) {
         highest = Math.max(highest, options.baseline - p[1]);
@@ -225,9 +223,9 @@ export function generateFont(
   for (const key of ["fontFamily", "fullName"] as const)
     font.names[key] = { en: englishName, ko: options.familyName.trim() };
   font.names.postScriptName = { en: postScriptName };
-  font.names.version = { en: "Version 1.400" };
+  font.names.version = { en: "Version 1.500" };
   Object.assign(font.names, {
-    uniqueID: { en: internalName + "-1.400-" + project.updatedAt },
+    uniqueID: { en: internalName + "-1.500-" + project.updatedAt },
   });
   const mapping = glyphs.flatMap((glyph, index) =>
     glyph.unicodes.map((code) => ({ code, index })),

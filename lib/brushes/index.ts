@@ -1,4 +1,5 @@
 import { getStrokeOutlinePoints, getStrokePoints } from "perfect-freehand";
+import type { StrokeFinish } from "../font/types";
 import { nibContours, pixelContours } from "./solid";
 import type { Stroke, StrokePoint, BrushId, BrushParams } from "../types";
 
@@ -48,10 +49,18 @@ function roundEnd(poly: number[][], end: number[], ahead: number[]) {
   return poly;
 }
 
+export function brushThinning(brush: BrushId) {
+  if (brush === "marker") return 0;
+  if (brush === "brush") return 0.75;
+  if (brush === "pencil") return 0.2;
+  return 0.5;
+}
+
 function smoothOutline(
   points: StrokePoint[],
   brush: BrushId,
   params: BrushParams,
+  finish: StrokeFinish,
 ): number[][] {
   if (!points.length) return [];
   const stationary = points.every(
@@ -59,21 +68,30 @@ function smoothOutline(
   );
   const size = params.size * (brush === "pencil" ? 0.5 : 1),
     tapered = brush === "brush" && !stationary;
+  const length =
+    finish === "pointed"
+      ? points.reduce(
+          (sum, p, i) =>
+            i
+              ? sum + Math.hypot(p.x - points[i - 1].x, p.y - points[i - 1].y)
+              : sum,
+          0,
+        )
+      : 0;
+  const endTaper =
+    finish === "pointed" && !stationary
+      ? Math.min(size * 1.25, length / 4)
+      : finish === "original" && tapered
+        ? params.size
+        : 0;
   const options = {
     size,
-    thinning:
-      brush === "marker"
-        ? 0
-        : brush === "brush"
-          ? 0.75
-          : brush === "pencil"
-            ? 0.2
-            : 0.5,
+    thinning: brushThinning(brush),
     smoothing: brush === "marker" ? 0.6 : brush === "pencil" ? 0.3 : 0.5,
     streamline: 0.5,
     simulatePressure: !params.usePressure,
     start: { taper: tapered ? params.size : 0 },
-    end: { taper: tapered ? params.size : 0, cap: tapered },
+    end: { taper: endTaper, cap: endTaper > 0 },
   };
   const input = stationary ? points : spacedPoints(points, size * 0.08);
   // The smoothed path trails the pen slightly. Repeating the end lets it glide
@@ -85,7 +103,7 @@ function smoothOutline(
     options,
   );
   const poly = getStrokeOutlinePoints(strokePoints, options);
-  if (tapered || strokePoints.length < 2) return poly;
+  if (endTaper || strokePoints.length < 2) return poly;
   const last = strokePoints[strokePoints.length - 1];
   return roundEnd(poly, last.point, [-last.vector[0], -last.vector[1]]);
 }
@@ -93,10 +111,11 @@ export function outlines(
   points: StrokePoint[],
   brush: BrushId,
   params: BrushParams,
+  finish: StrokeFinish = "original",
 ): number[][][] {
   if (brush === "nib") return nibContours(points, params);
   if (brush === "pixel") return pixelContours(points, params);
-  const polygon = smoothOutline(points, brush, params);
+  const polygon = smoothOutline(points, brush, params, finish);
   return polygon.length ? [polygon] : [];
 }
 // For coordinate bounds only. Rendering must retain separate contours.

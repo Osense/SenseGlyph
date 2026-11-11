@@ -1,6 +1,8 @@
 import { METRICS } from "../../config/metrics";
 import { categoryForChar, DIAMOND_RADIUS } from "../safety";
-import type { FontBuildSettings } from "./types";
+import polygonClipping, { type Ring } from "polygon-clipping";
+import { hitsStroke } from "../geometry";
+import type { FontBuildSettings, StrokeFinish } from "./types";
 import type { Stroke } from "../types";
 import { outlines } from "../brushes";
 import { simplifyContour } from "./polygon";
@@ -31,14 +33,61 @@ export interface LaidOutGlyph {
   bounds: InkBounds | null;
   leftSideBearing: number;
 }
-export function strokeContours(strokes: Stroke[]): Contours {
-  return strokes
-    .flatMap((stroke) =>
-      outlines(stroke.points, stroke.brush, stroke.params).map((poly) =>
-        simplifyContour(poly),
-      ),
-    )
-    .filter((path) => path.length >= 3);
+export function createStrokeRenderer(settings?: FontBuildSettings) {
+  const weight = (settings?.strokeWeight ?? 100) / 100;
+  const finish = settings?.strokeFinish ?? "original";
+  const cache = new WeakMap<Stroke, Map<StrokeFinish, Contours>>();
+  return (strokes: Stroke[]): Contours =>
+    strokes.flatMap((stroke, index) => {
+      const start = stroke.points[0],
+        end = stroke.points.at(-1);
+      const radius = (stroke.params.size * weight) / 2;
+      const style =
+        finish !== "original" &&
+        start &&
+        end &&
+        stroke.brush !== "nib" &&
+        stroke.brush !== "pixel" &&
+        Math.hypot(end.x - start.x, end.y - start.y) > radius &&
+        !strokes.some(
+          (other, i) =>
+            i !== index &&
+            hitsStroke(end, other.points, radius, other.params.size * weight),
+        )
+          ? finish
+          : "original";
+      let styles = cache.get(stroke);
+      if (!styles) {
+        styles = new Map();
+        cache.set(stroke, styles);
+      }
+      let paths = styles.get(style);
+      if (!paths) {
+        paths = outlines(
+          stroke.points,
+          stroke.brush,
+          {
+            ...stroke.params,
+            size: stroke.params.size * weight,
+          },
+          style,
+        )
+          .map((poly) => simplifyContour(poly))
+          .filter((path) => path.length >= 3);
+        styles.set(style, paths);
+      }
+      return paths;
+    });
+}
+
+export const strokeContours = createStrokeRenderer();
+
+export function mergeInk(contours: Contours): Contours {
+  return contours.length
+    ? polygonClipping
+        .union(contours.map((ring) => [ring as Ring]))
+        .flatMap((polygon) => polygon.map((ring) => ring.slice(0, -1)))
+    : [];
 }
 
 export function inkBounds(contours: Contours): InkBounds | null {
@@ -141,8 +190,9 @@ export function layoutGlyph(
   char: string,
   source: Contours,
   plan: LayoutPlan,
+  reference: Contours = source,
 ): LaidOutGlyph {
-  const bounds = inkBounds(source);
+  const bounds = inkBounds(reference);
   if (!bounds)
     return {
       contours: [],
@@ -162,24 +212,22 @@ export function layoutGlyph(
       scale,
       plan.bodySize / Math.max(1, bounds.width, bounds.height),
     );
-  const cx = (bounds.left + bounds.right) / 2,
-    cy = (bounds.top + bounds.bottom) / 2;
-  let paths = source.map((polygon) =>
-    polygon.map(([x, y]) =>
-      hangul
-        ? [500 + (x - cx) * scale, 500 + (y - cy) * scale]
-        : [x * scale, METRICS.baseline + (y - METRICS.baseline) * scale],
-    ),
-  );
-  const normalized = inkBounds(paths)!;
+  const cy = (bounds.top + bounds.bottom) / 2;
+  const referenceWidth = bounds.width * scale;
   const contentWidth =
     category === "digit"
-      ? Math.max(plan.digitInkWidth, normalized.width)
-      : normalized.width;
-  const left = plan.sideBearing + (contentWidth - normalized.width) / 2,
-    shift = left - normalized.left;
-  paths = paths.map((polygon) =>
-    polygon.map(([x, y]) => [Math.round(x + shift), Math.round(y)]),
+      ? Math.max(plan.digitInkWidth, referenceWidth)
+      : referenceWidth;
+  const left = plan.sideBearing + (contentWidth - referenceWidth) / 2;
+  const paths = source.map((polygon) =>
+    polygon.map(([x, y]) => [
+      Math.round(left + (x - bounds.left) * scale),
+      Math.round(
+        hangul
+          ? 500 + (y - cy) * scale
+          : METRICS.baseline + (y - METRICS.baseline) * scale,
+      ),
+    ]),
   );
   const finalBounds = inkBounds(paths)!;
   return {

@@ -1,7 +1,12 @@
 import { HANGUL } from "../../data/charset";
 import { decompose, slotKeys, vowelType } from "../hangul";
 import { activeSeparation, effectiveSample, strokeBounds } from "./editing";
-import { refinePool, correction, interpolation } from "./interpolation";
+import {
+  refinePool,
+  correction,
+  interpolation,
+  widthCorrection,
+} from "./interpolation";
 import { strokesAreSafe } from "../safety";
 import {
   referenceGuide,
@@ -179,7 +184,9 @@ export function prepareHandwriting(
     // Zero is a genuine comparison against the previous first-sample algorithm.
     library.set(
       key,
-      !correction(prep.settings) && !interpolation(prep.settings)
+      !correction(prep.settings) &&
+        !interpolation(prep.settings) &&
+        !widthCorrection(prep.settings)
         ? pool[0]
         : model.representative,
     );

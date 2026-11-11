@@ -9,10 +9,26 @@ export function validPreparation(value: unknown): value is FontPreparation {
   if (!record(value) || !record(value.settings) || !record(value.separations))
     return false;
   const s = value.settings;
-  for (const key of ["positionCorrection", "shapeInterpolation"]) {
+  for (const key of [
+    "positionCorrection",
+    "shapeInterpolation",
+    "widthCorrection",
+  ]) {
     if (s[key] !== undefined && (!finite(s[key]) || s[key] < 0 || s[key] > 100))
       return false;
   }
+  if (
+    s.strokeWeight !== undefined &&
+    (!finite(s.strokeWeight) || s.strokeWeight < 80 || s.strokeWeight > 120)
+  )
+    return false;
+  if (
+    s.strokeFinish !== undefined &&
+    s.strokeFinish !== "original" &&
+    s.strokeFinish !== "round" &&
+    s.strokeFinish !== "pointed"
+  )
+    return false;
   if (
     s.bodySize !== undefined &&
     (!finite(s.bodySize) ||

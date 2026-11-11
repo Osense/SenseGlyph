@@ -107,3 +107,45 @@ it("validates optional saved strengths and keeps old backups valid", () => {
     expect(validPreparation(prep)).toBe(false);
   }
 });
+
+it("normalizes matching pen sizes conservatively while preserving the recorded pressure", () => {
+  const narrow = sample("가"),
+    medium = sample("나"),
+    wide = sample("다");
+  narrow.strokes[0].params.size = 20;
+  medium.strokes[0].params.size = 40;
+  wide.strokes[0].params.size = 60;
+  const model = refinePool([narrow, medium, wide], {
+    ...settings(),
+    positionCorrection: 0,
+    shapeInterpolation: 0,
+    widthCorrection: 100,
+  });
+  const refined = model.refine(narrow).strokes[0];
+  expect(refined.params.size).toBe(24);
+  expect(refined.points.map((p) => p.p)).toEqual(
+    narrow.strokes[0].points.map((p) => p.p),
+  );
+  expect(narrow.strokes[0].params.size).toBe(20);
+});
+
+it("responds to different pressure even when all strokes use the same brush size", () => {
+  const light = sample("가"),
+    medium = sample("나"),
+    heavy = sample("다");
+  [light, medium, heavy].forEach((entry, i) => {
+    entry.strokes[0].points = entry.strokes[0].points.map((p) => ({
+      ...p,
+      p: 0.25 + i * 0.25,
+    }));
+  });
+  const model = refinePool([light, medium, heavy], {
+    ...settings(),
+    positionCorrection: 0,
+    shapeInterpolation: 0,
+    widthCorrection: 50,
+  });
+  expect(model.refine(light).strokes[0].params.size).toBeGreaterThan(35);
+  expect(model.refine(heavy).strokes[0].params.size).toBeLessThan(35);
+  expect(model.refine(light).strokes[0].points[0].p).toBe(0.25);
+});

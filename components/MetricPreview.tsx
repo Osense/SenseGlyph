@@ -1,17 +1,39 @@
 "use client";
+
 import { useEffect, useMemo, useRef, useState } from "react";
-import { prepareHandwriting, composeGlyph } from "../lib/font/composition";
+import { composeGlyph, prepareHandwriting } from "../lib/font/composition";
 import { effectiveStrokes } from "../lib/font/editing";
 import {
   createLayoutPlan,
+  createStrokeRenderer,
   layoutGlyph,
+  mergeInk,
   strokeContours,
-  type Contours,
 } from "../lib/font/layout";
-import { drawSample } from "../lib/drawing";
 import { loadReferenceFont, referenceStack } from "../lib/reference-fonts";
 import type { FontProject } from "../lib/types";
 import type { FontPreparation } from "../lib/font/types";
+
+function examples(project: FontProject) {
+  const written = Object.values(project.samples).filter(
+    (sample) => sample.strokes.length,
+  );
+  const selected = [
+    written.find(
+      (sample) =>
+        /^[가-힣]$/.test(sample.char) &&
+        (sample.char.charCodeAt(0) - 0xac00) % 28 !== 0,
+    ),
+    written.find((sample) => /^[아-잏ㅇ]$/.test(sample.char)),
+    written.find((sample) => /^[사-싷ㅅ]$/.test(sample.char)),
+    ...written,
+  ];
+  return [
+    ...new Set(selected.flatMap((sample) => (sample ? [sample.char] : []))),
+  ]
+    .slice(0, 6)
+    .join("");
+}
 
 export default function MetricPreview({
   project,
@@ -20,47 +42,51 @@ export default function MetricPreview({
   project: FontProject;
   preparation: FontPreparation;
 }) {
-  const initial = Object.values(project.samples)
-    .filter((sample) => sample.strokes.length)
-    .slice(0, 6)
-    .map((sample) => sample.char)
-    .join("");
-  const [text, setText] = useState(initial || "한글 가나다"),
-    [ready, setReady] = useState(0);
-  const canvas = useRef<HTMLCanvasElement>(null);
+  const [text, setText] = useState(() => examples(project) || "한글 가나다");
+  const [ready, setReady] = useState(0);
+  const before = useRef<HTMLCanvasElement>(null),
+    after = useRef<HTMLCanvasElement>(null);
+  const { settings, separations } = preparation;
+  const {
+    positionCorrection,
+    shapeInterpolation,
+    widthCorrection,
+    strokeWeight,
+    strokeFinish,
+  } = settings;
   const handwriting = useMemo(
     () => prepareHandwriting(project, preparation),
     [
       project.samples,
-      preparation.separations,
-      preparation.settings.positionCorrection,
-      preparation.settings.shapeInterpolation,
+      separations,
       project.settings.referenceFont,
       project.settings.grid.diamond,
+      positionCorrection,
+      shapeInterpolation,
+      widthCorrection,
     ],
   );
-  const library = handwriting.library;
-  const direct = useMemo(
+  const originals = useMemo(
     () =>
       new Map(
         Object.values(project.samples)
-          .map(
-            (sample) =>
-              [
-                sample.char,
-                strokeContours(
-                  handwriting.direct.get(sample.char) ?? sample.strokes,
-                ),
-              ] as [string, Contours],
-          )
-          .filter(([, paths]) => paths.length),
+          .filter((sample) => sample.strokes.length)
+          .map((sample) => [
+            sample.char,
+            strokeContours(effectiveStrokes(sample, separations[sample.char])),
+          ]),
       ),
-    [handwriting, project.samples],
+    [project.samples, separations],
   );
   const plan = useMemo(
-    () => createLayoutPlan(direct, preparation.settings),
-    [direct, preparation.settings.bodySize, preparation.settings.letterSpacing],
+    () => createLayoutPlan(originals, settings),
+    [originals, settings.bodySize, settings.letterSpacing],
   );
+  const renderer = useMemo(
+    () => createStrokeRenderer(settings),
+    [strokeWeight, strokeFinish],
+  );
+
   useEffect(() => {
     let alive = true;
     loadReferenceFont(project.settings.referenceFont, text).then(() => {
@@ -70,164 +96,87 @@ export default function MetricPreview({
       alive = false;
     };
   }, [project.settings.referenceFont, text]);
+
   useEffect(() => {
-    const ctx = canvas.current?.getContext("2d");
-    if (!ctx) return;
-    const chars = [...text.normalize("NFC")].slice(0, 12);
-    const fill = (paths: Contours) => {
-      for (const polygon of paths) {
-        if (!polygon.length) continue;
-        ctx.beginPath();
-        ctx.moveTo(polygon[0][0], polygon[0][1]);
-        for (const p of polygon.slice(1)) ctx.lineTo(p[0], p[1]);
-        ctx.closePath();
-        ctx.fill();
-      }
-    };
-    const previews = chars.map((char) => {
-      const raw =
-        direct.get(char) ??
-        (() => {
-          const strokes = composeGlyph(char, library);
-          return strokes ? strokeContours(strokes) : undefined;
-        })();
-      if (raw?.length) {
-        const shaped = layoutGlyph(char, raw, plan);
-        const sample = project.samples[char];
-        const original = sample
-          ? strokeContours(
-              effectiveStrokes(sample, preparation.separations[char]),
-            )
-          : raw;
-        return { char, raw: original, shaped, advance: shaped.advanceWidth };
-      }
-      if (/\s/.test(char))
+    const views = [
+      before.current?.getContext("2d"),
+      after.current?.getContext("2d"),
+    ];
+    const letters = [...text.normalize("NFC")].slice(0, 12);
+    const glyphs = letters.map((char) => {
+      const strokes =
+        handwriting.direct.get(char) ?? composeGlyph(char, handwriting.library);
+      const reference =
+        originals.get(char) ?? (strokes ? strokeContours(strokes) : []);
+      if (!strokes || !reference.length)
         return {
           char,
-          advance:
-            char === "　"
-              ? plan.bodySize + plan.sideBearing * 2
-              : plan.spaceWidth,
+          advance: /\s/.test(char)
+            ? char === "　"
+              ? plan.bodySize + 2 * plan.sideBearing
+              : plan.spaceWidth
+            : plan.bodySize + 2 * plan.sideBearing,
         };
-      const hangul = /[가-힣ㄱ-ㅣ]/.test(char);
-      ctx.font = "1000px " + referenceStack(project.settings.referenceFont);
-      let m = ctx.measureText(char),
-        width = m.actualBoundingBoxLeft + m.actualBoundingBoxRight,
-        height = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
-      let factor = hangul
-        ? plan.bodySize / Math.max(width, height, 1)
-        : plan.capHeight /
-          (ctx.measureText("H").actualBoundingBoxAscent || 700);
-      if (!hangul)
-        factor = Math.min(factor, plan.bodySize / Math.max(width, height, 1));
-      ctx.font =
-        1000 * factor + "px " + referenceStack(project.settings.referenceFont);
-      m = ctx.measureText(char);
-      width = m.actualBoundingBoxLeft + m.actualBoundingBoxRight;
-      const advance = width + plan.sideBearing * 2;
+      const original = layoutGlyph(char, reference, plan);
+      const styled = layoutGlyph(char, renderer(strokes), plan, reference);
       return {
         char,
-        advance,
-        fallback: {
-          font: ctx.font,
-          x: plan.sideBearing + m.actualBoundingBoxLeft,
-          y: hangul
-            ? 500 + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2
-            : 800,
-        },
+        advance: styled.advanceWidth,
+        inks: [mergeInk(original.contours), mergeInk(styled.contours)],
       };
     });
-    const rawAdvance =
-      (1000 + preparation.settings.letterSpacing) *
-        chars.filter((c) => !/\s/.test(c)).length +
-      (500 + preparation.settings.letterSpacing) *
-        chars.filter((c) => /\s/.test(c)).length;
-    const outputAdvance = previews.reduce((sum, item) => sum + item.advance, 0);
-    const size = Math.min(
-        120,
-        1060 / Math.max(rawAdvance / 1000, outputAdvance / 1000, 4),
-      ),
-      scale = size / 1000;
-    ctx.clearRect(0, 0, 1200, 320);
-    ctx.fillStyle = "#fffef8";
-    ctx.fillRect(0, 0, 1200, 320);
-    ctx.font = '16px "Noto Sans KR"';
-    for (const [base, label, cap] of [
-      [120, "입력 칸 그대로", 570],
-      [285, "폰트 출력 · 자모 정돈/크기/여백", plan.capHeight],
-    ] as [number, string, number][]) {
-      ctx.fillStyle = "#829078";
-      ctx.fillText(label, 16, base - 103);
-      ctx.strokeStyle = "#bc9967";
-      ctx.lineWidth = 1.2;
-      ctx.setLineDash([7, 6]);
+    const total = glyphs.reduce((sum, glyph) => sum + glyph.advance, 0);
+    const scale = Math.min(0.108, 680 / Math.max(1, total));
+    views.forEach((ctx, view) => {
+      if (!ctx) return;
+      ctx.fillStyle = "#fffef8";
+      ctx.fillRect(0, 0, 720, 160);
+      const baseline = 126;
+      ctx.strokeStyle = "#d8d5c8";
       ctx.beginPath();
-      ctx.moveTo(15, base);
-      ctx.lineTo(1185, base);
+      ctx.moveTo(16, baseline);
+      ctx.lineTo(704, baseline);
       ctx.stroke();
-      ctx.strokeStyle = "#d7e0ce";
-      ctx.beginPath();
-      ctx.moveTo(15, base - cap * scale);
-      ctx.lineTo(1185, base - cap * scale);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    let rawX = 85,
-      outputX = 85;
-    for (const item of previews) {
-      if (!/\s/.test(item.char)) {
-        ctx.save();
-        ctx.translate(rawX, 120 - preparation.settings.baseline * scale);
-        ctx.scale(scale, scale);
-        if (item.raw?.length) {
-          ctx.fillStyle = "#84917d";
-          fill(item.raw);
-        } else
-          drawSample(
-            ctx,
-            item.char,
-            !/[가-힣ㄱ-ㅣ]/.test(item.char),
-            0.5,
-            false,
-            project.settings,
-            false,
-          );
-        ctx.restore();
-        ctx.save();
-        ctx.translate(outputX, 285 - preparation.settings.baseline * scale);
-        ctx.scale(scale, scale);
-        if (item.shaped) {
+      let x = Math.max(20, (720 - total * scale) / 2);
+      for (const glyph of glyphs) {
+        const paths = glyph.inks?.[view];
+        if (paths) {
           ctx.fillStyle = "#263c33";
-          fill(item.shaped.contours);
-        } else if (item.fallback) {
-          ctx.font = item.fallback.font;
-          ctx.fillStyle = "#8da18b";
-          ctx.fillText(item.char, item.fallback.x, item.fallback.y);
+          ctx.beginPath();
+          for (const ring of paths) {
+            ring.forEach(([px, py], i) => {
+              const dx = x + px * scale,
+                dy = baseline + (py - settings.baseline) * scale;
+              if (i === 0) ctx.moveTo(dx, dy);
+              else ctx.lineTo(dx, dy);
+            });
+            ctx.closePath();
+          }
+          ctx.fill("nonzero");
+        } else if (!/\s/.test(glyph.char)) {
+          ctx.fillStyle = "#929d8d";
+          ctx.font = `${plan.bodySize * scale}px ${referenceStack(project.settings.referenceFont)}`;
+          ctx.fillText(glyph.char, x, baseline);
         }
-        ctx.restore();
+        x += glyph.advance * scale;
       }
-      rawX +=
-        (/\s/.test(item.char)
-          ? 500 + preparation.settings.letterSpacing
-          : 1000 + preparation.settings.letterSpacing) * scale;
-      outputX += item.advance * scale;
-    }
+    });
   }, [
     text,
     ready,
-    direct,
-    library,
+    originals,
+    handwriting,
     plan,
-    project.settings,
-    project.samples,
-    preparation.separations,
-    preparation.settings.baseline,
+    renderer,
+    settings.baseline,
+    project.settings.referenceFont,
   ]);
+
   return (
     <section className="metric-preview">
       <div className="preview-heading">
-        <h3>간격·기준선 실시간 견본</h3>
-        <span>입력 크기와 실제 출력 크기를 비교하세요</span>
+        <h3>보정 전후 비교</h3>
+        <span>같은 출력 크기와 글자 간격으로 비교합니다.</span>
       </div>
       <label className="font-field">
         비교할 글자
@@ -238,18 +187,31 @@ export default function MetricPreview({
           onChange={(event) => setText(event.target.value)}
         />
       </label>
-      <canvas
-        ref={canvas}
-        width={1200}
-        height={320}
-        aria-label="간격 기준선 실시간 견본"
-        data-hangul-scale={plan.hangulScale}
-        data-body-size={plan.bodySize}
-      />
+      <div className="font-comparison">
+        <figure>
+          <figcaption>보정 전</figcaption>
+          <canvas
+            ref={before}
+            width={720}
+            height={160}
+            aria-label="보정 전 손글씨 견본"
+          />
+        </figure>
+        <figure>
+          <figcaption>보정 후</figcaption>
+          <canvas
+            ref={after}
+            width={720}
+            height={160}
+            aria-label="간격 기준선 실시간 견본"
+            data-hangul-scale={plan.hangulScale}
+            data-body-size={plan.bodySize}
+          />
+        </figure>
+      </div>
       <p className="font-help">
-        한글 대표 크기 기준 {plan.hangulScale.toFixed(2)}배 보정 · 출력 크기{" "}
-        {plan.bodySize / 10}%. 위는 입력 칸 그대로, 아래는 파일에 적용되는
-        크기와 간격입니다. 아직 없는 글자는 견본으로 연하게 표시합니다.
+        직접 쓴 글자를 먼저 보여줍니다. 아직 만들 수 없는 글자는 연하게
+        표시합니다.
       </p>
     </section>
   );

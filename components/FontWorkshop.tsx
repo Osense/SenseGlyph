@@ -4,6 +4,7 @@ import { defaultEnglishFontName } from "../lib/font/names";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { HANGUL } from "../data/charset";
 import SeparationEditor from "./SeparationEditor";
+import { widthCorrection } from "../lib/font/interpolation";
 import MetricPreview from "./MetricPreview";
 import { FONT_WORKER_URL } from "../lib/font/worker-url";
 import { decompose } from "../lib/hangul";
@@ -242,20 +243,21 @@ export default function FontWorkshop({
     if (
       !guided ||
       stage !== "build" ||
+      finishStep !== 0 ||
       !report.direct ||
       !prep.settings.familyName.trim()
     )
       return;
     const timer = setTimeout(() => latestBuild.current(), 650);
     return () => clearTimeout(timer);
-  }, [
-    guided,
-    stage,
-    project.samples,
-    prep,
-    project.settings.referenceFont,
-    project.settings.grid.diamond,
-  ]);
+  }, [guided, stage, finishStep, project.samples, prep, report.direct]);
+
+  // Build once on entering export. Slider changes update only the comparison.
+  useEffect(() => {
+    if (!guided || stage !== "build" || finishStep !== 3) return;
+    const timer = setTimeout(() => latestBuild.current(), 0);
+    return () => clearTimeout(timer);
+  }, [guided, stage, finishStep]);
   const download = () => {
     if (!result) return;
     const url = URL.createObjectURL(
@@ -552,6 +554,48 @@ export default function FontWorkshop({
                 />
               </label>
               <label className="font-field">
+                획 굵기 정돈 <b>{widthCorrection(prep.settings)}%</b>
+                <input
+                  aria-label="획 굵기 정돈"
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={widthCorrection(prep.settings)}
+                  onChange={(e) =>
+                    settings({ widthCorrection: +e.target.value })
+                  }
+                />
+              </label>
+              <label className="font-field">
+                전체 획 굵기 <b>{prep.settings.strokeWeight ?? 100}%</b>
+                <input
+                  aria-label="전체 획 굵기"
+                  type="range"
+                  min="80"
+                  max="120"
+                  value={prep.settings.strokeWeight ?? 100}
+                  onChange={(e) => settings({ strokeWeight: +e.target.value })}
+                />
+              </label>
+              <label className="font-field">
+                획 끝 모양
+                <select
+                  aria-label="획 끝 모양"
+                  value={prep.settings.strokeFinish ?? "original"}
+                  onChange={(e) =>
+                    settings({
+                      strokeFinish: e.target
+                        .value as FontPreparation["settings"]["strokeFinish"],
+                    })
+                  }
+                >
+                  <option value="original">원본</option>
+                  <option value="round">둥글게</option>
+                  <option value="pointed">뾰족하게</option>
+                </select>
+              </label>
+              <label className="font-field">
                 기준선 <b>{prep.settings.baseline}</b>
                 <input
                   aria-label="기준선"
@@ -566,11 +610,11 @@ export default function FontWorkshop({
             </div>
             {guided && finishStep === 3 && (
               <p className="font-help">
-                크기와 간격을 바꾸면 미리보기와 내보낼 폰트가 자동으로 다시
-                만들어져요. 간격을 아주 좁히면 획이 겹칠 수도 있어요.
+                보정 후 모양을 확인하고 폰트를 생성하면 현재 설정으로 다운로드할
+                수 있어요.
               </p>
             )}
-            {(!guided || finishStep === 2) && (
+            {(!guided || finishStep >= 2) && (
               <MetricPreview project={project} preparation={prep} />
             )}
             {(!guided || finishStep === 2) && (
@@ -592,7 +636,7 @@ export default function FontWorkshop({
               </div>
             )}
             <div className="font-build-actions">
-              {(!guided || !!error) && (
+              {(!guided || !!error || (finishStep === 3 && !result)) && (
                 <button
                   className="font-primary"
                   disabled={

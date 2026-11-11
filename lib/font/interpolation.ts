@@ -134,6 +134,11 @@ export function refinePool(
   const position = correction(settings) / 100,
     shape = interpolation(settings) / 100,
     width = widthCorrection(settings) / 100;
+  const positionBoost = Math.max(0, 2 * position - 1);
+  const maxShift = mix(0.12, 0.24, positionBoost);
+  const maxResize = mix(0.15, 0.35, positionBoost);
+  const maxWidthChange = mix(0.2, 0.5, Math.max(0, 2 * width - 1));
+  const shapeReach = mix(0.12, 0.17, Math.max(0, 2 * shape - 1));
   if (!position && !shape && !width)
     return {
       representative: pool[0],
@@ -171,30 +176,43 @@ export function refinePool(
   };
   const refine = (source: ComponentSample): ComponentSample => {
     const d = descriptions.get(source) ?? describe(source, width > 0);
-    const peers = entries.filter(
-      (e) => e.component !== source && distance(d, e) <= 0.12,
-    );
-    if (!position && ((!shape && !width) || !peers.length)) return source;
+    const candidates = entries
+      .filter((e) => e.component !== source)
+      .map((entry) => ({ entry, gap: distance(d, entry) }));
+    const peers = shape
+      ? candidates
+          .filter(({ gap }) => gap <= shapeReach)
+          .map(({ entry }) => entry)
+      : [];
+    const widthPeers = width
+      ? candidates.filter(({ gap }) => gap <= 0.12).map(({ entry }) => entry)
+      : [];
+    if (!position && !peers.length && widthPeers.length < 2) return source;
     const g = {
       x: mix(
         d.g.x,
-        Math.max(d.g.x - 0.12, Math.min(d.g.x + 0.12, target.x)),
+        Math.max(d.g.x - maxShift, Math.min(d.g.x + maxShift, target.x)),
         position,
       ),
       y: mix(
         d.g.y,
-        Math.max(d.g.y - 0.12, Math.min(d.g.y + 0.12, target.y)),
+        Math.max(d.g.y - maxShift, Math.min(d.g.y + maxShift, target.y)),
         position,
       ),
-      // Limit size correction to 15% so an unusual genuine style survives.
       w: mix(
         d.g.w,
-        Math.max(d.g.w * 0.85, Math.min(d.g.w * 1.15, target.w)),
+        Math.max(
+          d.g.w * (1 - maxResize),
+          Math.min(d.g.w * (1 + maxResize), target.w),
+        ),
         position,
       ),
       h: mix(
         d.g.h,
-        Math.max(d.g.h * 0.85, Math.min(d.g.h * 1.15, target.h)),
+        Math.max(
+          d.g.h * (1 - maxResize),
+          Math.min(d.g.h * (1 + maxResize), target.h),
+        ),
         position,
       ),
     };
@@ -216,14 +234,20 @@ export function refinePool(
     const strokes: Stroke[] = source.strokes.map((stroke, i) => {
       const originalSize = stroke.params.size;
       const targetSize =
-        width && peers.length >= 2
+        widthPeers.length >= 2
           ? (originalSize *
-              median([d.widths[i], ...peers.map((peer) => peer.widths[i])])) /
+              median([
+                d.widths[i],
+                ...widthPeers.map((peer) => peer.widths[i]),
+              ])) /
             d.widths[i]
           : originalSize;
       const size = mix(
         originalSize,
-        Math.max(originalSize * 0.8, Math.min(originalSize * 1.2, targetSize)),
+        Math.max(
+          originalSize * (1 - maxWidthChange),
+          Math.min(originalSize * (1 + maxWidthChange), targetSize),
+        ),
         width,
       );
       const lengths = arc(

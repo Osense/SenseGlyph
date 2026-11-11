@@ -1,7 +1,7 @@
 "use client";
 
 import { defaultEnglishFontName } from "../lib/font/names";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { HANGUL } from "../data/charset";
 import SeparationEditor from "./SeparationEditor";
 import { widthCorrection } from "../lib/font/interpolation";
@@ -50,6 +50,7 @@ export default function FontWorkshop({
   journeyStage,
   onStageChange,
 }: Props) {
+  const controlId = useId();
   const defaults = useMemo(
     () => defaultPreparation(project.name),
     [project.id, project.name],
@@ -306,7 +307,7 @@ export default function FontWorkshop({
                 : [
                     "내 글씨로 먼저 써보세요.",
                     "글씨체의 이름을 정해요!",
-                    "글자 사이 간격을 정해요.",
+                    "3. 간격을 다듬기",
                     "이제 어디서든 써보세요.",
                   ][finishStep]}
             </h2>
@@ -356,7 +357,7 @@ export default function FontWorkshop({
               지금 저장
             </button>
           </div>
-          <button onClick={onClose} aria-label="폰트 만들기 닫기">
+          <button onClick={onClose} aria-label="폰트 완성 닫기">
             ✕
           </button>
         </header>
@@ -449,15 +450,17 @@ export default function FontWorkshop({
             {guided && (
               <>
                 <nav className="finish-track" aria-label="폰트 완성 순서">
-                  {["써보기", "이름", "간격", "내보내기"].map((label, i) => (
-                    <button
-                      key={label}
-                      aria-current={i === finishStep ? "step" : undefined}
-                      onClick={() => setFinishStep(i)}
-                    >
-                      {i + 1}. {label}
-                    </button>
-                  ))}
+                  {["써보기", "이름", "간격을 다듬기", "내보내기"].map(
+                    (label, i) => (
+                      <button
+                        key={label}
+                        aria-current={i === finishStep ? "step" : undefined}
+                        onClick={() => setFinishStep(i)}
+                      >
+                        {i + 1}. {label}
+                      </button>
+                    ),
+                  )}
                 </nav>
                 <p className="finish-description">
                   {
@@ -472,159 +475,209 @@ export default function FontWorkshop({
               </>
             )}
             <div
-              className="font-settings"
-              data-setting-step={guided ? finishStep : "all"}
+              className="font-specimen-layout"
+              data-step={guided ? finishStep : "all"}
             >
-              <label className="font-field font-name-field">
-                폰트 이름
-                <input
-                  aria-label="폰트 이름"
-                  maxLength={60}
-                  value={prep.settings.familyName}
-                  disabled={building && !guided}
-                  onChange={(e) => settings({ familyName: e.target.value })}
-                />
-              </label>
-              <label className="font-field font-name-field">
-                영문 폰트 이름
-                <input
-                  aria-label="영문 폰트 이름"
-                  maxLength={60}
-                  value={prep.settings.englishFamilyName ?? ""}
-                  placeholder={defaultEnglishFontName(prep.settings.familyName)}
-                  disabled={building && !guided}
-                  onChange={(e) =>
-                    settings({ englishFamilyName: e.target.value })
-                  }
-                />
-              </label>
-              <label className="font-field">
-                출력 글자 크기 <b>{bodySize(prep.settings) / 10}%</b>
-                <input
-                  aria-label="출력 글자 크기"
-                  type="range"
-                  min={LIMITS.bodyMin}
-                  max={LIMITS.bodyMax}
-                  step="10"
-                  value={bodySize(prep.settings)}
-                  disabled={building && !guided}
-                  onChange={(e) => settings({ bodySize: +e.target.value })}
-                />
-              </label>
-              <label className="font-field">
-                글자 사이 간격 <b>{prep.settings.letterSpacing}</b>
-                <input
-                  aria-label="글자 사이 간격"
-                  type="range"
-                  min={LIMITS.spacingMin}
-                  max={LIMITS.spacingMax}
-                  value={prep.settings.letterSpacing}
-                  disabled={building && !guided}
-                  onChange={(e) => settings({ letterSpacing: +e.target.value })}
-                />
-              </label>
-              <label className="font-field">
-                자모 위치 정돈 <b>{correction(prep.settings)}%</b>
-                <input
-                  aria-label="자모 위치 정돈"
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="5"
-                  value={correction(prep.settings)}
-                  disabled={building && !guided}
-                  onChange={(e) =>
-                    settings({ positionCorrection: +e.target.value })
-                  }
-                />
-              </label>
-              <label className="font-field">
-                획 모양 보간 <b>{interpolation(prep.settings)}%</b>
-                <input
-                  aria-label="획 모양 보간"
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="5"
-                  value={interpolation(prep.settings)}
-                  disabled={building && !guided}
-                  onChange={(e) =>
-                    settings({ shapeInterpolation: +e.target.value })
-                  }
-                />
-              </label>
-              <label className="font-field">
-                획 굵기 정돈 <b>{widthCorrection(prep.settings)}%</b>
-                <input
-                  aria-label="획 굵기 정돈"
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="5"
-                  value={widthCorrection(prep.settings)}
-                  onChange={(e) =>
-                    settings({ widthCorrection: +e.target.value })
-                  }
-                />
-              </label>
-              <label className="font-field">
-                전체 획 굵기 <b>{prep.settings.strokeWeight ?? 100}%</b>
-                <input
-                  aria-label="전체 획 굵기"
-                  type="range"
-                  min="80"
-                  max="120"
-                  value={prep.settings.strokeWeight ?? 100}
-                  onChange={(e) => settings({ strokeWeight: +e.target.value })}
-                />
-              </label>
-              <label className="font-field">
-                획 끝 모양
-                <select
-                  aria-label="획 끝 모양"
-                  value={prep.settings.strokeFinish ?? "original"}
-                  onChange={(e) =>
-                    settings({
-                      strokeFinish: e.target
-                        .value as FontPreparation["settings"]["strokeFinish"],
-                    })
-                  }
-                >
-                  <option value="original">원본</option>
-                  <option value="round">둥글게</option>
-                  <option value="pointed">뾰족하게</option>
-                </select>
-              </label>
-              <label className="font-field">
-                기준선 <b>{prep.settings.baseline}</b>
-                <input
-                  aria-label="기준선"
-                  type="range"
-                  min="650"
-                  max="900"
-                  value={prep.settings.baseline}
-                  disabled={building && !guided}
-                  onChange={(e) => settings({ baseline: +e.target.value })}
-                />
-              </label>
+              <div
+                className="font-settings"
+                data-setting-step={guided ? finishStep : "all"}
+              >
+                <label className="font-field font-name-field">
+                  폰트 이름
+                  <input
+                    aria-label="폰트 이름"
+                    maxLength={60}
+                    value={prep.settings.familyName}
+                    disabled={building && !guided}
+                    onChange={(e) => settings({ familyName: e.target.value })}
+                  />
+                </label>
+                <label className="font-field font-name-field">
+                  영문 폰트 이름
+                  <input
+                    aria-label="영문 폰트 이름"
+                    maxLength={60}
+                    value={prep.settings.englishFamilyName ?? ""}
+                    placeholder={defaultEnglishFontName(
+                      prep.settings.familyName,
+                    )}
+                    disabled={building && !guided}
+                    onChange={(e) =>
+                      settings({ englishFamilyName: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="font-field">
+                  출력 글자 크기 <b>{bodySize(prep.settings) / 10}%</b>
+                  <input
+                    aria-describedby={`${controlId}-font-range-note-0`}
+                    aria-label="출력 글자 크기"
+                    type="range"
+                    min={LIMITS.bodyMin}
+                    max={LIMITS.bodyMax}
+                    step="10"
+                    value={bodySize(prep.settings)}
+                    disabled={building && !guided}
+                    onChange={(e) => settings({ bodySize: +e.target.value })}
+                  />
+                  <small
+                    className="font-field-note"
+                    id={`${controlId}-font-range-note-0`}
+                  >
+                    폰트 안에서 글자가 차지하는 크기를 바꿉니다.
+                  </small>
+                </label>
+                <label className="font-field">
+                  글자 사이 간격 <b>{prep.settings.letterSpacing}</b>
+                  <input
+                    aria-describedby={`${controlId}-font-range-note-1`}
+                    aria-label="글자 사이 간격"
+                    type="range"
+                    min={LIMITS.spacingMin}
+                    max={LIMITS.spacingMax}
+                    value={prep.settings.letterSpacing}
+                    disabled={building && !guided}
+                    onChange={(e) =>
+                      settings({ letterSpacing: +e.target.value })
+                    }
+                  />
+                  <small
+                    className="font-field-note"
+                    id={`${controlId}-font-range-note-1`}
+                  >
+                    이웃 글자의 획 가장자리 사이를 좁히거나 넓힙니다.
+                  </small>
+                </label>
+                <label className="font-field">
+                  자모 위치 정돈 <b>{correction(prep.settings)}%</b>
+                  <input
+                    aria-describedby={`${controlId}-font-range-note-2`}
+                    aria-label="자모 위치 정돈"
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={correction(prep.settings)}
+                    disabled={building && !guided}
+                    onChange={(e) =>
+                      settings({ positionCorrection: +e.target.value })
+                    }
+                  />
+                  <small
+                    className="font-field-note"
+                    id={`${controlId}-font-range-note-2`}
+                  >
+                    같은 자모의 위치와 크기를 표본의 중앙값에 맞춥니다.
+                  </small>
+                </label>
+                <label className="font-field">
+                  획 모양 보간 <b>{interpolation(prep.settings)}%</b>
+                  <input
+                    aria-describedby={`${controlId}-font-range-note-3`}
+                    aria-label="획 모양 보간"
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={interpolation(prep.settings)}
+                    disabled={building && !guided}
+                    onChange={(e) =>
+                      settings({ shapeInterpolation: +e.target.value })
+                    }
+                  />
+                  <small
+                    className="font-field-note"
+                    id={`${controlId}-font-range-note-3`}
+                  >
+                    획 순서와 형태가 비슷한 표본을 모아 획의 흔들림을 줄입니다.
+                  </small>
+                </label>
+                <label className="font-field">
+                  획 굵기 정돈 <b>{widthCorrection(prep.settings)}%</b>
+                  <input
+                    aria-describedby={`${controlId}-font-range-note-4`}
+                    aria-label="획 굵기 정돈"
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={widthCorrection(prep.settings)}
+                    onChange={(e) =>
+                      settings({ widthCorrection: +e.target.value })
+                    }
+                  />
+                  <small
+                    className="font-field-note"
+                    id={`${controlId}-font-range-note-4`}
+                  >
+                    비슷한 획의 굵기를 맞춰 글자마다 굵기가 달라지는 폭을
+                    줄입니다.
+                  </small>
+                </label>
+                <label className="font-field">
+                  전체 획 굵기 <b>{prep.settings.strokeWeight ?? 100}%</b>
+                  <input
+                    aria-describedby={`${controlId}-font-range-note-5`}
+                    aria-label="전체 획 굵기"
+                    type="range"
+                    min={LIMITS.weightMin}
+                    max={LIMITS.weightMax}
+                    value={prep.settings.strokeWeight ?? 100}
+                    onChange={(e) =>
+                      settings({ strokeWeight: +e.target.value })
+                    }
+                  />
+                  <small
+                    className="font-field-note"
+                    id={`${controlId}-font-range-note-5`}
+                  >
+                    100%가 기준입니다. 낮추면 가늘어지고 높이면 굵어집니다.
+                  </small>
+                </label>
+                <label className="font-field">
+                  획 끝 모양
+                  <select
+                    aria-label="획 끝 모양"
+                    value={prep.settings.strokeFinish ?? "original"}
+                    onChange={(e) =>
+                      settings({
+                        strokeFinish: e.target
+                          .value as FontPreparation["settings"]["strokeFinish"],
+                      })
+                    }
+                  >
+                    <option value="original">원본</option>
+                    <option value="round">둥글게</option>
+                    <option value="pointed">뾰족하게</option>
+                  </select>
+                  <small className="font-field-note">
+                    이어지지 않은 획 끝을 둥글거나 뾰족하게 다듬습니다.
+                  </small>
+                </label>
+                <label className="font-field">
+                  기준선 <b>{prep.settings.baseline}</b>
+                  <input
+                    aria-describedby={`${controlId}-font-range-note-6`}
+                    aria-label="기준선"
+                    type="range"
+                    min="650"
+                    max="900"
+                    value={prep.settings.baseline}
+                    disabled={building && !guided}
+                    onChange={(e) => settings({ baseline: +e.target.value })}
+                  />
+                  <small
+                    className="font-field-note"
+                    id={`${controlId}-font-range-note-6`}
+                  >
+                    글자가 줄 위에 놓이는 세로 위치를 바꿉니다.
+                  </small>
+                </label>
+              </div>
+              {(!guided || finishStep >= 2) && (
+                <MetricPreview project={project} preparation={prep} />
+              )}
             </div>
-            {guided && finishStep === 3 && (
-              <p className="font-help">
-                보정 후 모양을 확인하고 폰트를 생성하면 현재 설정으로 다운로드할
-                수 있어요.
-              </p>
-            )}
-            {(!guided || finishStep >= 2) && (
-              <MetricPreview project={project} preparation={prep} />
-            )}
-            {(!guided || finishStep === 2) && (
-              <p className="font-help">
-                같은 자모를 반복해 쓴 표본으로 위치와 크기를 정돈하고, 획 구조가
-                비슷한 표본끼리 모양을 보간합니다. 두 강도를 모두 0으로 낮추면
-                기존 방식과 비교할 수 있어요. 원본 글씨와 직접 보정한 모양은
-                보존됩니다. 자간은 획 가장자리 사이의 간격입니다.
-              </p>
-            )}
             {report.missingSlots.length > 0 && (
               <div className="font-notice">
                 자모 자리 {report.missingSlots.length}개가 비어 있어 한글{" "}
@@ -697,6 +750,7 @@ export default function FontWorkshop({
                 <label className="font-field preview-size">
                   미리보기 크기 {previewSize}px
                   <input
+                    aria-describedby={`${controlId}-font-range-note-7`}
                     aria-label="미리보기 크기"
                     type="range"
                     min="20"
@@ -704,6 +758,12 @@ export default function FontWorkshop({
                     value={previewSize}
                     onChange={(e) => setPreviewSize(+e.target.value)}
                   />
+                  <small
+                    className="font-field-note"
+                    id={`${controlId}-font-range-note-7`}
+                  >
+                    화면에서 보는 견본의 크기를 바꿉니다.
+                  </small>
                 </label>
                 <div
                   className="generated-preview"
@@ -760,7 +820,7 @@ export default function FontWorkshop({
                     disabled={finishStep === 0 && !result}
                     onClick={() => setFinishStep((v) => v + 1)}
                   >
-                    {["이름 정하기", "간격 맞추기", "내보내기로"][finishStep]} →
+                    {["이름 정하기", "간격 다듬기", "내보내기로"][finishStep]} →
                   </button>
                 )}
               </div>

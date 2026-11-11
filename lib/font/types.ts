@@ -6,6 +6,8 @@ export const FONT_SETTING_LIMITS = {
   bodyMax: 1200,
   spacingMin: -250,
   spacingMax: 200,
+  weightMin: 55,
+  weightMax: 165,
 } as const;
 export interface Box {
   x: number;

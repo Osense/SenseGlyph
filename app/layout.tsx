@@ -7,6 +7,7 @@ import "./journey.css";
 import "./touch.css";
 import "./mobile.css";
 import "./canvas-navigation.css";
+import "./paper-workspace.css";
 import { BASE_PATH } from "../lib/base-path";
 
 // Bundled reference fonts. Declared here (not in CSS) so their URLs follow the
@@ -44,9 +45,46 @@ const FONT_FACES = `
   font-display: swap;
 }
 `;
+const title = "쎈스 글리프 — 손글씨 폰트 작업실";
+const description =
+  "직접 쓴 손글씨의 자모와 간격을 다듬어 나만의 한글 폰트를 만드세요. OSNS.studio 제작.";
+const siteUrl = "https://osense.github.io/SenseGlyph/";
+const shareImage = {
+  url: new URL("senseglyph-share.png", siteUrl).href,
+  width: 1200,
+  height: 630,
+  type: "image/png",
+  alt: "쎈스 글리프. 손글씨를 써서 나만의 한글 폰트로. OSNS.studio 제작.",
+};
+
 export const metadata: Metadata = {
-  title: "센스글리프 — 나만의 손글씨",
-  description: "오프라인에서 차곡차곡 모으는 나의 손글씨",
+  title,
+  description,
+  icons: {
+    icon: [
+      {
+        url: `${BASE_PATH}/brand-icon-32.png`,
+        type: "image/png",
+        sizes: "32x32",
+      },
+      { url: `${BASE_PATH}/brand-icon.svg`, type: "image/svg+xml" },
+    ],
+  },
+  openGraph: {
+    type: "website",
+    locale: "ko_KR",
+    siteName: "쎈스 글리프",
+    url: siteUrl,
+    title,
+    description,
+    images: [shareImage],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+    images: [shareImage],
+  },
 };
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (

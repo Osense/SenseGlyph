@@ -108,7 +108,7 @@ it("validates optional saved strengths and keeps old backups valid", () => {
   }
 });
 
-it("normalizes matching pen sizes conservatively while preserving the recorded pressure", () => {
+it("strengthens width normalization at the top of the range while preserving recorded pressure", () => {
   const narrow = sample("가"),
     medium = sample("나"),
     wide = sample("다");
@@ -122,7 +122,14 @@ it("normalizes matching pen sizes conservatively while preserving the recorded p
     widthCorrection: 100,
   });
   const refined = model.refine(narrow).strokes[0];
-  expect(refined.params.size).toBe(24);
+  expect(refined.params.size).toBe(30);
+  const halfStrength = refinePool([narrow, medium, wide], {
+    ...settings(),
+    positionCorrection: 0,
+    shapeInterpolation: 0,
+    widthCorrection: 50,
+  });
+  expect(halfStrength.refine(narrow).strokes[0].params.size).toBe(22);
   expect(refined.points.map((p) => p.p)).toEqual(
     narrow.strokes[0].points.map((p) => p.p),
   );

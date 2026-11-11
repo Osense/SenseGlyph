@@ -62,8 +62,8 @@ export function generateFont(
     ) ||
     (options.strokeWeight !== undefined &&
       (!Number.isFinite(options.strokeWeight) ||
-        options.strokeWeight < 80 ||
-        options.strokeWeight > 120)) ||
+        options.strokeWeight < LIMITS.weightMin ||
+        options.strokeWeight > LIMITS.weightMax)) ||
     (options.strokeFinish !== undefined &&
       !["original", "round", "pointed"].includes(options.strokeFinish)) ||
     !Number.isFinite(options.baseline) ||

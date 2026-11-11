@@ -1,0 +1,186 @@
+/* Hallmark: Vellum surfaces, Blueprint guides, Specimen comparison. */
+.studio.journey {
+  --paper: #f9f6ed;
+  --sheet: #fffdf6;
+  --ink: #232c29;
+  --accent: #244f47;
+  --active-wash: #e8f0e9;
+  --line: #d8d5c5;
+  --muted: #545c55;
+  --on-accent: #fffdf6;
+  --display-face: "Noto Serif KR", serif;
+}
+
+.studio.journey.dark {
+  --paper: #20251f;
+  --sheet: #29312a;
+  --ink: #ecebe1;
+  --accent: #a7ceb7;
+  --active-wash: #34463c;
+  --line: #505d51;
+  --muted: #c2c9be;
+  --on-accent: #20251f;
+}
+
+.journey .brand {
+  gap: 9px;
+  white-space: nowrap;
+}
+.journey .brand-mark {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-radius: 7px;
+}
+.journey .brand small.brand-credit,
+.journey .journey-tagline,
+.journey .finish-description,
+.journey .finish-track button,
+.journey .font-workshop .font-field,
+.journey .font-workshop .font-help {
+  color: var(--muted);
+}
+.journey .setup-copy h1,
+.journey .guided-workshop .font-header h2 {
+  font-family: var(--display-face);
+  font-weight: 650;
+  word-break: keep-all;
+  letter-spacing: -0.035em;
+}
+.journey .guided-workshop .font-header .eyebrow {
+  display: none;
+}
+.journey .journey-track button {
+  color: var(--muted);
+}
+.journey .journey-track .is-current {
+  background: var(--active-wash);
+  color: var(--accent);
+}
+.journey .journey-track .is-current .step-number,
+.journey .journey-next,
+.journey .guided-workshop .font-primary,
+.journey .guided-workshop .font-download {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.journey .journey-next:hover:not(:disabled),
+.journey
+  .guided-workshop
+  :is(.font-primary, .font-download):hover:not(:disabled) {
+  filter: brightness(0.88);
+}
+.journey .setup-brushes button[aria-pressed="true"],
+.journey .setup-fonts button[aria-checked="true"] {
+  background: var(--active-wash);
+}
+.journey :is(.setup-brushes, .setup-fonts) button,
+.journey .new-project-trigger {
+  border-radius: 6px;
+}
+.journey .writing-area > .pad .pad-sheet,
+.journey .font-workshop .separation-svg {
+  border-color: var(--line);
+  border-radius: 7px;
+}
+.journey > .progress-panel {
+  background: var(--sheet);
+}
+.journey .glyph.current {
+  border-color: var(--accent);
+  background: var(--active-wash);
+}
+.journey .jamo-example small {
+  color: var(--muted);
+}
+.journey .finish-track {
+  gap: clamp(5px, 3vw, 30px);
+}
+.journey .finish-track button {
+  padding: 5px clamp(4px, 1vw, 12px);
+  word-break: keep-all;
+}
+.journey .finish-track button[aria-current] {
+  color: var(--accent);
+  background: var(--active-wash);
+}
+.font-specimen-layout {
+  --field-gap: 14px;
+}
+.font-specimen-layout > .font-settings[data-setting-step="2"],
+.font-specimen-layout > .font-settings[data-setting-step="3"] {
+  gap: 0 var(--field-gap);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.font-field-note {
+  display: block;
+  line-height: 1.55;
+  font-size: 11px;
+  font-weight: 400;
+  word-break: keep-all;
+  margin-top: 4px;
+}
+.journey .font-field > input[type="range"] {
+  display: block;
+  accent-color: var(--accent);
+}
+.journey .font-field > :is(input:not([type="range"]), select, textarea) {
+  background: var(--sheet);
+  border-color: var(--line);
+  color: var(--ink);
+}
+.journey .font-workshop .metric-preview,
+.journey .font-workshop .generated-preview {
+  background: var(--sheet);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.journey .font-workshop .metric-preview {
+  margin: 0;
+  padding: clamp(12px, 2vw, 22px);
+}
+.journey .metric-preview .preview-heading h3 {
+  color: var(--ink);
+  font-family: var(--display-face);
+  font-size: 19px;
+}
+.journey .metric-preview :is(.preview-heading span, figcaption) {
+  color: var(--muted);
+}
+.journey .metric-preview .font-comparison {
+  gap: 10px;
+}
+.journey .metric-preview canvas {
+  border-color: var(--line);
+}
+@media (min-width: 900px) {
+  .font-specimen-layout:is([data-step="2"], [data-step="3"]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    align-items: start;
+    gap: clamp(18px, 3vw, 40px);
+  }
+  .journey .metric-preview .font-comparison {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 520px) {
+  .journey .brand {
+    font-size: 17px;
+  }
+  .journey .finish-track button {
+    flex: 1;
+    font-size: 11px;
+    margin: 0;
+  }
+  .journey .font-workshop .metric-preview {
+    margin-top: 14px;
+  }
+  .font-specimen-layout {
+    --field-gap: 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .journey :is(button, input, select) {
+    transition: none;
+  }
+}

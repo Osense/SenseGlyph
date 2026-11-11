@@ -22,7 +22,7 @@ import JourneySetup from "../components/JourneySetup";
 import { characterGuide } from "../lib/character-guide";
 import { gsap } from "gsap";
 import ProjectManager from "../components/ProjectManager";
-const STEPS = ["브러시", "견본", "글자 쓰기", "자모 나누기", "폰트 만들기"];
+const STEPS = ["브러시", "견본", "글자 쓰기", "자모 나누기", "폰트 완성"];
 const BRUSHES: { id: BrushId; label: string }[] = [
   { id: "pen", label: "펜" },
   { id: "marker", label: "마커" },
@@ -430,8 +430,10 @@ export default function Page() {
   if (!project || !s)
     return (
       <main className="loading">
-        <span className="brand-mark" aria-hidden="true">ㅅ</span>
-        <p>센스글리프를 여는 중…</p>
+        <span className="brand-mark" aria-hidden="true">
+          ㅆ
+        </span>
+        <p>쎈스 글리프를 여는 중…</p>
       </main>
     );
   const params = s.brushParams[s.activeBrush],
@@ -452,9 +454,11 @@ export default function Page() {
     >
       <header className="topbar">
         <a className="brand" href="./">
-          <span className="brand-mark" aria-hidden="true">ㅅ</span>
+          <span className="brand-mark" aria-hidden="true">
+            ㅆ
+          </span>
           <span>
-            센스글리프<small className="brand-credit">OSNS.studio 제작</small>
+            쎈스 글리프<small className="brand-credit">OSNS.studio 제작</small>
           </span>
         </a>
         <span className="journey-tagline">손글씨가 글꼴이 되는 다섯 걸음</span>
@@ -469,7 +473,7 @@ export default function Page() {
             <small>새 폰트</small>
           </button>
           <span className="save-state" role="status">
-            <i /> {saved}
+            {saved}
           </span>
           <button
             className="make-font-button"
@@ -1355,7 +1359,7 @@ export default function Page() {
               Ctrl / ⌘ + Z 실행 취소 · Shift + Z 다시 실행
             </p>
             <p className="version">
-              센스글리프 · 모든 획은 벡터로 보관됩니다.
+              쎈스 글리프 · 모든 획은 벡터로 보관됩니다.
             </p>
           </section>
         </div>

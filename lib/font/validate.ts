@@ -19,7 +19,9 @@ export function validPreparation(value: unknown): value is FontPreparation {
   }
   if (
     s.strokeWeight !== undefined &&
-    (!finite(s.strokeWeight) || s.strokeWeight < 80 || s.strokeWeight > 120)
+    (!finite(s.strokeWeight) ||
+      s.strokeWeight < LIMITS.weightMin ||
+      s.strokeWeight > LIMITS.weightMax)
   )
     return false;
   if (

@@ -74,6 +74,6 @@ export function jamoFilterIndex(value: string, part: keyof typeof JAMO) {
       );
     })
     .join("");
-  const jamo = typedJamo[text] ?? text;
+  const jamo = text.length === 2 ? (typedJamo[text] ?? text) : text;
   return [...jamo].length === 1 ? JAMO[part].indexOf(jamo) : -1;
 }

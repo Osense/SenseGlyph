@@ -25,4 +25,5 @@ it("accepts optional fields and typed compound jamo in the source search", () =>
   expect(jamoFilterIndex("ᆰ", "jong")).toBe(decompose("궑")!.jong);
   expect(jamoFilterIndex("ㄺ", "cho")).toBe(-1);
   expect(jamoFilterIndex("가", "jung")).toBe(-1);
+  expect(jamoFilterIndex("constructor", "cho")).toBe(-1);
 });

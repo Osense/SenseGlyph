@@ -97,6 +97,27 @@ export function replaceCmap(
   buffer: ArrayBuffer,
   mapping: CharacterMapping[],
 ): ArrayBuffer {
+  return replaceSfntTables(buffer, { cmap: makeCmap(mapping) });
+}
+
+export function sfntTable(buffer: ArrayBuffer, tag: string) {
+  const data = new DataView(buffer);
+  for (let i = 0; i < data.getUint16(4); i++) {
+    const record = 12 + i * 16;
+    if (String.fromCharCode(...new Uint8Array(buffer, record, 4)) === tag) {
+      const offset = data.getUint32(record + 8);
+      return new Uint8Array(
+        buffer.slice(offset, offset + data.getUint32(record + 12)),
+      );
+    }
+  }
+  throw new Error(`폰트 테이블을 찾지 못했습니다: ${tag}`);
+}
+
+export function replaceSfntTables(
+  buffer: ArrayBuffer,
+  replacements: Record<string, Uint8Array>,
+): ArrayBuffer {
   const original = new DataView(buffer),
     count = original.getUint16(4);
   const tables = Array.from({ length: count }, (_, i) => {
@@ -105,9 +126,8 @@ export function replaceCmap(
       length = original.getUint32(position + 12);
     const tag = String.fromCharCode(...new Uint8Array(buffer, position, 4));
     const bytes =
-      tag === "cmap"
-        ? makeCmap(mapping)
-        : new Uint8Array(buffer.slice(offset, offset + length));
+      replacements[tag] ??
+      new Uint8Array(buffer.slice(offset, offset + length));
     if (tag === "head")
       new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).setUint32(
         8,

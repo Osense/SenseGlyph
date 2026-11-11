@@ -11,3 +11,4 @@ artifacts/*
 !artifacts/.gitkeep
 # personal handwriting backups exported from the app
 /나의 첫 손글씨*.json
+public/font-export-worker.*.js

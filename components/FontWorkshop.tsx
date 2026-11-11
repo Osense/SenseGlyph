@@ -6,7 +6,15 @@ import { HANGUL } from "../data/charset";
 import SeparationEditor from "./SeparationEditor";
 import { widthCorrection } from "../lib/font/interpolation";
 import MetricPreview from "./MetricPreview";
-import { FONT_WORKER_URL } from "../lib/font/worker-url";
+import type {
+  ConversionReply,
+  ConversionRequest,
+  ExportFormat,
+} from "../lib/font/export-formats";
+import {
+  FONT_EXPORT_WORKER_URL,
+  FONT_WORKER_URL,
+} from "../lib/font/worker-url";
 import { decompose } from "../lib/hangul";
 import { coverage } from "../lib/font/composition";
 import {
@@ -91,6 +99,8 @@ export default function FontWorkshop({
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [exporting, setExporting] = useState<ExportFormat | null>(null);
+  const [exportError, setExportError] = useState("");
   const [result, setResult] = useState<{
     buffer: ArrayBuffer;
     stats: FontStats;
@@ -101,6 +111,7 @@ export default function FontWorkshop({
   );
   const [previewSize, setPreviewSize] = useState(42);
   const worker = useRef<Worker | null>(null),
+    exportWorker = useRef<Worker | null>(null),
     face = useRef<FontFace | null>(null),
     dialog = useRef<HTMLElement>(null);
   const generation = useRef(0);
@@ -108,6 +119,10 @@ export default function FontWorkshop({
     generation.current++;
     worker.current?.terminate();
     worker.current = null;
+    exportWorker.current?.terminate();
+    exportWorker.current = null;
+    setExporting(null);
+    setExportError("");
     setBuilding(false);
     setResult(null);
     setError("");
@@ -159,6 +174,7 @@ export default function FontWorkshop({
     return () => {
       generation.current++;
       worker.current?.terminate();
+      exportWorker.current?.terminate();
       if (face.current) document.fonts.delete(face.current);
       document.removeEventListener("keydown", keydown);
       document.body.style.overflow = overflow;
@@ -169,6 +185,7 @@ export default function FontWorkshop({
     () => () => {
       generation.current++;
       worker.current?.terminate();
+      exportWorker.current?.terminate();
       if (face.current) document.fonts.delete(face.current);
     },
     [],
@@ -259,18 +276,53 @@ export default function FontWorkshop({
     const timer = setTimeout(() => latestBuild.current(), 0);
     return () => clearTimeout(timer);
   }, [guided, stage, finishStep]);
-  const download = () => {
-    if (!result) return;
-    const url = URL.createObjectURL(
-      new Blob([result.buffer], { type: "font/otf" }),
-    );
-    const a = document.createElement("a");
-    a.href = url;
-    a.download =
-      (prep.settings.familyName.trim().replace(/[<>:"/\\|?*\x00-\x1f]/g, "_") ||
-        "손글씨") + ".otf";
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const download = (format: ExportFormat) => {
+    if (!result || exportWorker.current) return;
+    const filename =
+      prep.settings.familyName.trim().replace(/[<>:"/\\|?*\x00-\x1f]/g, "_") ||
+      "손글씨";
+    const save = (buffer: ArrayBuffer) => {
+      const type = format === "zip" ? "application/zip" : "font/" + format;
+      const url = URL.createObjectURL(new Blob([buffer], { type }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename + "." + format;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+    setExportError("");
+    if (format === "otf") {
+      save(result.buffer);
+      return;
+    }
+    try {
+      const converter = new Worker(FONT_EXPORT_WORKER_URL);
+      exportWorker.current = converter;
+      setExporting(format);
+      const finish = (reply: ConversionReply) => {
+        converter.terminate();
+        if (exportWorker.current !== converter) return;
+        exportWorker.current = null;
+        setExporting(null);
+        if ("error" in reply) setExportError(reply.error);
+        else save(reply.buffer);
+      };
+      converter.onmessage = (event: MessageEvent<ConversionReply>) =>
+        finish(event.data);
+      converter.onerror = () =>
+        finish({ error: "파일 변환에 실패했습니다. 다시 시도해 주세요." });
+      const request: ConversionRequest = {
+        buffer: result.buffer,
+        format,
+        filename,
+      };
+      converter.postMessage(request);
+    } catch {
+      exportWorker.current?.terminate();
+      exportWorker.current = null;
+      setExporting(null);
+      setExportError("파일 변환을 시작하지 못했습니다. 다시 시도해 주세요.");
+    }
   };
   const available = new Set(result?.stats.characters ?? report.available);
   const unsupported = [
@@ -712,11 +764,41 @@ export default function FontWorkshop({
                 </button>
               )}
               {result && (!guided || finishStep === 3) && (
-                <button className="font-download" onClick={download}>
-                  OTF 폰트 다운로드 ↓
-                </button>
+                <div
+                  className="font-download-options"
+                  role="group"
+                  aria-label="다운로드 형식"
+                >
+                  {(["ttf", "otf", "woff", "woff2", "zip"] as const).map(
+                    (format) => (
+                      <button
+                        key={format}
+                        type="button"
+                        className={
+                          format === "zip" ? "font-download" : "font-secondary"
+                        }
+                        disabled={exporting !== null}
+                        onClick={() => download(format)}
+                      >
+                        {format === "zip"
+                          ? "전체 받기 ZIP ↓"
+                          : `${format.toUpperCase()} 폰트 다운로드 ↓`}
+                      </button>
+                    ),
+                  )}
+                </div>
               )}
             </div>
+            {exporting && (
+              <p role="status" className="font-help">
+                {exporting.toUpperCase()} 파일 만드는 중…
+              </p>
+            )}
+            {exportError && (
+              <p role="alert" className="font-error">
+                {exportError}
+              </p>
+            )}
             {(building || result) && (
               <div className="build-progress" role="status">
                 <progress max="100" value={progress} />

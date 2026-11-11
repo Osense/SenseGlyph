@@ -575,3 +575,9 @@
 .font-field textarea {
   min-width: 0;
 }
+
+.font-download-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

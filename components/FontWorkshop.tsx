@@ -1,9 +1,9 @@
 "use client";
 
-import FontOutput, { FontDialog } from "./FontOutput";
+import FontOutput, { FontDialog, type OutputPlan } from "./FontOutput";
 import { OUTPUT_PREFIX, type OutputNames } from "../lib/font/output-names";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { HANGUL } from "../data/charset";
+import { HANGUL, SPECIAL_SYMBOLS } from "../data/charset";
 import HandwritingSearch from "./HandwritingSearch";
 import SeparationEditor from "./SeparationEditor";
 import MetricPreview from "./MetricPreview";
@@ -25,6 +25,7 @@ import {
 import { bodySize } from "../lib/font/layout";
 import type { FontProject } from "../lib/types";
 import type {
+  BuildRequest,
   FontPreparation,
   FontStats,
   Part,
@@ -32,10 +33,9 @@ import type {
 } from "../lib/font/types";
 
 type GeneratedFont = {
-  projectId: string;
-  samples: FontProject["samples"];
+  request: BuildRequest;
   preparation: FontPreparation;
-  referenceFont: FontProject["settings"]["referenceFont"];
+  basicBuffer?: ArrayBuffer;
   buffer: ArrayBuffer;
   stats: FontStats;
   face: FontFace;
@@ -116,12 +116,15 @@ export default function FontWorkshop({
   const [exporting, setExporting] = useState<ExportFormat | null>(null);
   const [exportError, setExportError] = useState("");
   const [result, setResult] = useState(() =>
-    lastGeneratedFont?.projectId === project.id ? lastGeneratedFont : null,
+    lastGeneratedFont?.request.project.id === project.id
+      ? lastGeneratedFont
+      : null,
   );
   const isCurrent =
-    result?.samples === project.samples &&
+    result?.request.project.samples === project.samples &&
     result.preparation === prep &&
-    result.referenceFont === project.settings.referenceFont;
+    result.request.project.settings.referenceFont ===
+      project.settings.referenceFont;
   const worker = useRef<Worker | null>(null),
     exportWorker = useRef<Worker | null>(null),
     dialog = useRef<HTMLElement>(null);
@@ -208,6 +211,17 @@ export default function FontWorkshop({
     setBuilding(true);
     setProgress(0);
     setMessage("폰트 생성을 시작합니다");
+    const request: BuildRequest = {
+      project,
+      preparation: {
+        ...prep,
+        settings: {
+          ...prep.settings,
+          familyName: "OSNS Preview",
+          englishFamilyName: "OSNS Preview",
+        },
+      },
+    };
     const token = generation.current;
     try {
       // Bundle locally before dev/build so the worker is available offline as plain JavaScript.
@@ -235,10 +249,8 @@ export default function FontWorkshop({
               document.fonts.delete(lastGeneratedFont.face);
             document.fonts.add(loaded);
             const generated = {
-              projectId: project.id,
-              samples: project.samples,
+              request,
               preparation: prep,
-              referenceFont: project.settings.referenceFont,
               buffer: reply.buffer,
               stats: reply.stats,
               face: loaded,
@@ -265,17 +277,7 @@ export default function FontWorkshop({
           worker.current = null;
         }
       };
-      nextWorker.postMessage({
-        project,
-        preparation: {
-          ...prep,
-          settings: {
-            ...prep.settings,
-            familyName: "OSNS Preview",
-            englishFamilyName: "OSNS Preview",
-          },
-        },
-      });
+      nextWorker.postMessage(request);
     } catch (error) {
       setBuilding(false);
       setError(
@@ -289,8 +291,24 @@ export default function FontWorkshop({
     if (stage === "separation") setFinishStep("refine");
   }, [stage]);
 
-  const download = (format: ExportFormat, names: OutputNames) => {
-    if (!result || exportWorker.current) return;
+  const specialWritten = SPECIAL_SYMBOLS.filter(
+    (symbol) => project.samples[symbol]?.strokes.length,
+  ).length;
+  const resultSymbols = new Set(result?.stats.characters);
+  const premiumReady = SPECIAL_SYMBOLS.every((symbol) =>
+    resultSymbols.has(symbol),
+  );
+  const download = (
+    format: ExportFormat,
+    names: OutputNames,
+    plan: OutputPlan,
+  ) => {
+    if (
+      !result ||
+      exportWorker.current ||
+      (plan === "premium" && !premiumReady)
+    )
+      return;
     const filename = OUTPUT_PREFIX + names.korean;
     const save = (buffer: ArrayBuffer) => {
       const type = format === "zip" ? "application/zip" : "font/" + format;
@@ -302,34 +320,73 @@ export default function FontWorkshop({
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     };
     setExportError("");
-    try {
-      const converter = new Worker(FONT_EXPORT_WORKER_URL);
-      exportWorker.current = converter;
-      setExporting(format);
-      const finish = (reply: ConversionReply) => {
-        converter.terminate();
-        if (exportWorker.current !== converter) return;
-        exportWorker.current = null;
-        setExporting(null);
-        if ("error" in reply) setExportError(reply.error);
-        else save(reply.buffer);
-      };
-      converter.onmessage = (event: MessageEvent<ConversionReply>) =>
-        finish(event.data);
-      converter.onerror = () =>
-        finish({ error: "파일 변환에 실패했습니다. 다시 시도해 주세요." });
-      const request: ConversionRequest = {
-        buffer: result.buffer,
-        format,
-        filename,
-        names,
-      };
-      converter.postMessage(request);
-    } catch {
+    setExporting(format);
+    const fail = (message: string) => {
       exportWorker.current?.terminate();
       exportWorker.current = null;
       setExporting(null);
-      setExportError("파일 변환을 시작하지 못했습니다. 다시 시도해 주세요.");
+      setExportError(message);
+    };
+    const convert = (buffer: ArrayBuffer) => {
+      try {
+        const converter = new Worker(FONT_EXPORT_WORKER_URL);
+        exportWorker.current = converter;
+        converter.onmessage = (event: MessageEvent<ConversionReply>) => {
+          if (exportWorker.current !== converter) return;
+          const reply = event.data;
+          if ("error" in reply) {
+            fail(reply.error);
+            return;
+          }
+          converter.terminate();
+          exportWorker.current = null;
+          setExporting(null);
+          save(reply.buffer);
+        };
+        converter.onerror = () => {
+          if (exportWorker.current === converter)
+            fail("파일 변환에 실패했습니다. 다시 시도해 주세요.");
+        };
+        const request: ConversionRequest = { buffer, format, filename, names };
+        converter.postMessage(request);
+      } catch {
+        fail("파일 변환을 시작하지 못했습니다. 다시 시도해 주세요.");
+      }
+    };
+    if (
+      plan === "premium" ||
+      !SPECIAL_SYMBOLS.some((symbol) => resultSymbols.has(symbol))
+    ) {
+      convert(result.buffer);
+      return;
+    }
+    if (result.basicBuffer) {
+      convert(result.basicBuffer);
+      return;
+    }
+    try {
+      const basicWorker = new Worker(FONT_WORKER_URL);
+      exportWorker.current = basicWorker;
+      basicWorker.onmessage = (event: MessageEvent<WorkerReply>) => {
+        if (exportWorker.current !== basicWorker) return;
+        const reply = event.data;
+        if (reply.type === "error") fail(reply.message);
+        if (reply.type === "result") {
+          basicWorker.terminate();
+          result.basicBuffer = reply.buffer;
+          convert(reply.buffer);
+        }
+      };
+      basicWorker.onerror = () => {
+        if (exportWorker.current === basicWorker)
+          fail("기본 폰트를 생성하지 못했습니다.");
+      };
+      basicWorker.postMessage({
+        ...result.request,
+        includeSpecial: false,
+      } satisfies BuildRequest);
+    } catch {
+      fail("기본 폰트 생성을 시작하지 못했습니다.");
     }
   };
   const bothCorrections =
@@ -735,6 +792,9 @@ export default function FontWorkshop({
                 exportError={exportError}
                 onDownload={download}
                 onWriteSpecial={onWriteSpecial}
+                specialWritten={specialWritten}
+                specialTotal={SPECIAL_SYMBOLS.length}
+                premiumReady={premiumReady}
               />
             </div>
             {building && finishStep === "refine" && (

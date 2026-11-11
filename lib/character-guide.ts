@@ -47,6 +47,8 @@ const symbols: Record<string, string> = {
 };
 
 export function characterGuide(char: string, category: CharCategory) {
+  if (category === "special-symbol")
+    return "견본을 보고 기호의 모양과 높이를 맞춰 써주세요.";
   if (symbols[char]) return symbols[char];
   if (category === "latin-upper")
     return `영문 대문자 ${char}예요. 위쪽 높이선과 기준선을 참고해 써주세요.`;

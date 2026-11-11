@@ -28,7 +28,8 @@ export type CharCategory =
   | "latin-upper"
   | "latin-lower"
   | "hangul-jamo"
-  | "korean-punct";
+  | "korean-punct"
+  | "special-symbol";
 export interface GlyphSample {
   needsReview?: boolean;
   rewritePending?: boolean;

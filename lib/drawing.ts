@@ -1,8 +1,14 @@
+import { SPECIAL_SYMBOLS } from "../data/charset";
 import { METRICS } from "../config/metrics";
 import type { CharCategory, ProjectSettings } from "./types";
 import { referenceStack } from "./reference-fonts";
 import { referenceFit, referenceUsesFallback } from "./font/reference";
-import { categoryForChar, safetyBounds, sampleFontSize } from "./safety";
+import {
+  categoryForChar,
+  isSymbolCategory,
+  safetyBounds,
+  sampleFontSize,
+} from "./safety";
 export function drawGrid(
   ctx: CanvasRenderingContext2D,
   s: ProjectSettings,
@@ -33,7 +39,7 @@ export function drawGrid(
     ctx.fillStyle = dark ? "#a4bad2" : "#7198b4";
     ctx.font = "17px sans-serif";
     ctx.fillText(
-      category === "ascii-symbol" || category === "korean-punct"
+      isSymbolCategory(category)
         ? "아래쪽 문장부호 영역"
         : "디센더 영역 · g j p q y",
       box.left + 14,
@@ -47,7 +53,7 @@ export function drawGrid(
   ctx.fillStyle = dark ? "#b69a73" : "#a18b6a";
   ctx.fillText(
     latin
-      ? category === "ascii-symbol" || category === "korean-punct"
+      ? isSymbolCategory(category)
         ? "기호 안전영역"
         : "영문·숫자 안전영역"
       : "한글 안전영역",
@@ -115,7 +121,9 @@ export function drawSample(
     // Use a shared Latin scale so g/p/q/y retain their proportions to H/x.
     const characters = /^[A-Za-z0-9]$/.test(char)
       ? [..."ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"]
-      : [..."!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~·…“”‘’₩※°「」"];
+      : SPECIAL_SYMBOLS.includes(char)
+        ? [char]
+        : [..."!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~·…“”‘’₩※°「」"];
     const metrics = characters.map((value) => ctx.measureText(value));
     const ascent = Math.max(...metrics.map((m) => m.actualBoundingBoxAscent)),
       descent = Math.max(...metrics.map((m) => m.actualBoundingBoxDescent));

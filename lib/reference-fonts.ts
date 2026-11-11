@@ -1,3 +1,5 @@
+import { SPECIAL_SYMBOLS } from "../data/charset";
+
 export const REFERENCE_FONTS = [
   {
     id: "sans",
@@ -56,12 +58,19 @@ export function referenceFont(id?: string) {
 }
 
 export function referenceStack(id?: string) {
-  return '"' + referenceFont(id).family + '", "Noto Sans KR"';
+  return (
+    '"' +
+    referenceFont(id).family +
+    '", "Noto Sans KR", "Special Symbols Fallback", sans-serif'
+  );
 }
 
 export async function loadReferenceFont(id?: string, char = "가") {
   await Promise.all([
     document.fonts.load('600px "Noto Sans KR"', char),
     document.fonts.load('600px "' + referenceFont(id).family + '"', char),
+    ...([...char].some((value) => SPECIAL_SYMBOLS.includes(value))
+      ? [document.fonts.load('600px "Special Symbols Fallback"', char)]
+      : []),
   ]);
 }

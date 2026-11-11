@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CATEGORIES, CHARSET } from "../data/charset";
+import { CATEGORIES, CHARSET, SPECIAL_SYMBOLS } from "../data/charset";
 import { newProject } from "../lib/defaults";
 import { BASE_PATH } from "../lib/base-path";
 import {
@@ -118,7 +118,9 @@ export default function Page() {
       ?.focus({ preventScroll: true });
     return () => motion.revert();
   }, [step, !!project]);
-  const chars = CHARSET.filter((c) => enabled.includes(c.category));
+  const chars = CHARSET.filter(
+    (c) => c.category !== "special-symbol" && enabled.includes(c.category),
+  );
   const issues = useMemo(
     () => projectIssues(project),
     [
@@ -136,7 +138,7 @@ export default function Page() {
     basic: chars.filter(({ category }) =>
       ["digit", "ascii-symbol", "korean-punct"].includes(category),
     ),
-    special: [],
+    special: CHARSET.filter(({ category }) => category === "special-symbol"),
     review: reviewChars,
   };
   const navigationChars = filteredChars[listFilter];
@@ -323,7 +325,11 @@ export default function Page() {
   const selectFilter = (filter: WritingFilter) => {
     setListFilter(filter);
     const entries = filteredChars[filter];
-    if (filter === "all" && !enabled.includes(category))
+    if (
+      filter === "all" &&
+      category !== "special-symbol" &&
+      !enabled.includes(category)
+    )
       setEnabled((previous) => [...previous, category]);
     else if (entries.length && !entries.some((entry) => entry.char === char))
       setIndex(CHARSET.findIndex((entry) => entry.char === entries[0].char));
@@ -455,6 +461,18 @@ export default function Page() {
       project.samples[c.char]?.status === "done" && !issues[c.char]?.length,
   ).length;
   const isLast = currentPosition === navigationChars.length - 1;
+  const specialWritten = SPECIAL_SYMBOLS.filter(
+    (symbol) => project.samples[symbol]?.strokes.length,
+  ).length;
+  const specialComplete =
+    listFilter === "special" && specialWritten === SPECIAL_SYMBOLS.length;
+  const nextWritingChar = () => {
+    if (specialComplete && isLast) changeStep(4);
+    else if (listFilter !== "all" && !navigationChars.length)
+      selectFilter("all");
+    else if (listFilter === "all" && isLast) changeStep(3);
+    else go(1);
+  };
   return (
     <main
       ref={stageRoot}
@@ -866,14 +884,7 @@ export default function Page() {
                   nextDisabled: false,
                   inkLocked: busy,
                   onPrevious: () => go(-1),
-                  onNext: () =>
-                    listFilter !== "all"
-                      ? navigationChars.length
-                        ? go(1)
-                        : selectFilter("all")
-                      : isLast
-                        ? changeStep(3)
-                        : go(1),
+                  onNext: nextWritingChar,
                 }}
               />
               <div className="canvas-footer">
@@ -1015,21 +1026,15 @@ export default function Page() {
                     className="primary"
                     data-ink-locked={busy || undefined}
                     disabled={busy}
-                    onClick={() =>
-                      listFilter !== "all"
-                        ? navigationChars.length
-                          ? go(1)
-                          : selectFilter("all")
-                        : isLast
-                          ? changeStep(3)
-                          : go(1)
-                    }
+                    onClick={nextWritingChar}
                   >
                     {listFilter !== "all" && !navigationChars.length
                       ? "전체 글자로 →"
                       : listFilter === "all" && isLast
                         ? "자모 나누기 →"
-                        : "다음 →"}
+                        : specialComplete && isLast
+                          ? "폰트 완성 →"
+                          : "다음 →"}
                   </button>
                 </div>
                 <button
@@ -1054,7 +1059,11 @@ export default function Page() {
               <div>
                 <strong>나의 글자 모음</strong>
                 <span>
-                  {done} / {chars.length} 완료
+                  {listFilter === "special" ? specialWritten : done} /{" "}
+                  {listFilter === "special"
+                    ? SPECIAL_SYMBOLS.length
+                    : chars.length}{" "}
+                  완료
                 </span>
               </div>
               <div
@@ -1091,7 +1100,7 @@ export default function Page() {
               >
                 {CATEGORIES.filter((c) =>
                   listFilter === "all"
-                    ? enabled.includes(c.id)
+                    ? c.id !== "special-symbol" && enabled.includes(c.id)
                     : navigationChars.some(
                         (entry) => entry.category === c.id,
                       ) || category === c.id,
@@ -1103,7 +1112,16 @@ export default function Page() {
               </select>
             </div>
             <div className="progress-track">
-              <div style={{ width: (done / chars.length) * 100 + "%" }} />
+              <div
+                style={{
+                  width:
+                    (listFilter === "special"
+                      ? specialWritten / SPECIAL_SYMBOLS.length
+                      : done / chars.length) *
+                      100 +
+                    "%",
+                }}
+              />
             </div>
             <div
               className="glyph-strip"
@@ -1114,11 +1132,9 @@ export default function Page() {
             >
               {!navigationChars.length && (
                 <div className="strip-empty" role="status">
-                  {listFilter === "special"
-                    ? "특수 기호 쓰기는 준비 중입니다."
-                    : listFilter === "review"
-                      ? "다시 확인할 글자가 없습니다."
-                      : "이 분류에 표시할 글자가 없습니다."}
+                  {listFilter === "review"
+                    ? "다시 확인할 글자가 없습니다."
+                    : "이 분류에 표시할 글자가 없습니다."}
                   <button onClick={() => selectFilter("all")}>
                     전체 글자 보기
                   </button>
@@ -1204,6 +1220,11 @@ export default function Page() {
           onWriteSpecial={() => {
             changeStep(2);
             setListFilter("special");
+            const next =
+              SPECIAL_SYMBOLS.find(
+                (symbol) => !project.samples[symbol]?.strokes.length,
+              ) ?? SPECIAL_SYMBOLS[0];
+            setIndex(CHARSET.findIndex(({ char }) => char === next));
           }}
           initialStage={step === 3 ? "separation" : "build"}
           onSave={persist}
@@ -1302,7 +1323,7 @@ export default function Page() {
             </label>
             <h3>모을 글자</h3>
             <div className="settings-grid">
-              {CATEGORIES.map((c) => (
+              {CATEGORIES.filter((c) => c.id !== "special-symbol").map((c) => (
                 <label className="check" key={c.id}>
                   <input
                     type="checkbox"

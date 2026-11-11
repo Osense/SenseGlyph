@@ -5,9 +5,15 @@ import { SAFETY_PROFILES } from "../config/metrics";
 export const SAFE_INSET = 40;
 export const SAFE_MAX = 1000 - SAFE_INSET;
 export const DIAMOND_RADIUS = 500;
+export function isSymbolCategory(category: CharCategory) {
+  return (
+    category === "ascii-symbol" ||
+    category === "korean-punct" ||
+    category === "special-symbol"
+  );
+}
 export function safetyBounds(category: CharCategory = "hangul-syllable") {
-  if (category === "ascii-symbol" || category === "korean-punct")
-    return SAFETY_PROFILES.symbol;
+  if (isSymbolCategory(category)) return SAFETY_PROFILES.symbol;
   return category.startsWith("hangul")
     ? SAFETY_PROFILES.hangul
     : SAFETY_PROFILES.latin;

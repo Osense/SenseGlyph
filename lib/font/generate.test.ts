@@ -154,3 +154,19 @@ it("exports separate readable Korean and English names with a matching PostScrip
   expect(font.names.fullName.en).toBe("Osense Hand");
   expect(font.names.postScriptName.en).toBe("OsenseHand-Regular");
 });
+
+it("maps written special symbols in the full font and excludes them from the basic font", () => {
+  const project = newProject();
+  const sample = completeFixture().samples["겨"];
+  project.samples["겨"] = sample;
+  project.samples["①"] = { ...sample, char: "①", category: "special-symbol" };
+  const preparation = defaultPreparation("Special Symbols");
+  const full = generateFont({ project, preparation });
+  const basic = generateFont({ project, preparation, includeSpecial: false });
+  expect(opentype.parse(full.buffer).charToGlyphIndex("①")).toBeGreaterThan(0);
+  expect(opentype.parse(basic.buffer).charToGlyphIndex("①")).toBe(0);
+  expect(basic.stats.characters).toContain("겨");
+  expect(parseProject(JSON.stringify(project)).samples["①"].category).toBe(
+    "special-symbol",
+  );
+});

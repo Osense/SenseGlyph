@@ -47,6 +47,8 @@ const specimen = [
   "Aa–Zz / 0123456789 / !? @#%&+ « » ( ) [ ] ₩",
 ];
 
+export type OutputPlan = "basic" | "premium";
+
 export default function FontOutput({
   family,
   characters,
@@ -54,18 +56,28 @@ export default function FontOutput({
   exportError,
   onDownload,
   onWriteSpecial,
+  specialWritten,
+  specialTotal,
+  premiumReady,
 }: {
   family?: string;
   characters: string[];
   exporting: ExportFormat | null;
   exportError: string;
   onWriteSpecial?: () => void;
-  onDownload: (format: ExportFormat, names: OutputNames) => void;
+  specialWritten: number;
+  specialTotal: number;
+  premiumReady: boolean;
+  onDownload: (
+    format: ExportFormat,
+    names: OutputNames,
+    plan: OutputPlan,
+  ) => void;
 }) {
   const [names, setNames] = useState<OutputNames>({ korean: "", english: "" });
   const [format, setFormat] = useState<ExportFormat>("zip");
   const [open, setOpen] = useState(false);
-  const [plan, setPlan] = useState<"basic" | "premium">("basic");
+  const [plan, setPlan] = useState<OutputPlan>("basic");
   const [needsSpecial, setNeedsSpecial] = useState(false);
   const [nameChecked, setNameChecked] = useState(false);
   const [code, setCode] = useState("");
@@ -114,7 +126,7 @@ export default function FontOutput({
         onSubmit={(event) => {
           event.preventDefault();
           if (valid && nameChecked) {
-            if (plan === "premium") {
+            if (plan === "premium" && specialWritten < specialTotal) {
               setNeedsSpecial(true);
               return;
             }
@@ -191,7 +203,8 @@ export default function FontOutput({
             onChange={(event) => {
               const premium = event.target.value === "premium";
               setPlan(premium ? "premium" : "basic");
-              if (premium) setNeedsSpecial(true);
+              if (premium && specialWritten < specialTotal)
+                setNeedsSpecial(true);
             }}
           >
             <option value="basic">기본 · 19,900원 · 특수 기호 제외</option>
@@ -199,6 +212,9 @@ export default function FontOutput({
               프리미엄 · 29,900원 · 특수 기호 포함
             </option>
           </select>
+          <small className="font-field-note">
+            특수 기호 {specialWritten} / {specialTotal}자 작성
+          </small>
         </label>
         <label className="font-field">
           파일 형식
@@ -230,7 +246,11 @@ export default function FontOutput({
             setPlan("basic");
           }}
         >
-          <p>현재 특수기호 손글씨가 없습니다. 입력하시겠습니까?</p>
+          <p>
+            {specialWritten === 0
+              ? "현재 특수기호 손글씨가 없습니다. 입력하시겠습니까?"
+              : `프리미엄 출력까지 특수 기호 ${specialTotal - specialWritten}자가 남았습니다.`}
+          </p>
           <div className="font-dialog-actions">
             <button
               className="font-secondary"
@@ -263,8 +283,12 @@ export default function FontOutput({
             {korean}.{format}
           </p>
           <p className="output-price">
-            <span>1회 출력</span> <del>29,000원</del> <strong>19,900원</strong>{" "}
-            <span>프로모션 · 30% 할인</span>
+            <span>{plan === "premium" ? "프리미엄" : "기본"} 1회 출력</span>
+            <del>{plan === "premium" ? "39,000원" : "29,000원"}</del>
+            <strong>{plan === "premium" ? "29,900원" : "19,900원"}</strong>
+            <span>
+              {plan === "premium" ? "프로모션 가격" : "프로모션 · 30% 할인"}
+            </span>
           </p>
           <p>
             폰트의 저작권은 전부 사용자에게 있습니다. 폰트명에는 서비스명 OSNS를
@@ -327,6 +351,11 @@ export default function FontOutput({
               실제 파일을 받으려면 폰트 파일이 필요합니다.
             </p>
           )}
+          {family && plan === "premium" && !premiumReady && (
+            <p className="font-help">
+              특수 기호가 포함된 폰트를 생성한 뒤 다운로드할 수 있습니다.
+            </p>
+          )}
           {exportError && (
             <p className="font-error" role="alert">
               {exportError}
@@ -344,8 +373,13 @@ export default function FontOutput({
             <button
               type="button"
               className="font-primary"
-              disabled={!family || promo !== "valid" || exporting !== null}
-              onClick={() => onDownload(format, { korean, english })}
+              disabled={
+                !family ||
+                (plan === "premium" && !premiumReady) ||
+                promo !== "valid" ||
+                exporting !== null
+              }
+              onClick={() => onDownload(format, { korean, english }, plan)}
             >
               {exporting ? "파일 준비 중…" : "다운로드 ↓"}
             </button>

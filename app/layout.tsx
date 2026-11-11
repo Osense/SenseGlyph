@@ -27,6 +27,11 @@ const FONT_FACES = `
   font-weight: 100 900;
   font-display: swap;
 }
+@font-face {
+  font-family: "Special Symbols Fallback";
+  src: url("${BASE_PATH}/fonts/SpecialSymbolsFallback.ttf") format("truetype");
+  font-display: swap;
+}
 ${REFERENCE_FONTS.map(({ family, file }) => {
   const format = file.endsWith(".ttf") ? "truetype" : file.split(".").at(-1);
   return `

@@ -60,6 +60,7 @@ export interface Coverage {
   available: string[];
 }
 export interface BuildRequest {
+  includeSpecial?: boolean;
   project: FontProject;
   preparation: FontPreparation;
 }

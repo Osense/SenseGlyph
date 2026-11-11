@@ -33,7 +33,7 @@ export function appendContour(
 }
 
 export function generateFont(
-  { project, preparation }: BuildRequest,
+  { project, preparation, includeSpecial = true }: BuildRequest,
   progress: (value: number, message: string) => void = () => {},
 ): { buffer: ArrayBuffer; stats: FontStats } {
   const options = { ...preparation.settings, includeComposed: true };
@@ -76,7 +76,10 @@ export function generateFont(
     .map((sample) =>
       effectiveSample(sample, preparation.separations[sample.char]),
     )
-    .filter((s) => s.strokes.length);
+    .filter(
+      (s) =>
+        s.strokes.length && (includeSpecial || s.category !== "special-symbol"),
+    );
   if (!samples.length) throw new Error("먼저 한 글자 이상 써주세요.");
   const unsafe = samples.filter(
     (sample) => !strokesAreSafe(sample.strokes, sample.category),

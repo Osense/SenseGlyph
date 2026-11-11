@@ -32,7 +32,7 @@ export async function convertFont({
       deflate: (data) => Array.from(zlibSync(Uint8Array.from(data))),
     });
   if (format === "woff") return makeWoff();
-  const woff2 = await compress(ttf);
+  const woff2 = await compress(buffer);
   if (
     woff2.length < 48 ||
     new DataView(woff2.buffer, woff2.byteOffset).getUint32(0) !== 0x774f4632

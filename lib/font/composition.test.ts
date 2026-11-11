@@ -5,7 +5,7 @@ import {
   componentLibrary,
   composeGlyph,
   coverage,
-  transformComponent,
+  prepareHandwriting,
 } from "./composition";
 import { defaultPreparation } from "./types";
 import { completeFixture } from "./fixtures";
@@ -49,24 +49,23 @@ describe("Hangul component assembly", () => {
     expect(assignStroke("겨", stroke, separation)).toBe("jung");
     expect(boxesFor("겨", separation).cho).toEqual(separation.boxes.cho);
   });
-  it("transforms original centerlines without mutating pressure, tilt, time or original vectors", () => {
-    const p = completeFixture(),
-      prep = defaultPreparation(p.name),
-      component = [...componentLibrary(p, prep).values()][0];
-    const original = JSON.stringify(component.strokes),
-      from = component.box;
-    const strokes = transformComponent(component, {
-      x: from.x + 10,
-      y: from.y + 20,
-      width: from.width * 2,
-      height: from.height * 2,
-    });
-    expect(strokes[0].points[0].x).toBeCloseTo(
-      from.x + 10 + (component.strokes[0].points[0].x - from.x) * 2,
-    );
-    expect(strokes[0].points[0].p).toBe(component.strokes[0].points[0].p);
-    expect(strokes[0].params.size).toBe(component.strokes[0].params.size * 2);
-    expect(JSON.stringify(component.strokes)).toBe(original);
+  it("reuses the original strokes and groups compatible parts from the same source", () => {
+    const project = completeFixture();
+    const prep = defaultPreparation(project.name);
+    prep.settings.shapeInterpolation = prep.settings.widthCorrection = 100;
+    const { library, pools } = prepareHandwriting(project, prep);
+    const strokes = composeGlyph("좋", library, pools)!;
+    expect(strokes).toContain(project.samples["졺"].strokes[0]);
+    expect(strokes).toContain(project.samples["졺"].strokes[1]);
+    expect(strokes.some((stroke) => stroke.id === "요-jung")).toBe(false);
+    const noFinal = composeGlyph("아", library, pools)!;
+    expect(noFinal).toHaveLength(2);
+    expect(
+      noFinal.every((stroke) => {
+        const char = stroke.id.split("-")[0];
+        return (char.charCodeAt(0) - 0xac00) % 28 === 0;
+      }),
+    ).toBe(true);
   });
 });
 
@@ -104,13 +103,4 @@ it("keeps a confirmed final consonant from the current project's source", () => 
   expect(component.char).toBe(source.char);
   expect(component.strokes).toEqual([finalStroke]);
   expect(component.strokes[0]).toBe(finalStroke);
-  const target = { ...component.box, width: component.box.width * 2 };
-  const [fitted] = transformComponent(component, target);
-  expect(fitted.params.size).toBe(finalStroke.params.size);
-  fitted.points.forEach((point, i) => {
-    expect(point.x).toBeCloseTo(
-      finalStroke.points[i].x + component.box.width / 2,
-    );
-    expect(point.y).toBeCloseTo(finalStroke.points[i].y);
-  });
 });

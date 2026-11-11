@@ -47,13 +47,7 @@ export default function MetricPreview({
   const before = useRef<HTMLCanvasElement>(null),
     after = useRef<HTMLCanvasElement>(null);
   const { settings, separations } = preparation;
-  const {
-    positionCorrection,
-    shapeInterpolation,
-    widthCorrection,
-    strokeWeight,
-    strokeFinish,
-  } = settings;
+  const { strokeWeight, strokeFinish } = settings;
   const handwriting = useMemo(
     () => prepareHandwriting(project, preparation),
     [
@@ -61,9 +55,6 @@ export default function MetricPreview({
       separations,
       project.settings.referenceFont,
       project.settings.grid.diamond,
-      positionCorrection,
-      shapeInterpolation,
-      widthCorrection,
     ],
   );
   const originals = useMemo(
@@ -113,8 +104,9 @@ export default function MetricPreview({
     ];
     const letters = [...text.normalize("NFC")].slice(0, 12);
     const glyphs = letters.map((char) => {
+      const direct = handwriting.direct.get(char);
       const strokes =
-        handwriting.direct.get(char) ?? composeGlyph(char, handwriting.library);
+        direct ?? composeGlyph(char, handwriting.library, handwriting.pools);
       const reference =
         originals.get(char) ?? (strokes ? strokeContours(strokes) : []);
       if (!strokes || !reference.length)
@@ -131,8 +123,15 @@ export default function MetricPreview({
         writtenContours.get(char) ?? reference,
         plan,
         reference,
+        !direct,
       );
-      const styled = layoutGlyph(char, renderer(strokes), plan, reference);
+      const styled = layoutGlyph(
+        char,
+        direct ? renderer(strokes) : reference,
+        plan,
+        reference,
+        !direct,
+      );
       return {
         char,
         advance: styled.advanceWidth,

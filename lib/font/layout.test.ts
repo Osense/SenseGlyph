@@ -111,3 +111,12 @@ it("enlarges beyond one em and exports negative side bearings for tighter tracki
   );
   expect(glyph.advanceWidth).toBeGreaterThan(0);
 });
+
+it("keeps composed ink at original em dimensions even with larger output size", () => {
+  const raw = rectangle(280, 260, 440, 480);
+  const settings = { ...defaultPreparation("Test").settings, bodySize: 1200 };
+  const plan = createLayoutPlan(new Map([["가", raw]]), settings);
+  const composed = layoutGlyph("좋", raw, plan, raw, true);
+  expect(composed.bounds?.width).toBe(440);
+  expect(composed.bounds?.height).toBe(480);
+});

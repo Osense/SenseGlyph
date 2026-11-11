@@ -191,6 +191,7 @@ export function layoutGlyph(
   source: Contours,
   plan: LayoutPlan,
   reference: Contours = source,
+  preserveScale = false,
 ): LaidOutGlyph {
   const bounds = inkBounds(reference);
   if (!bounds)
@@ -207,7 +208,8 @@ export function layoutGlyph(
     : category === "ascii-symbol" || category === "korean-punct"
       ? plan.symbolScale
       : plan.latinScale;
-  if (hangul)
+  if (preserveScale) scale = 1;
+  else if (hangul)
     scale = Math.min(
       scale,
       plan.bodySize / Math.max(1, bounds.width, bounds.height),

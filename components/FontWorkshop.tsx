@@ -5,7 +5,6 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { HANGUL } from "../data/charset";
 import HandwritingSearch from "./HandwritingSearch";
 import SeparationEditor from "./SeparationEditor";
-import { widthCorrection } from "../lib/font/interpolation";
 import MetricPreview from "./MetricPreview";
 import type {
   ConversionReply,
@@ -23,7 +22,6 @@ import {
   FONT_SETTING_LIMITS as LIMITS,
 } from "../lib/font/types";
 import { bodySize } from "../lib/font/layout";
-import { correction, interpolation } from "../lib/font/interpolation";
 import type { FontProject } from "../lib/types";
 import type {
   FontPreparation,
@@ -611,7 +609,8 @@ export default function FontWorkshop({
                         className="font-field-note"
                         id={`${controlId}-font-range-note-0`}
                       >
-                        폰트 안에서 글자가 차지하는 크기를 바꿉니다.
+                        직접 쓴 글자의 출력 크기를 바꿉니다. 조합 글자는 원본
+                        크기를 사용합니다.
                       </small>
                     </label>
                     <label className="font-field">
@@ -636,72 +635,6 @@ export default function FontWorkshop({
                       </small>
                     </label>
                     <label className="font-field">
-                      자모 위치 정돈 <b>{correction(prep.settings)}%</b>
-                      <input
-                        aria-describedby={`${controlId}-font-range-note-2`}
-                        aria-label="자모 위치 정돈"
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="5"
-                        value={correction(prep.settings)}
-                        disabled={building && !guided}
-                        onChange={(e) =>
-                          settings({ positionCorrection: +e.target.value })
-                        }
-                      />
-                      <small
-                        className="font-field-note"
-                        id={`${controlId}-font-range-note-2`}
-                      >
-                        조합용 자모의 위치와 크기를 표본의 중앙값에 맞춥니다.
-                      </small>
-                    </label>
-                    <label className="font-field">
-                      획 모양 보간 <b>{interpolation(prep.settings)}%</b>
-                      <input
-                        aria-describedby={`${controlId}-font-range-note-3`}
-                        aria-label="획 모양 보간"
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="5"
-                        value={interpolation(prep.settings)}
-                        disabled={building && !guided}
-                        onChange={(e) =>
-                          settings({ shapeInterpolation: +e.target.value })
-                        }
-                      />
-                      <small
-                        className="font-field-note"
-                        id={`${controlId}-font-range-note-3`}
-                      >
-                        조합용 자모에서 형태가 비슷한 획의 흔들림을 줄입니다.
-                      </small>
-                    </label>
-                    <label className="font-field">
-                      획 굵기 정돈 <b>{widthCorrection(prep.settings)}%</b>
-                      <input
-                        aria-describedby={`${controlId}-font-range-note-4`}
-                        aria-label="획 굵기 정돈"
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="5"
-                        value={widthCorrection(prep.settings)}
-                        onChange={(e) =>
-                          settings({ widthCorrection: +e.target.value })
-                        }
-                      />
-                      <small
-                        className="font-field-note"
-                        id={`${controlId}-font-range-note-4`}
-                      >
-                        비슷한 획의 굵기를 맞춰 글자마다 굵기가 달라지는 폭을
-                        줄입니다.
-                      </small>
-                    </label>
-                    <label className="font-field">
                       전체 획 굵기 <b>{prep.settings.strokeWeight ?? 100}%</b>
                       <input
                         aria-describedby={`${controlId}-font-range-note-5`}
@@ -718,7 +651,8 @@ export default function FontWorkshop({
                         className="font-field-note"
                         id={`${controlId}-font-range-note-5`}
                       >
-                        100%가 기준입니다. 낮추면 가늘어지고 높이면 굵어집니다.
+                        직접 쓴 글자의 획 굵기를 바꿉니다. 조합 글자는 원본
+                        굵기를 사용합니다.
                       </small>
                     </label>
                     <label className="font-field">
@@ -738,7 +672,7 @@ export default function FontWorkshop({
                         <option value="pointed">뾰족하게</option>
                       </select>
                       <small className="font-field-note">
-                        이어지지 않은 획 끝을 둥글거나 뾰족하게 다듬습니다.
+                        직접 쓴 글자의 획 끝을 둥글거나 뾰족하게 다듬습니다.
                       </small>
                     </label>
                     <label className="font-field">

@@ -1,16 +1,11 @@
 import opentype from "opentype.js";
-import { slotKeys } from "../hangul";
-import {
-  prepareHandwriting,
-  layoutBoxes,
-  transformComponent,
-} from "./composition";
+import { prepareHandwriting, composeGlyph } from "./composition";
 import type { BuildRequest, FontStats } from "./types";
 import { FONT_SETTING_LIMITS as LIMITS } from "./types";
 import { defaultEnglishFontName, isEnglishFontName } from "./names";
 import { replaceCmap } from "./cmap";
 import { effectiveSample } from "./editing";
-import { strokesAreSafe, SAFE_INSET, SAFE_MAX } from "../safety";
+import { strokesAreSafe } from "../safety";
 import {
   bodySize,
   createLayoutPlan,
@@ -102,43 +97,18 @@ export function generateFont(
       render(handwriting.direct.get(s.char) ?? s.strokes),
     ]),
   );
-  const components = new Map<string, ReturnType<typeof transformComponent>>();
-  const componentReferences = new Map<string, Polygon[]>();
-  for (const [key, component] of handwriting.library) {
-    const strokes = transformComponent(
-      component,
-      layoutBoxes(component.char)[component.part]!,
-    );
-    const ink = contours(strokes);
-    if (
-      ink.some((polygon) =>
-        polygon.some(
-          ([x, y]) =>
-            x < SAFE_INSET || y < SAFE_INSET || x > SAFE_MAX || y > SAFE_MAX,
-        ),
-      )
-    )
-      throw new Error(
-        component.char +
-          "의 자모 위치 상자가 너무 작아 조합 획이 안전영역을 벗어납니다. 자모 위치 상자를 수정해 주세요.",
-      );
-    components.set(key, strokes);
-    componentReferences.set(key, ink);
-  }
   const polygons = new Map(direct);
   const layout = createLayoutPlan(references, options);
   let composed = 0;
   for (let code = 0xac00; code <= 0xd7a3; code++) {
-    const char = String.fromCharCode(code),
-      keys = slotKeys(char);
-    if (!polygons.has(char) && keys.every((key) => components.has(key))) {
-      polygons.set(char, render(keys.flatMap((key) => components.get(key)!)));
-      references.set(
-        char,
-        keys.flatMap((key) => componentReferences.get(key)!),
-      );
-      composed++;
-    }
+    const char = String.fromCharCode(code);
+    if (direct.has(char)) continue;
+    const strokes = composeGlyph(char, handwriting.library, handwriting.pools);
+    if (!strokes) continue;
+    const ink = contours(strokes);
+    polygons.set(char, ink);
+    references.set(char, ink);
+    composed++;
   }
   const missingPath = new opentype.Path();
   missingPath.moveTo(160, 0);
@@ -179,7 +149,13 @@ export function generateFont(
   for (let i = 0; i < entries.length; i++) {
     const [char, paths] = entries[i],
       path = new opentype.Path();
-    const shaped = layoutGlyph(char, paths, layout, references.get(char));
+    const shaped = layoutGlyph(
+      char,
+      paths,
+      layout,
+      references.get(char),
+      !direct.has(char),
+    );
     for (const ring of mergeInk(shaped.contours))
       appendContour(path, ring, options.baseline);
     for (const polygon of shaped.contours) {

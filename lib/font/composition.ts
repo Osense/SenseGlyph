@@ -1,7 +1,6 @@
 import { HANGUL } from "../../data/charset";
 import { decompose, slotKeys, vowelType } from "../hangul";
-import { activeSeparation, effectiveSample, strokeBounds } from "./editing";
-import { refinePool } from "./interpolation";
+import { activeSeparation, effectiveSample } from "./editing";
 import {
   referenceGuide,
   referencePart,
@@ -126,17 +125,6 @@ export function separateSample(
       (stroke) =>
         assignStroke(sample.char, stroke, separation, reference) === part,
     );
-    let box = boxes[part]!;
-    // A guide estimates assignment; it must not crop a user's larger handwriting
-    // when reusing that component in another syllable. Explicit edits still win.
-    if (strokes.length && !separation?.boxes?.[part]) {
-      const ink = strokeBounds(strokes)!;
-      const left = Math.min(box.x, ink.x - 12),
-        top = Math.min(box.y, ink.y - 12),
-        right = Math.max(box.x + box.width, ink.x + ink.width + 12),
-        bottom = Math.max(box.y + box.height, ink.y + ink.height + 12);
-      box = { x: left, y: top, width: right - left, height: bottom - top };
-    }
     const confirmed = strokes.every(
       (stroke) => separation?.assignments[stroke.id] === part,
     );
@@ -147,7 +135,7 @@ export function separateSample(
             part,
             char: sample.char,
             strokes,
-            box,
+            box: boxes[part]!,
             ...(confirmed ? { confirmed: true as const } : {}),
           },
         ]
@@ -184,20 +172,9 @@ export function prepareHandwriting(
   }
   for (const [key, pool] of pools) {
     const confirmed = pool.filter((component) => component.confirmed);
-    const model = refinePool(
-      confirmed.length ? confirmed : pool,
-      prep.settings,
-    );
-    library.set(
-      key,
-      confirmed.length
-        ? confirmed.find(
-            (component) => component.char === model.representative.char,
-          )!
-        : model.representative,
-    );
+    library.set(key, confirmed[0] ?? pool[0]);
   }
-  return { library, direct };
+  return { library, direct, pools };
 }
 
 const ALL_SLOTS = [...new Set(HANGUL.flatMap(slotKeys))];
@@ -236,34 +213,34 @@ export function coverage(
   };
 }
 
-export function transformComponent(
-  component: ComponentSample,
-  target: Box,
-): Stroke[] {
-  const from = component.box,
-    scale = Math.min(target.width / from.width, target.height / from.height),
-    x = target.x + (target.width - from.width * scale) / 2,
-    y = target.y + (target.height - from.height * scale) / 2;
-  return component.strokes.map((stroke) => ({
-    ...stroke,
-    params: { ...stroke.params, size: stroke.params.size * scale },
-    points: stroke.points.map((p) => ({
-      ...p,
-      x: x + (p.x - from.x) * scale,
-      y: y + (p.y - from.y) * scale,
-    })),
-  }));
-}
-
+/** Exact contextual slots already share the same writing layout and em coordinates. */
 export function composeGlyph(
   char: string,
   library: Map<string, ComponentSample>,
+  pools?: Map<string, ComponentSample[]>,
 ): Stroke[] | null {
   const keys = slotKeys(char);
   if (!keys.length || !keys.every((key) => library.has(key))) return null;
-  const target = layoutBoxes(char);
-  return keys.flatMap((key) => {
-    const component = library.get(key)!;
-    return transformComponent(component, target[component.part]!);
-  });
+  if (!pools) return keys.flatMap((key) => library.get(key)!.strokes);
+
+  // Use one original for as many parts as possible. For example, 졺 can
+  // supply both the initial and medial of 좋 in their original relationship.
+  const matches = new Map<string, { count: number; confirmed: number }>();
+  for (const key of keys)
+    for (const component of pools.get(key) ?? []) {
+      const match = matches.get(component.char) ?? { count: 0, confirmed: 0 };
+      match.count++;
+      match.confirmed += Number(!!component.confirmed);
+      matches.set(component.char, match);
+    }
+  const anchor = [...matches].sort(
+    ([, a], [, b]) => b.count - a.count || b.confirmed - a.confirmed,
+  )[0]?.[0];
+  return keys.flatMap(
+    (key) =>
+      (
+        (anchor && pools.get(key)?.find((part) => part.char === anchor)) ||
+        library.get(key)!
+      ).strokes,
+  );
 }

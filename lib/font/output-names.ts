@@ -9,8 +9,12 @@ export interface OutputNames {
 export const OUTPUT_PREFIX = "OSNS ";
 export const isKoreanOutputName = (name: string) =>
   /[가-힣]/.test(name) &&
+  !/\s/.test(name) &&
   !/[<>:"/\\|?*\x00-\x1f]/.test(name) &&
   !name.endsWith(".");
+
+export const isEnglishOutputName = (name: string) =>
+  isEnglishFontName(name) && !/\s/.test(name);
 
 export function nameOutputFont(buffer: ArrayBuffer, names: OutputNames) {
   const korean = names.korean.trim().normalize("NFC");
@@ -19,7 +23,7 @@ export function nameOutputFont(buffer: ArrayBuffer, names: OutputNames) {
     korean.length > 60 ||
     english.length > 60 ||
     !isKoreanOutputName(korean) ||
-    !isEnglishFontName(english)
+    !isEnglishOutputName(english)
   )
     throw new Error("한글과 영문 폰트 이름을 확인해 주세요.");
 

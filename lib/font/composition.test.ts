@@ -156,3 +156,20 @@ it("prefers the same vowel layout when borrowing a final with equal confirmation
   const { library, pools } = prepareHandwriting(project, prep);
   expect(composeGlyph("좋", library, pools)?.at(-1)).toBe(source.strokes[2]);
 });
+
+it("applies opt-in reference correction to output strokes without changing the written sample", () => {
+  const project = completeFixture();
+  const prep = defaultPreparation(project.name);
+  const char = "졺";
+  const source = project.samples[char].strokes;
+  const points = structuredClone(source.map((stroke) => stroke.points));
+  prep.settings.alignToReference = true;
+  const original = prepareHandwriting(project, prep);
+  const corrected = prepareHandwriting(project, prep, true);
+  expect(original.direct.get(char)).toEqual(source);
+  expect(corrected.direct.get(char)).not.toEqual(source);
+  expect(corrected.direct.get(char)?.map((stroke) => stroke.id)).toEqual(
+    source.map((stroke) => stroke.id),
+  );
+  expect(source.map((stroke) => stroke.points)).toEqual(points);
+});

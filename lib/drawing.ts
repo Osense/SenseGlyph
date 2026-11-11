@@ -62,17 +62,15 @@ export function drawGrid(
     ctx.stroke();
   };
   ctx.setLineDash([9, 9]);
-  if (!latin && s.grid.halfVertical) line(500, 0, 500, 1000);
-  if (!latin && s.grid.halfHorizontal) line(0, 500, 1000, 500);
-  if (!latin && s.grid.diamond) {
-    ctx.beginPath();
-    ctx.moveTo(500, 0);
-    ctx.lineTo(1000, 500);
-    ctx.lineTo(500, 1000);
-    ctx.lineTo(0, 500);
-    ctx.closePath();
-    ctx.stroke();
-  }
+  line(500, 0, 500, 1000);
+  line(0, 500, 1000, 500);
+  ctx.beginPath();
+  ctx.moveTo(500, 0);
+  ctx.lineTo(1000, 500);
+  ctx.lineTo(500, 1000);
+  ctx.lineTo(0, 500);
+  ctx.closePath();
+  ctx.stroke();
   ctx.setLineDash([]);
   if (!latin && s.grid.sizeGuide) {
     ctx.globalAlpha = 0.5;
@@ -111,12 +109,7 @@ export function drawSample(
     h = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
   let scale = latin
     ? 570 / (ctx.measureText("H").actualBoundingBoxAscent || 570)
-    : sampleFontSize(
-        w,
-        h,
-        settings?.grid.diamond ?? true,
-        referenceFit(char, settings?.referenceFont),
-      );
+    : sampleFontSize(w, h, true, referenceFit(char, settings?.referenceFont));
   if (latin) {
     const box = safetyBounds(categoryForChar(char));
     // Use a shared Latin scale so g/p/q/y retain their proportions to H/x.

@@ -186,3 +186,43 @@
 .studio.journey.journey-step-2 .writing-area:not(.custom-writing-size) {
   grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
 }
+
+.writing-rail-sample {
+  position: absolute;
+  top: calc(50% - 43px);
+  left: 0;
+  transform: translateY(-100%);
+  width: 44px;
+  font-size: 25px;
+  line-height: 1.25;
+  text-align: center;
+  pointer-events: none;
+}
+.separation-fixed-grid {
+  fill: none;
+  stroke: currentColor;
+  opacity: 0.26;
+  stroke-width: 2;
+  stroke-dasharray: 9 9;
+  pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .studio.journey .progress-heading > .strip-filters {
+    grid-column: 1 / -1;
+    display: flex;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .studio.journey .strip-filters > button {
+    flex: 1 0 auto;
+  }
+  .studio.journey .progress-heading > select {
+    display: none;
+  }
+}
+.write-to-separation {
+  font-size: 12px;
+  white-space: nowrap;
+}

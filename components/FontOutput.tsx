@@ -2,9 +2,9 @@
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { ExportFormat } from "../lib/font/export-formats";
-import { isEnglishFontName } from "../lib/font/names";
 import {
   isKoreanOutputName,
+  isEnglishOutputName,
   OUTPUT_PREFIX,
   type OutputNames,
 } from "../lib/font/output-names";
@@ -53,21 +53,26 @@ export default function FontOutput({
   exporting,
   exportError,
   onDownload,
+  onWriteSpecial,
 }: {
   family: string;
   characters: string[];
   exporting: ExportFormat | null;
   exportError: string;
+  onWriteSpecial?: () => void;
   onDownload: (format: ExportFormat, names: OutputNames) => void;
 }) {
   const [names, setNames] = useState<OutputNames>({ korean: "", english: "" });
   const [format, setFormat] = useState<ExportFormat>("zip");
   const [open, setOpen] = useState(false);
+  const [plan, setPlan] = useState<"basic" | "premium">("basic");
+  const [needsSpecial, setNeedsSpecial] = useState(false);
+  const [nameChecked, setNameChecked] = useState(false);
   const [code, setCode] = useState("");
   const [promo, setPromo] = useState<"valid" | "invalid" | null>(null);
   const korean = names.korean.trim().normalize("NFC");
   const english = names.english.trim();
-  const valid = isKoreanOutputName(korean) && isEnglishFontName(english);
+  const valid = isKoreanOutputName(korean) && isEnglishOutputName(english);
   const available = new Set(characters);
   const missing = [...new Set(specimen.join(""))].filter(
     (char) => !/\s/.test(char) && !available.has(char),
@@ -106,7 +111,11 @@ export default function FontOutput({
         className="output-fields"
         onSubmit={(event) => {
           event.preventDefault();
-          if (valid) {
+          if (valid && nameChecked) {
+            if (plan === "premium") {
+              setNeedsSpecial(true);
+              return;
+            }
             setCode("");
             setPromo(null);
             setOpen(true);
@@ -122,13 +131,17 @@ export default function FontOutput({
               aria-label="한글 폰트 이름"
               maxLength={60}
               value={names.korean}
-              onChange={(event) =>
-                setNames({ ...names, korean: event.target.value })
-              }
+              onChange={(event) => {
+                setNameChecked(false);
+                setNames({
+                  ...names,
+                  korean: event.target.value.replace(/\s/g, ""),
+                });
+              }}
             />
           </span>
           <small className="font-field-note">
-            한글을 한 글자 이상 포함해 주세요.
+            공백 없이 입력하고 한글을 한 글자 이상 포함해 주세요.
           </small>
         </label>
         <label className="font-field">
@@ -140,14 +153,50 @@ export default function FontOutput({
               aria-label="영문 폰트 이름"
               maxLength={60}
               value={names.english}
-              onChange={(event) =>
-                setNames({ ...names, english: event.target.value })
-              }
+              onChange={(event) => {
+                setNameChecked(false);
+                setNames({
+                  ...names,
+                  english: event.target.value.replace(/\s/g, ""),
+                });
+              }}
             />
           </span>
           <small className="font-field-note">
-            영문 키보드의 문자로 입력하고 영문자나 숫자를 포함해 주세요.
+            공백 없이 영문 키보드 문자로 입력해 주세요. 영문자나 숫자가
+            필요합니다.
           </small>
+        </label>
+        <div className="output-name-check">
+          <button
+            type="button"
+            className="font-secondary"
+            disabled={!valid}
+            onClick={() => setNameChecked(true)}
+          >
+            폰트 이름 중복확인
+          </button>
+          {nameChecked && (
+            <p role="status" className="output-name-available">
+              사용가능한 폰트명입니다!
+            </p>
+          )}
+        </div>
+        <label className="font-field">
+          출력 플랜
+          <select
+            value={plan}
+            onChange={(event) => {
+              const premium = event.target.value === "premium";
+              setPlan(premium ? "premium" : "basic");
+              if (premium) setNeedsSpecial(true);
+            }}
+          >
+            <option value="basic">기본 · 19,900원 · 특수 기호 제외</option>
+            <option value="premium">
+              프리미엄 · 29,900원 · 특수 기호 포함
+            </option>
+          </select>
         </label>
         <label className="font-field">
           파일 형식
@@ -163,10 +212,45 @@ export default function FontOutput({
             ))}
           </select>
         </label>
-        <button className="font-primary" disabled={!valid} type="submit">
+        <button
+          className="font-primary"
+          disabled={!valid || !nameChecked}
+          type="submit"
+        >
           다운로드 →
         </button>
       </form>
+      {needsSpecial && (
+        <FontDialog
+          title="특수 기호 손글씨"
+          onClose={() => {
+            setNeedsSpecial(false);
+            setPlan("basic");
+          }}
+        >
+          <p>현재 특수기호 손글씨가 없습니다. 입력하시겠습니까?</p>
+          <div className="font-dialog-actions">
+            <button
+              className="font-secondary"
+              onClick={() => {
+                setNeedsSpecial(false);
+                setPlan("basic");
+              }}
+            >
+              취소
+            </button>
+            <button
+              className="font-primary"
+              onClick={() => {
+                setNeedsSpecial(false);
+                onWriteSpecial?.();
+              }}
+            >
+              특수 기호 쓰러 가기
+            </button>
+          </div>
+        </FontDialog>
+      )}
       {open && (
         <FontDialog
           title="폰트 출력"
@@ -196,7 +280,14 @@ export default function FontOutput({
             onSubmit={(event) => {
               event.preventDefault();
               setPromo(
-                code.trim().toLowerCase() === "osnsstudio"
+                [
+                  "osnsstudio",
+                  "오쎈스",
+                  "한울사랑",
+                  "명천사랑",
+                  "황금포도",
+                  "쓰리에쓰부라더쓰",
+                ].includes(code.trim().normalize("NFC").toLowerCase())
                   ? "valid"
                   : "invalid",
               );

@@ -41,6 +41,7 @@ interface Props {
   onChange: (preparation: FontPreparation) => void;
   onClose: () => void;
   onWrite: (char: string) => void;
+  onWriteSpecial?: () => void;
   saveStatus: string;
   onSave: () => void;
 }
@@ -50,6 +51,7 @@ export default function FontWorkshop({
   onChange,
   onClose,
   onWrite,
+  onWriteSpecial,
   saveStatus,
   onSave,
   initialChar,
@@ -316,6 +318,8 @@ export default function FontWorkshop({
       setExportError("파일 변환을 시작하지 못했습니다. 다시 시도해 주세요.");
     }
   };
+  const bothCorrections =
+    prep.settings.alignToReference && prep.settings.averageStrokes;
   const syllables = report.available.filter((ch) => decompose(ch)).length;
 
   return (
@@ -610,6 +614,41 @@ export default function FontWorkshop({
                   </div>
                   <MetricPreview project={project} preparation={prep} />
                 </div>
+                <fieldset className="font-correction-controls">
+                  <legend>자동 보정</legend>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={!!prep.settings.alignToReference}
+                      onChange={(event) =>
+                        settings({ alignToReference: event.target.checked })
+                      }
+                    />
+                    견본에 맞춰 자모 위치 다듬기
+                  </label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={!!prep.settings.averageStrokes}
+                      onChange={(event) =>
+                        settings({ averageStrokes: event.target.checked })
+                      }
+                    />
+                    비슷한 손글씨 획 평균으로 다듬기
+                  </label>
+                  <button
+                    type="button"
+                    className="font-secondary"
+                    onClick={() =>
+                      settings({
+                        alignToReference: !bothCorrections,
+                        averageStrokes: !bothCorrections,
+                      })
+                    }
+                  >
+                    {bothCorrections ? "자동 보정 끄기" : "한 번에 보정하기"}
+                  </button>
+                </fieldset>
                 <HandwritingSearch
                   project={project}
                   preparation={prep}
@@ -661,6 +700,7 @@ export default function FontWorkshop({
                   exporting={exporting}
                   exportError={exportError}
                   onDownload={download}
+                  onWriteSpecial={onWriteSpecial}
                 />
               </div>
             )}

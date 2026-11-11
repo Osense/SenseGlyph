@@ -16,12 +16,12 @@ it("exports four valid fonts with the output names and original Hangul coverage"
   const zip = await convertFont({
     buffer: original.buffer,
     format: "zip",
-    filename: "OSNS 새 글씨",
-    names: { korean: "새 글씨", english: "New Handwriting" },
+    filename: "OSNS 새글씨",
+    names: { korean: "새글씨", english: "NewHandwriting" },
   });
   const files = unzipSync(new Uint8Array(zip));
   expect(Object.keys(files)).toEqual(
-    ["ttf", "otf", "woff", "woff2"].map((ext) => "OSNS 새 글씨." + ext),
+    ["ttf", "otf", "woff", "woff2"].map((ext) => "OSNS 새글씨." + ext),
   );
   expect(opentype.parse(original.buffer).names.fontFamily).toMatchObject({
     en: "My Handwriting",
@@ -33,7 +33,7 @@ it("exports four valid fonts with the output names and original Hangul coverage"
     ["woff", 0x774f4646],
     ["woff2", 0x774f4632],
   ] as const) {
-    const bytes = files["OSNS 새 글씨." + ext];
+    const bytes = files["OSNS 새글씨." + ext];
     expect(new DataView(bytes.buffer, bytes.byteOffset).getUint32(0)).toBe(
       signature,
     );
@@ -46,8 +46,8 @@ it("exports four valid fonts with the output names and original Hangul coverage"
     }
     const font = opentype.parse(buffer);
     expect(font.names.fontFamily).toMatchObject({
-      en: "OSNS New Handwriting",
-      ko: "OSNS 새 글씨",
+      en: "OSNS NewHandwriting",
+      ko: "OSNS 새글씨",
     });
     expect(font.glyphs.length).toBe(original.stats.glyphs);
     expect(font.charToGlyphIndex("가")).toBeGreaterThan(0);

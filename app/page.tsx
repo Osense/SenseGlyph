@@ -17,12 +17,21 @@ import FontWorkshop from "../components/FontWorkshop";
 import { REFERENCE_FONTS, referenceStack } from "../lib/reference-fonts";
 import { referenceUsesFallback } from "../lib/font/reference";
 import { projectIssues } from "../lib/review";
-import { BrushPreview, Reference, Thumbnail } from "../components/Preview";
-import type { BrushId, CharCategory, ProjectSettings } from "../lib/types";
+import { BrushPreview, Thumbnail } from "../components/Preview";
+import type { BrushId, CharCategory } from "../lib/types";
 import JourneySetup from "../components/JourneySetup";
 import { characterGuide } from "../lib/character-guide";
 import { gsap } from "gsap";
 import ProjectManager from "../components/ProjectManager";
+const WRITING_FILTERS = [
+  ["all", "전체"],
+  ["hangul", "한글"],
+  ["latin", "영어"],
+  ["basic", "기본 기호"],
+  ["special", "특수 기호"],
+  ["review", "다시 확인"],
+] as const;
+type WritingFilter = (typeof WRITING_FILTERS)[number][0];
 const STEPS = ["브러시", "견본", "글자 쓰기", "자모 나누기", "폰트 완성"];
 const BRUSHES: { id: BrushId; label: string }[] = [
   { id: "pen", label: "펜" },
@@ -46,7 +55,7 @@ export default function Page() {
   } = useStudio();
   const [index, setIndex] = useState(0),
     [step, setStep] = useState(0),
-    [listFilter, setListFilter] = useState<"all" | "review" | "unsafe">("all"),
+    [listFilter, setListFilter] = useState<WritingFilter>("all"),
     [tool, setTool] = useState<"pen" | "eraser">("pen"),
     [modal, setModal] = useState(false),
     [projectsOpen, setProjectsOpen] = useState(false),
@@ -120,15 +129,17 @@ export default function Page() {
     ],
   );
   const reviewChars = CHARSET.filter((entry) => issues[entry.char]?.length);
-  const unsafeChars = reviewChars.filter((entry) =>
-    issues[entry.char].some((issue) => issue.kind === "unsafe"),
-  );
-  const navigationChars =
-    listFilter === "review"
-      ? reviewChars
-      : listFilter === "unsafe"
-        ? unsafeChars
-        : chars;
+  const filteredChars = {
+    all: chars,
+    hangul: chars.filter(({ category }) => category.startsWith("hangul")),
+    latin: chars.filter(({ category }) => category.startsWith("latin")),
+    basic: chars.filter(({ category }) =>
+      ["digit", "ascii-symbol", "korean-punct"].includes(category),
+    ),
+    special: [],
+    review: reviewChars,
+  };
+  const navigationChars = filteredChars[listFilter];
   const current = CHARSET[Math.max(0, Math.min(index, CHARSET.length - 1))],
     char = current.char,
     category = current.category;
@@ -309,14 +320,9 @@ export default function Page() {
         CHARSET.findIndex((entry) => entry.char === (target ?? fallback)!.char),
       );
   };
-  const selectFilter = (filter: "all" | "review" | "unsafe") => {
+  const selectFilter = (filter: WritingFilter) => {
     setListFilter(filter);
-    const entries =
-      filter === "review"
-        ? reviewChars
-        : filter === "unsafe"
-          ? unsafeChars
-          : chars;
+    const entries = filteredChars[filter];
     if (filter === "all" && !enabled.includes(category))
       setEnabled((previous) => [...previous, category]);
     else if (entries.length && !entries.some((entry) => entry.char === char))
@@ -449,8 +455,6 @@ export default function Page() {
       project.samples[c.char]?.status === "done" && !issues[c.char]?.length,
   ).length;
   const isLast = currentPosition === navigationChars.length - 1;
-  const setGrid = (key: keyof ProjectSettings["grid"]) =>
-    update({ grid: { ...s.grid, [key]: !s.grid[key] } });
   return (
     <main
       ref={stageRoot}
@@ -835,6 +839,18 @@ export default function Page() {
                     자동
                   </button>
                 </label>
+                {category === "hangul-syllable" && (
+                  <button
+                    className="write-to-separation"
+                    disabled={busy || !strokes.length}
+                    onClick={() => {
+                      changeStep(3);
+                      setFontReviewChar(char);
+                    }}
+                  >
+                    이 글자 자모 나누기 →
+                  </button>
+                )}
               </div>
               <WritingPad
                 key={char}
@@ -873,61 +889,6 @@ export default function Page() {
                   ? "갈색 점선은 한글 안전영역입니다. 획의 가장자리까지 안쪽에 써주세요."
                   : "기준선 아래는 디센더·문장부호 영역입니다. 아래쪽 점선까지 사용할 수 있어요."}
               </p>
-              <div className="grid-tools">
-                {category.startsWith("hangul") ? (
-                  <>
-                    <span>가이드</span>
-                    <button
-                      data-ink-locked={busy || undefined}
-                      disabled={busy}
-                      className={
-                        s.grid.halfVertical || s.grid.halfHorizontal
-                          ? "active"
-                          : ""
-                      }
-                      onClick={() => {
-                        const on = !(
-                          s.grid.halfVertical || s.grid.halfHorizontal
-                        );
-                        update({
-                          grid: {
-                            ...s.grid,
-                            halfVertical: on,
-                            halfHorizontal: on,
-                          },
-                        });
-                      }}
-                    >
-                      ⊞ 2분할
-                    </button>
-                    <button
-                      data-ink-locked={busy || undefined}
-                      disabled={busy}
-                      className={s.grid.diamond ? "active" : ""}
-                      onClick={() => setGrid("diamond")}
-                    >
-                      ◇ 다이아몬드
-                    </button>
-                    <button
-                      data-ink-locked={busy || undefined}
-                      disabled={busy}
-                      className={s.grid.sizeGuide ? "active" : ""}
-                      onClick={() => setGrid("sizeGuide")}
-                    >
-                      □ 크기
-                    </button>
-                  </>
-                ) : (
-                  <div
-                    className="metric-guide-legend"
-                    aria-label="영문 기호 기준선 가이드"
-                  >
-                    <span>cap 230 · x 420</span>
-                    <strong>기준선 800</strong>
-                    <span>디센더 950</span>
-                  </div>
-                )}
-              </div>
             </div>
             <aside className="reference-panel">
               <div
@@ -962,15 +923,6 @@ export default function Page() {
                     ‘{char}’은 대체 견본으로 표시됩니다.
                   </small>
                 )}
-              {s.sampleMode === "outside" && (
-                <Reference
-                  char={char}
-                  settings={s}
-                  latin={!category.startsWith("hangul")}
-                  dark={dark}
-                  category={category}
-                />
-              )}
               {s.sampleMode === "inside-faint" && (
                 <label className="slider-label opacity-control">
                   견본 농도 <b>{Math.round(s.sampleOpacity * 100)}%</b>
@@ -1043,7 +995,7 @@ export default function Page() {
               </section>
               <div className="next-block">
                 <span className="section-label">
-                  {listFilter === "all" ? "진행" : "확인 목록"}{" "}
+                  {listFilter === "review" ? "확인 목록" : "진행"}{" "}
                   {currentPosition >= 0
                     ? currentPosition + 1
                     : "현재 글자 완료"}{" "}
@@ -1110,30 +1062,17 @@ export default function Page() {
                 role="group"
                 aria-label="글자 목록 필터"
               >
-                <button
-                  data-ink-locked={busy || undefined}
-                  disabled={busy}
-                  aria-pressed={listFilter === "all"}
-                  onClick={() => selectFilter("all")}
-                >
-                  전체 <b>{chars.length}</b>
-                </button>
-                <button
-                  data-ink-locked={busy || undefined}
-                  disabled={busy}
-                  aria-pressed={listFilter === "review"}
-                  onClick={() => selectFilter("review")}
-                >
-                  다시 확인 <b>{reviewChars.length}</b>
-                </button>
-                <button
-                  data-ink-locked={busy || undefined}
-                  disabled={busy}
-                  aria-pressed={listFilter === "unsafe"}
-                  onClick={() => selectFilter("unsafe")}
-                >
-                  영역 벗어남 <b>{unsafeChars.length}</b>
-                </button>
+                {WRITING_FILTERS.map(([id, label]) => (
+                  <button
+                    key={id}
+                    data-ink-locked={busy || undefined}
+                    disabled={busy}
+                    aria-pressed={listFilter === id}
+                    onClick={() => selectFilter(id)}
+                  >
+                    {label} <b>{filteredChars[id].length}</b>
+                  </button>
+                ))}
               </div>
               <select
                 aria-label="카테고리로 이동"
@@ -1169,18 +1108,17 @@ export default function Page() {
             <div
               className="glyph-strip"
               aria-label={
-                listFilter === "all"
-                  ? "전체 글자 목록"
-                  : listFilter === "unsafe"
-                    ? "안전영역 벗어난 글자 목록"
-                    : "다시 확인할 글자 목록"
+                WRITING_FILTERS.find(([id]) => id === listFilter)?.[1] +
+                " 글자 목록"
               }
             >
               {!navigationChars.length && (
                 <div className="strip-empty" role="status">
-                  {listFilter === "unsafe"
-                    ? "안전영역을 벗어난 글자가 없습니다."
-                    : "다시 확인할 글자가 없습니다."}
+                  {listFilter === "special"
+                    ? "특수 기호 쓰기는 준비 중입니다."
+                    : listFilter === "review"
+                      ? "다시 확인할 글자가 없습니다."
+                      : "이 분류에 표시할 글자가 없습니다."}
                   <button onClick={() => selectFilter("all")}>
                     전체 글자 보기
                   </button>
@@ -1263,6 +1201,10 @@ export default function Page() {
           onChange={useStudio.getState().prepareFont}
           saveStatus={saved}
           initialChar={fontReviewChar}
+          onWriteSpecial={() => {
+            changeStep(2);
+            setListFilter("special");
+          }}
           initialStage={step === 3 ? "separation" : "build"}
           onSave={persist}
           onClose={() => {
@@ -1321,26 +1263,18 @@ export default function Page() {
                 onChange={(e) => rename(e.target.value)}
               />
             </label>
-            <h3>격자</h3>
-            <div className="settings-grid">
-              {(
-                [
-                  { key: "halfVertical", label: "2분할 세로" },
-                  { key: "halfHorizontal", label: "2분할 가로" },
-                  { key: "diamond", label: "다이아몬드" },
-                  { key: "sizeGuide", label: "글자 크기 가이드" },
-                ] as const
-              ).map((g) => (
-                <label className="check" key={g.key}>
-                  <input
-                    type="checkbox"
-                    checked={s.grid[g.key]}
-                    onChange={() => setGrid(g.key)}
-                  />
-                  {g.label}
-                </label>
-              ))}
-            </div>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={s.grid.sizeGuide}
+                onChange={(event) =>
+                  update({
+                    grid: { ...s.grid, sizeGuide: event.target.checked },
+                  })
+                }
+              />
+              글자 크기 가이드
+            </label>
             <h3>입력과 화면</h3>
             <label className="check">
               <input

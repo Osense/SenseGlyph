@@ -789,3 +789,34 @@
     transition: none;
   }
 }
+
+.output-name-check {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: center;
+}
+.output-name-available {
+  color: #24743e;
+}
+.dark .output-name-available {
+  color: #9ad6a9;
+}
+
+.font-correction-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 18px;
+}
+.font-correction-controls legend {
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+.font-correction-controls label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

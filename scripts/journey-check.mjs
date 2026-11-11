@@ -264,6 +264,18 @@ try {
   await page.getByLabel(/한글 폰트 이름/).fill("여정 손글씨");
   assert.equal(await output.isEnabled(), false);
   await page.getByLabel(/영문 폰트 이름/).fill("Journey Hand Test");
+  assert.equal(await output.isEnabled(), false);
+  await page
+    .getByRole("button", { name: "폰트 이름 중복확인", exact: true })
+    .click();
+  await page.getByText("사용가능한 폰트명입니다!").waitFor();
+  await page.getByLabel("출력 플랜").selectOption("premium");
+  const premium = page.getByRole("dialog", { name: "특수 기호 손글씨" });
+  await premium
+    .getByText("현재 특수기호 손글씨가 없습니다. 입력하시겠습니까?")
+    .waitFor();
+  await premium.getByRole("button", { name: "취소", exact: true }).click();
+  assert.equal(await page.getByLabel("출력 플랜").inputValue(), "basic");
   await page.getByLabel("파일 형식").selectOption("otf");
   await output.click();
   const checkout = page.getByRole("dialog", { name: "폰트 출력" });
@@ -283,15 +295,15 @@ try {
   const downloaded = page.waitForEvent("download");
   await download.click();
   const file = await downloaded;
-  assert.equal(file.suggestedFilename(), "OSNS 여정 손글씨.otf");
+  assert.equal(file.suggestedFilename(), "OSNS 여정손글씨.otf");
   await file.saveAs("artifacts/journey-test.otf");
   const bytes = await readFile("artifacts/journey-test.otf");
   const font = opentype.parse(
     bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
   );
   assert.equal(font.glyphs.length, 11175);
-  assert.equal(font.names.fontFamily.en, "OSNS Journey Hand Test");
-  assert.equal(font.names.fontFamily.ko, "OSNS 여정 손글씨");
+  assert.equal(font.names.fontFamily.en, "OSNS JourneyHandTest");
+  assert.equal(font.names.fontFamily.ko, "OSNS 여정손글씨");
   const glyph = font.charToGlyph("겨"),
     bounds = glyph.getBoundingBox();
   assert.equal(glyph.advanceWidth - (bounds.x2 - bounds.x1), -120);

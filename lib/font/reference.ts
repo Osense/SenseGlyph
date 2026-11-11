@@ -14,9 +14,9 @@ const referenceEntry = (char: string, font = "sans") =>
   fonts[font]?.[char] ?? fonts.fallback?.[char];
 const guides = new Map<string, ReturnType<typeof createGuide>>();
 const parts: Part[] = ["cho", "jung", "jong"];
-function createGuide(entry: Entry, diamond: boolean) {
+function createGuide(entry: Entry) {
   const [w, h] = entry.size,
-    scale = sampleFontSize(w, h, diamond, entry.fit),
+    scale = sampleFontSize(w, h, true, entry.fit),
     width = w * scale,
     height = h * scale;
   const x = 500 - width / 2,
@@ -57,11 +57,10 @@ function createGuide(entry: Entry, diamond: boolean) {
 export function referenceGuide(char: string, settings?: ReferenceSettings) {
   if (!settings) return null;
   const font = settings.referenceFont ?? "sans",
-    diamond = settings.grid.diamond,
-    key = font + ":" + diamond + ":" + char;
+    key = font + ":" + char;
   const entry = referenceEntry(char, font);
   if (!entry) return null;
-  if (!guides.has(key)) guides.set(key, createGuide(entry, diamond));
+  if (!guides.has(key)) guides.set(key, createGuide(entry));
   return guides.get(key)!;
 }
 export function referencePart(

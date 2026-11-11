@@ -48,13 +48,22 @@ export default function MetricPreview({
     after = useRef<HTMLCanvasElement>(null);
   const { settings, separations } = preparation;
   const { strokeWeight, strokeFinish } = settings;
-  const handwriting = useMemo(
+  const uncorrected = useMemo(
     () => prepareHandwriting(project, preparation),
+    [project.samples, separations, project.settings.referenceFont],
+  );
+  const handwriting = useMemo(
+    () =>
+      settings.alignToReference || settings.averageStrokes
+        ? prepareHandwriting(project, preparation, true)
+        : uncorrected,
     [
       project.samples,
       separations,
       project.settings.referenceFont,
-      project.settings.grid.diamond,
+      settings.alignToReference,
+      settings.averageStrokes,
+      uncorrected,
     ],
   );
   const originals = useMemo(
@@ -107,8 +116,12 @@ export default function MetricPreview({
       const direct = handwriting.direct.get(char);
       const strokes =
         direct ?? composeGlyph(char, handwriting.library, handwriting.pools);
+      const originalStrokes = direct
+        ? uncorrected.direct.get(char)
+        : composeGlyph(char, uncorrected.library, uncorrected.pools);
       const reference =
-        originals.get(char) ?? (strokes ? strokeContours(strokes) : []);
+        originals.get(char) ??
+        (originalStrokes ? strokeContours(originalStrokes) : []);
       if (!strokes || !reference.length)
         return {
           char,
@@ -127,9 +140,9 @@ export default function MetricPreview({
       );
       const styled = layoutGlyph(
         char,
-        direct ? renderer(strokes) : reference,
+        direct ? renderer(strokes) : strokeContours(strokes),
         plan,
-        reference,
+        direct ? reference : strokeContours(strokes),
         !direct,
       );
       return {
@@ -145,6 +158,24 @@ export default function MetricPreview({
       ctx.fillStyle = "#fffef8";
       ctx.fillRect(0, 0, 720, 160);
       const baseline = 126;
+      const guideBody = 840;
+      const size = guideBody * scale;
+      const top = baseline + (500 - guideBody / 2 - settings.baseline) * scale;
+      ctx.strokeStyle = "#eeece3";
+      ctx.beginPath();
+      for (let x = 16; x <= 704; x += 24) {
+        ctx.moveTo(x, 12);
+        ctx.lineTo(x, 148);
+      }
+      for (let y = 12; y <= 148; y += 24) {
+        ctx.moveTo(16, y);
+        ctx.lineTo(704, y);
+      }
+      ctx.stroke();
+      ctx.strokeStyle = "#b58b66";
+      ctx.setLineDash([5, 4]);
+      ctx.strokeRect(16, top, 688, size);
+      ctx.setLineDash([]);
       ctx.strokeStyle = "#d8d5c8";
       ctx.beginPath();
       ctx.moveTo(16, baseline);
@@ -180,6 +211,7 @@ export default function MetricPreview({
     originals,
     writtenContours,
     handwriting,
+    uncorrected,
     plan,
     renderer,
     settings.baseline,
@@ -201,6 +233,10 @@ export default function MetricPreview({
           onChange={(event) => setText(event.target.value)}
         />
       </label>
+      <p className="font-help">
+        글자가 갈색 점선 사이를 채우도록 출력 글자 크기를 조절해 주세요. 점선은
+        현재 설정한 한글 글자 크기의 기준입니다.
+      </p>
       <div className="font-comparison">
         <figure>
           <figcaption>보정 전</figcaption>

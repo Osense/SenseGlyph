@@ -570,6 +570,10 @@ export default function SeparationEditor({
                   pointerEvents="none"
                 />
               )}
+              <path
+                className="separation-fixed-grid"
+                d="M500 0V1000 M0 500H1000 M500 0L1000 500 500 1000 0 500Z"
+              />
               {parts.map((part) => {
                 const box = boxes[part]!;
                 if (guide)

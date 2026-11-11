@@ -9,6 +9,8 @@ export function validPreparation(value: unknown): value is FontPreparation {
   if (!record(value) || !record(value.settings) || !record(value.separations))
     return false;
   const s = value.settings;
+  for (const key of ["alignToReference", "averageStrokes"])
+    if (s[key] !== undefined && typeof s[key] !== "boolean") return false;
   for (const key of [
     "positionCorrection",
     "shapeInterpolation",

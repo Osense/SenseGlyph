@@ -59,12 +59,11 @@ it("uses the same input-frame fit and lets actual ink regions assign a stroke", 
     order: 0,
   };
   expect(referencePart("갛", stroke, settings)).toBe("jong");
-  const square = referenceGuide("갛", {
+  const legacy = referenceGuide("갛", {
     ...settings,
     grid: { ...settings.grid, diamond: false },
   })!;
-  expect(square.width).toBeGreaterThan(guide.width);
-  expect(square.width / square.height).toBeCloseTo(guide.width / guide.height);
+  expect(legacy).toBe(guide);
 });
 
 it("keeps the fallback outline, dimensions and 판정 범위 in sync when a font lacks a glyph", () => {

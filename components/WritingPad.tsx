@@ -11,7 +11,8 @@ import { pixelToEm, hitsStroke, splitPoints } from "../lib/geometry";
 import { paintStroke } from "../lib/brushes";
 import { drawGrid, drawSample } from "../lib/drawing";
 import { useStudio } from "../lib/store";
-import { loadReferenceFont } from "../lib/reference-fonts";
+import { referenceUsesFallback } from "../lib/font/reference";
+import { loadReferenceFont, referenceStack } from "../lib/reference-fonts";
 import { strokeIsSafe, strokesAreSafe } from "../lib/safety";
 import CanvasStepButtons, { type CanvasNavigation } from "./CanvasStepButtons";
 let penDetectedThisSession = false;
@@ -271,6 +272,19 @@ export default function WritingPad({
   };
   return (
     <div className="pad" ref={wrap} aria-label={char + " 쓰기 칸"}>
+      {settings.sampleMode === "outside" && (
+        <span
+          className="writing-rail-sample"
+          aria-label={"견본 " + char}
+          style={{
+            fontFamily: referenceUsesFallback(char, settings.referenceFont)
+              ? '"Noto Sans KR"'
+              : referenceStack(settings.referenceFont),
+          }}
+        >
+          {char}
+        </span>
+      )}
       {navigation && (
         <CanvasStepButtons navigation={navigation} context="쓰기" />
       )}

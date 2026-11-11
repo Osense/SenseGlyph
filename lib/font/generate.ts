@@ -88,7 +88,7 @@ export function generateFont(
         ". 쓰기 또는 자모 보정 화면에서 수정해 주세요.",
     );
   progress(2, "손글씨 외곽선을 준비하고 있어요");
-  const handwriting = prepareHandwriting(project, preparation);
+  const handwriting = prepareHandwriting(project, preparation, true);
   const render = createStrokeRenderer(options);
   const references = new Map(samples.map((s) => [s.char, contours(s.strokes)]));
   const direct = new Map(

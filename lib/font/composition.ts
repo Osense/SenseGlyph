@@ -1,4 +1,6 @@
 import { HANGUL } from "../../data/charset";
+import { strokesAreSafe } from "../safety";
+import { refinePool } from "./interpolation";
 import { decompose, slotKeys, vowelType } from "../hangul";
 import { activeSeparation, effectiveSample } from "./editing";
 import {
@@ -147,9 +149,35 @@ export function componentLibrary(project: FontProject, prep: FontPreparation) {
   return prepareHandwriting(project, prep).library;
 }
 
+function alignComponent(source: ComponentSample, target: Box): ComponentSample {
+  const centers = source.strokes.map(strokeCenter);
+  const xs = centers.map(({ x }) => x);
+  const ys = centers.map(({ y }) => y);
+  const shift = (distance: number) =>
+    Math.max(-35, Math.min(35, distance * 0.35));
+  const dx = shift(
+    target.x + target.width / 2 - (Math.min(...xs) + Math.max(...xs)) / 2,
+  );
+  const dy = shift(
+    target.y + target.height / 2 - (Math.min(...ys) + Math.max(...ys)) / 2,
+  );
+  return {
+    ...source,
+    strokes: source.strokes.map((stroke) => ({
+      ...stroke,
+      points: stroke.points.map((point) => ({
+        ...point,
+        x: point.x + dx,
+        y: point.y + dy,
+      })),
+    })),
+  };
+}
+
 export function prepareHandwriting(
   project: FontProject,
   prep: FontPreparation,
+  applyCorrection = false,
 ) {
   const library = new Map<string, ComponentSample>();
   const pools = new Map<string, ComponentSample[]>();
@@ -169,6 +197,50 @@ export function prepareHandwriting(
     );
     for (const part of parts)
       pools.set(part.key, [...(pools.get(part.key) ?? []), part]);
+  }
+  const { alignToReference, averageStrokes } = prep.settings;
+  if (applyCorrection && (alignToReference || averageStrokes)) {
+    const changed = new Map<string, Map<string, Stroke>>();
+    for (const [key, pool] of pools) {
+      const averaging =
+        averageStrokes && pool.length > 1
+          ? refinePool(pool, {
+              ...prep.settings,
+              positionCorrection: 0,
+              shapeInterpolation: 45,
+              widthCorrection: 35,
+            })
+          : null;
+      pools.set(
+        key,
+        pool.map((source) => {
+          const reference = alignToReference
+            ? referenceGuide(source.char, project.settings)?.boxes[source.part]
+            : undefined;
+          const averaged = averaging?.refine(source) ?? source;
+          const adjusted = reference
+            ? alignComponent(averaged, reference)
+            : averaged;
+          if (
+            adjusted === source ||
+            !strokesAreSafe(adjusted.strokes, "hangul-syllable")
+          )
+            return source;
+          const strokes = changed.get(source.char) ?? new Map();
+          for (const stroke of adjusted.strokes) strokes.set(stroke.id, stroke);
+          changed.set(source.char, strokes);
+          return adjusted;
+        }),
+      );
+    }
+    for (const [char, replacements] of changed) {
+      direct.set(
+        char,
+        direct
+          .get(char)!
+          .map((stroke) => replacements.get(stroke.id) ?? stroke),
+      );
+    }
   }
   for (const [key, pool] of pools) {
     const confirmed = pool.filter((component) => component.confirmed);

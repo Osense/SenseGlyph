@@ -25,6 +25,8 @@ export type StrokeFinish = "original" | "round" | "pointed";
 
 export interface FontBuildSettings {
   widthCorrection?: number;
+  alignToReference?: boolean;
+  averageStrokes?: boolean;
   strokeWeight?: number;
   strokeFinish?: StrokeFinish;
   positionCorrection?: number;

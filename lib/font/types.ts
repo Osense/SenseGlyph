@@ -20,6 +20,8 @@ export interface Separation {
   sourceUpdatedAt?: number;
 }
 export interface FontBuildSettings {
+  positionCorrection?: number;
+  shapeInterpolation?: number;
   bodySize?: number;
   familyName: string;
   letterSpacing: number;
@@ -65,6 +67,8 @@ export function defaultPreparation(name: string): FontPreparation {
   return {
     separations: {},
     settings: {
+      positionCorrection: 35,
+      shapeInterpolation: 25,
       bodySize: 840,
       familyName: name || "나의 손글씨",
       letterSpacing: 0,

@@ -1,7 +1,7 @@
 import opentype from "opentype.js";
 import { slotKeys } from "../hangul";
 import {
-  componentLibrary,
+  prepareHandwriting,
   layoutBoxes,
   transformComponent,
 } from "./composition";
@@ -47,6 +47,9 @@ export function generateFont(
   const options = { ...preparation.settings, includeComposed: true };
   if (!options.familyName.trim()) throw new Error("폰트 이름을 입력하세요.");
   if (
+    [options.positionCorrection, options.shapeInterpolation].some(
+      (v) => v !== undefined && (!Number.isFinite(v) || v < 0 || v > 100),
+    ) ||
     !Number.isFinite(options.baseline) ||
     options.baseline < 650 ||
     options.baseline > 900 ||
@@ -74,10 +77,16 @@ export function generateFont(
         ". 쓰기 또는 자모 보정 화면에서 수정해 주세요.",
     );
   progress(2, "손글씨 외곽선을 준비하고 있어요");
-  const direct = new Map(samples.map((s) => [s.char, contours(s.strokes)]));
+  const handwriting = prepareHandwriting(project, preparation);
+  const direct = new Map(
+    samples.map((s) => [
+      s.char,
+      contours(handwriting.direct.get(s.char) ?? s.strokes),
+    ]),
+  );
   const components = new Map<string, Polygon[]>();
   if (options.includeComposed)
-    for (const [key, component] of componentLibrary(project, preparation)) {
+    for (const [key, component] of handwriting.library) {
       components.set(
         key,
         contours(
@@ -206,9 +215,9 @@ export function generateFont(
   for (const key of ["fontFamily", "fullName"] as const)
     font.names[key] = { en: englishName, ko: options.familyName.trim() };
   font.names.postScriptName = { en: internalName + "-Regular" };
-  font.names.version = { en: "Version 1.100" };
+  font.names.version = { en: "Version 1.200" };
   Object.assign(font.names, {
-    uniqueID: { en: internalName + "-1.100-" + project.updatedAt },
+    uniqueID: { en: internalName + "-1.200-" + project.updatedAt },
   });
   const mapping = glyphs.flatMap((glyph, index) =>
     glyph.unicodes.map((code) => ({ code, index })),

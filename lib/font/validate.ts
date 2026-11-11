@@ -9,6 +9,10 @@ export function validPreparation(value: unknown): value is FontPreparation {
   if (!record(value) || !record(value.settings) || !record(value.separations))
     return false;
   const s = value.settings;
+  for (const key of ["positionCorrection", "shapeInterpolation"]) {
+    if (s[key] !== undefined && (!finite(s[key]) || s[key] < 0 || s[key] > 100))
+      return false;
+  }
   if (
     s.bodySize !== undefined &&
     (!finite(s.bodySize) ||

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { componentLibrary, composeGlyph } from "../lib/font/composition";
+import { prepareHandwriting, composeGlyph } from "../lib/font/composition";
 import { effectiveStrokes } from "../lib/font/editing";
 import {
   createLayoutPlan,
@@ -28,15 +28,18 @@ export default function MetricPreview({
   const [text, setText] = useState(initial || "한글 가나다"),
     [ready, setReady] = useState(0);
   const canvas = useRef<HTMLCanvasElement>(null);
-  const library = useMemo(
-    () => componentLibrary(project, preparation),
+  const handwriting = useMemo(
+    () => prepareHandwriting(project, preparation),
     [
       project.samples,
       preparation.separations,
+      preparation.settings.positionCorrection,
+      preparation.settings.shapeInterpolation,
       project.settings.referenceFont,
       project.settings.grid.diamond,
     ],
   );
+  const library = handwriting.library;
   const direct = useMemo(
     () =>
       new Map(
@@ -46,16 +49,13 @@ export default function MetricPreview({
               [
                 sample.char,
                 strokeContours(
-                  effectiveStrokes(
-                    sample,
-                    preparation.separations[sample.char],
-                  ),
+                  handwriting.direct.get(sample.char) ?? sample.strokes,
                 ),
               ] as [string, Contours],
           )
           .filter(([, paths]) => paths.length),
       ),
-    [project.samples, preparation.separations],
+    [handwriting, project.samples],
   );
   const plan = useMemo(
     () => createLayoutPlan(direct, preparation.settings),
@@ -93,7 +93,13 @@ export default function MetricPreview({
         })();
       if (raw?.length) {
         const shaped = layoutGlyph(char, raw, plan);
-        return { char, raw, shaped, advance: shaped.advanceWidth };
+        const sample = project.samples[char];
+        const original = sample
+          ? strokeContours(
+              effectiveStrokes(sample, preparation.separations[char]),
+            )
+          : raw;
+        return { char, raw: original, shaped, advance: shaped.advanceWidth };
       }
       if (/\s/.test(char))
         return {
@@ -148,7 +154,7 @@ export default function MetricPreview({
     ctx.font = '16px "Noto Sans KR"';
     for (const [base, label, cap] of [
       [120, "입력 칸 그대로", 570],
-      [285, "폰트 출력 · 크기/여백 보정", plan.capHeight],
+      [285, "폰트 출력 · 자모 정돈/크기/여백", plan.capHeight],
     ] as [number, string, number][]) {
       ctx.fillStyle = "#829078";
       ctx.fillText(label, 16, base - 103);
@@ -213,6 +219,8 @@ export default function MetricPreview({
     library,
     plan,
     project.settings,
+    project.samples,
+    preparation.separations,
     preparation.settings.baseline,
   ]);
   return (

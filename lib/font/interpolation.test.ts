@@ -1,0 +1,109 @@
+import { expect, it } from "vitest";
+import { refinePool } from "./interpolation";
+import { defaultPreparation } from "./types";
+import type { ComponentSample } from "./types";
+import { completeFixture } from "./fixtures";
+import { prepareHandwriting, separateSample } from "./composition";
+import { validPreparation } from "./validate";
+import { strokesAreSafe } from "../safety";
+
+const settings = () => defaultPreparation("test").settings;
+function sample(
+  char: string,
+  offset = 0,
+  bend = 0,
+  dense = false,
+): ComponentSample {
+  const points = [
+    { x: 100 + offset, y: 100 },
+    ...(dense ? [{ x: 150 + offset, y: 150 + bend / 2 }] : []),
+    { x: 200 + offset, y: 200 + bend },
+    { x: 300 + offset, y: 100 },
+  ].map((p, i) => ({ ...p, p: 0.4 + i * 0.1, t: i * 10, tiltX: 12 }));
+  return {
+    key: "jung:0:false",
+    char,
+    part: "jung",
+    box: { x: 0, y: 0, width: 1000, height: 1000 },
+    strokes: [
+      {
+        id: char,
+        order: 0,
+        createdAt: 1,
+        brush: "pen",
+        params: { size: 35, usePressure: true },
+        points,
+      },
+    ],
+  };
+}
+it("uses compatible repeated samples, independent of pen sampling density, without changing pressure or source data", () => {
+  const a = sample("가", 0, 0),
+    b = sample("나", 40, 12, true);
+  const before = JSON.stringify([a, b]);
+  const s = { ...settings(), positionCorrection: 100, shapeInterpolation: 100 };
+  const out = refinePool([a, b], s).refine(a);
+  expect(out.strokes[0].points[0].x).toBeGreaterThan(100);
+  expect(out.strokes[0].points[1].y).toBeGreaterThan(200);
+  expect(out.strokes[0].points.map((p) => [p.p, p.t, p.tiltX])).toEqual(
+    a.strokes[0].points.map((p) => [p.p, p.t, p.tiltX]),
+  );
+  expect(out.strokes[0].params).toEqual(a.strokes[0].params);
+  expect(JSON.stringify([a, b])).toBe(before);
+  const exact = refinePool([a, sample("다", 0, 0, true)], s).refine(a);
+  exact.strokes[0].points.forEach((p, i) => {
+    expect(p.x).toBeCloseTo(a.strokes[0].points[i].x);
+    expect(p.y).toBeCloseTo(a.strokes[0].points[i].y);
+  });
+});
+it("rejects different stroke topology and selects a majority prototype instead of the first outlier", () => {
+  const outlier = sample("가");
+  outlier.strokes.push({ ...outlier.strokes[0], id: "extra" });
+  const a = sample("나"),
+    b = sample("다", 5);
+  const s = { ...settings(), positionCorrection: 0, shapeInterpolation: 100 };
+  const model = refinePool([outlier, a, b], s);
+  expect(model.representative.strokes).toHaveLength(1);
+  expect(model.refine(outlier).strokes).toEqual(outlier.strokes);
+  const reversed = sample("라");
+  reversed.strokes[0].points.reverse();
+  expect(refinePool([a, reversed], s).refine(a).strokes).toEqual(a.strokes);
+});
+it("shares correction for written/composed glyphs, keeps manual geometry and supports exact legacy comparison", () => {
+  const project = completeFixture(),
+    prep = defaultPreparation("test");
+  const original = JSON.stringify(project);
+  const result = prepareHandwriting(project, prep);
+  expect(result.library.size).toBe(237);
+  for (const [char, strokes] of result.direct)
+    expect(strokesAreSafe(strokes, project.samples[char].category)).toBe(true);
+  expect(JSON.stringify(project)).toBe(original);
+  const char = "겨";
+  prep.separations[char] = {
+    assignments: {},
+    strokes: project.samples[char].strokes,
+  };
+  expect(prepareHandwriting(project, prep).direct.get(char)).toBe(
+    prep.separations[char].strokes,
+  );
+  prep.settings.positionCorrection = prep.settings.shapeInterpolation = 0;
+  const legacy = prepareHandwriting(project, prep);
+  const first = separateSample(
+    project.samples[char],
+    prep.separations[char],
+    project.settings,
+  )[0];
+  expect(legacy.library.get(first.key)).toEqual(first);
+  expect(legacy.direct.get(char)).toEqual(project.samples[char].strokes);
+});
+it("validates optional saved strengths and keeps old backups valid", () => {
+  const prep = defaultPreparation("test");
+  expect(validPreparation(JSON.parse(JSON.stringify(prep)))).toBe(true);
+  delete prep.settings.positionCorrection;
+  delete prep.settings.shapeInterpolation;
+  expect(validPreparation(prep)).toBe(true);
+  for (const value of [-1, 101, NaN, Infinity]) {
+    prep.settings.positionCorrection = value;
+    expect(validPreparation(prep)).toBe(false);
+  }
+});

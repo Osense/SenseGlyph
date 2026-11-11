@@ -12,6 +12,7 @@ import {
   FONT_SETTING_LIMITS as LIMITS,
 } from "../lib/font/types";
 import { bodySize } from "../lib/font/layout";
+import { correction, interpolation } from "../lib/font/interpolation";
 import type { FontProject } from "../lib/types";
 import type {
   FontPreparation,
@@ -518,6 +519,36 @@ export default function FontWorkshop({
                 />
               </label>
               <label className="font-field">
+                자모 위치 정돈 <b>{correction(prep.settings)}%</b>
+                <input
+                  aria-label="자모 위치 정돈"
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={correction(prep.settings)}
+                  disabled={building && !guided}
+                  onChange={(e) =>
+                    settings({ positionCorrection: +e.target.value })
+                  }
+                />
+              </label>
+              <label className="font-field">
+                획 모양 보간 <b>{interpolation(prep.settings)}%</b>
+                <input
+                  aria-label="획 모양 보간"
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={interpolation(prep.settings)}
+                  disabled={building && !guided}
+                  onChange={(e) =>
+                    settings({ shapeInterpolation: +e.target.value })
+                  }
+                />
+              </label>
+              <label className="font-field">
                 기준선 <b>{prep.settings.baseline}</b>
                 <input
                   aria-label="기준선"
@@ -541,9 +572,10 @@ export default function FontWorkshop({
             )}
             {(!guided || finishStep === 2) && (
               <p className="font-help">
-                입력 칸의 빈 여백을 정리하고 필기 모양을 유지해 확대합니다.
-                자간은 획 가장자리 사이의 간격입니다. 나머지 한글은 자리별
-                자모를 조합합니다.
+                같은 자모를 반복해 쓴 표본으로 위치와 크기를 정돈하고, 획 구조가
+                비슷한 표본끼리 모양을 보간합니다. 두 강도를 모두 0으로 낮추면
+                기존 방식과 비교할 수 있어요. 원본 글씨와 직접 보정한 모양은
+                보존됩니다. 자간은 획 가장자리 사이의 간격입니다.
               </p>
             )}
             {report.missingSlots.length > 0 && (

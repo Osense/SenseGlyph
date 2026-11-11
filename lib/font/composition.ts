@@ -1,6 +1,8 @@
 import { HANGUL } from "../../data/charset";
 import { decompose, slotKeys, vowelType } from "../hangul";
 import { activeSeparation, effectiveSample, strokeBounds } from "./editing";
+import { refinePool, correction, interpolation } from "./interpolation";
+import { strokesAreSafe } from "../safety";
 import {
   referenceGuide,
   referencePart,
@@ -143,19 +145,62 @@ export function separateSample(
 }
 
 export function componentLibrary(project: FontProject, prep: FontPreparation) {
+  return prepareHandwriting(project, prep).library;
+}
+
+export function prepareHandwriting(
+  project: FontProject,
+  prep: FontPreparation,
+) {
   const library = new Map<string, ComponentSample>();
-  // Prefer the specified order so regenerating a project always picks the same source.
-  for (const char of HANGUL) {
+  const pools = new Map<string, ComponentSample[]>();
+  const partsByChar = new Map<string, ComponentSample[]>();
+  const direct = new Map<string, Stroke[]>();
+  const chars = [
+    ...new Set([...HANGUL, ...Object.keys(project.samples).sort()]),
+  ];
+  for (const char of chars) {
     const sample = project.samples[char];
     if (!sample?.strokes.length) continue;
-    for (const part of separateSample(
+    direct.set(char, effectiveSample(sample, prep.separations[char]).strokes);
+    const parts = separateSample(
       sample,
       prep.separations[char],
       project.settings,
-    ))
-      if (!library.has(part.key)) library.set(part.key, part);
+    );
+    partsByChar.set(char, parts);
+    for (const part of parts)
+      pools.set(part.key, [...(pools.get(part.key) ?? []), part]);
   }
-  return library;
+  const refiners = new Map<string, ReturnType<typeof refinePool>>();
+  for (const [key, pool] of pools) {
+    const model = refinePool(pool, prep.settings);
+    refiners.set(key, model);
+    // Zero is a genuine comparison against the previous first-sample algorithm.
+    library.set(
+      key,
+      !correction(prep.settings) && !interpolation(prep.settings)
+        ? pool[0]
+        : model.representative,
+    );
+  }
+  for (const [char, parts] of partsByChar) {
+    const sample = project.samples[char];
+    const edit = activeSeparation(sample, prep.separations[char]);
+    // Explicit geometry edits win; never silently undo the user's manual work.
+    if (edit?.boxes || edit?.strokes || !parts.length) continue;
+    const replacements = new Map(
+      parts.flatMap((part) =>
+        refiners
+          .get(part.key)!
+          .refine(part)
+          .strokes.map((s) => [s.id, s] as const),
+      ),
+    );
+    const strokes = direct.get(char)!.map((s) => replacements.get(s.id) ?? s);
+    if (strokesAreSafe(strokes, sample.category)) direct.set(char, strokes);
+  }
+  return { library, direct };
 }
 
 const ALL_SLOTS = [...new Set(HANGUL.flatMap(slotKeys))];

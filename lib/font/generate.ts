@@ -206,6 +206,10 @@ export function generateFont(
   const mapping = glyphs.flatMap((glyph, index) =>
     glyph.unicodes.map((code) => ({ code, index })),
   );
+  if (mapping.some(({ code }) => code >= 0xac00 && code <= 0xd7a3)) {
+    // Windows applications can use this OS/2 flag to list Korean fonts.
+    Object.assign(font.tables.os2, { ulCodePageRange1: 1 | (1 << 19) });
+  }
   // opentype.js 1.x emits one format-4 segment per character (overflows at ~8k glyphs).
   // Avoid that quadratic/oversized legacy cmap; keep ASCII aliases for metric lookup,
   // retain each glyph.unicode for OS/2 ranges, then install compact full Unicode mappings.

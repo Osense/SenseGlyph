@@ -2,6 +2,7 @@ import opentype from "opentype.js";
 import { unzipSync } from "fflate";
 import { decompress } from "woff2-encoder";
 import { expect, it } from "vitest";
+import { sfntTable } from "./cmap";
 import { convertFont } from "./export-formats";
 import { completeFixture } from "./fixtures";
 import { generateFont } from "./generate";
@@ -37,7 +38,13 @@ it("exports four valid fonts with the output names and original Hangul coverage"
       signature,
     );
     const sfnt = ext === "woff2" ? await decompress(bytes) : bytes;
-    const font = opentype.parse(Uint8Array.from(sfnt).buffer);
+    const buffer = Uint8Array.from(sfnt).buffer;
+    if (ext !== "woff") {
+      const metrics = new DataView(sfntTable(buffer, "OS/2").buffer);
+      expect(metrics.getUint32(78) & (1 << 19)).toBe(1 << 19); // Windows CP949
+      expect(metrics.getUint32(46) & (1 << 24)).toBe(1 << 24); // Hangul syllables
+    }
+    const font = opentype.parse(buffer);
     expect(font.names.fontFamily).toMatchObject({
       en: "OSNS New Handwriting",
       ko: "OSNS 새 글씨",

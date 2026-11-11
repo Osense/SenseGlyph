@@ -26,10 +26,17 @@ export async function convertFont({
     type: "ttf",
     toBuffer: false,
   }) as ArrayBuffer;
+  const originalMetrics = sfntTable(buffer, "OS/2");
+  const convertedMetrics = sfntTable(converted, "OS/2");
+  // The converter overwrites Unicode coverage. Keep both language ranges
+  // alongside the original cmap while preserving the converted glyph metrics.
+  convertedMetrics.set(originalMetrics.subarray(42, 58), 42);
+  convertedMetrics.set(originalMetrics.subarray(78, 86), 78);
   // Preserve the original Unicode mapping and both Korean and English names.
   const ttf = replaceSfntTables(converted, {
     cmap: sfntTable(buffer, "cmap"),
     name: sfntTable(buffer, "name"),
+    "OS/2": convertedMetrics,
   });
   if (format === "ttf") return ttf;
   const makeWoff = () =>

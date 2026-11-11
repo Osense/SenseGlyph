@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { defaultSettings } from "./defaults";
 import type {
   FontProject,
   ProjectSettings,
@@ -27,7 +28,24 @@ interface State {
 export const useStudio = create<State>((set, get) => ({
   project: null,
   histories: {},
-  setProject: (project) => set({ project, histories: {} }),
+  setProject: (project) =>
+    set({
+      project: {
+        ...project,
+        settings: {
+          ...project.settings,
+          sampleMode:
+            project.settings.sampleMode === "hidden"
+              ? "inside-faint"
+              : project.settings.sampleMode,
+          brushParams: {
+            ...defaultSettings().brushParams,
+            ...project.settings.brushParams,
+          },
+        },
+      },
+      histories: {},
+    }),
   markReview: (char, category, needsReview) =>
     set((state) => {
       const project = state.project;

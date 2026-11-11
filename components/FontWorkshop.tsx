@@ -79,14 +79,6 @@ export default function FontWorkshop({
     onStageChange?.(next);
   };
   const [finishStep, setFinishStep] = useState(0);
-  const [wideScreen] = useState(
-    () =>
-      typeof window === "undefined" ||
-      window.matchMedia("(min-width: 1280px) and (min-height: 901px)").matches,
-  );
-  useEffect(() => {
-    if (stage === "build") setFinishStep(0);
-  }, [stage]);
   const [selected, setSelected] = useState(
     initialChar && writtenHangul.includes(initialChar)
       ? initialChar
@@ -316,6 +308,45 @@ export default function FontWorkshop({
                   ][finishStep]}
             </h2>
           </div>
+          {stage === "separation" && (
+            <details className="separation-welcome">
+              <summary
+                className="jamo-example"
+                aria-label="한의 초성 중성 종성 예시"
+              >
+                <span>한</span>
+                <i>=</i>
+                <span>
+                  ㅎ<small>초성 · 첫 자음</small>
+                </span>
+                <span>
+                  ㅏ<small>중성 · 모음</small>
+                </span>
+                <span>
+                  ㄴ<small>종성 · 받침</small>
+                </span>
+                <em className="welcome-toggle">설명</em>
+              </summary>
+              <p>
+                한 글자에서 초성·중성·종성을 나누면, 아직 쓰지 않은 한글도 만들
+                수 있어요. 우선 자동으로 나눈 결과를 확인해주세요.
+              </p>
+              <ol>
+                <li>
+                  <b>여러 획 선택</b> 올가미로 원하는 획을 둘러싸 한꺼번에
+                  잡아요.
+                </li>
+                <li>
+                  <b>한 번에 배정</b> 선택한 획 목록에서 초성·중성·종성 버튼을
+                  누르세요.
+                </li>
+                <li>
+                  <b>모양 보정</b> 선택한 획을 끌어 위치를 옮기거나 부분 수정
+                  도구로 다듬어요.
+                </li>
+              </ol>
+            </details>
+          )}
           <div className="font-save-controls">
             <span role="status">자동 저장 · {saveStatus}</span>
             <button className="font-secondary" onClick={onSave}>
@@ -366,48 +397,6 @@ export default function FontWorkshop({
         )}
         {stage === "separation" ? (
           <div className="separation-stage">
-            <details
-              className="separation-welcome"
-              // Large screens show the explanation; tablets and phones keep
-              // the editor in view and fold it under the example line.
-              open={wideScreen}
-            >
-              <summary
-                className="jamo-example"
-                aria-label="한의 초성 중성 종성 예시"
-              >
-                <span>한</span>
-                <i>=</i>
-                <span>
-                  ㅎ<small>초성 · 첫 자음</small>
-                </span>
-                <span>
-                  ㅏ<small>중성 · 모음</small>
-                </span>
-                <span>
-                  ㄴ<small>종성 · 받침</small>
-                </span>
-                <em className="welcome-toggle">설명</em>
-              </summary>
-              <p>
-                한 글자에서 초성·중성·종성을 나누면, 아직 쓰지 않은 한글도 만들
-                수 있어요. 우선 자동으로 나눈 결과를 확인해주세요.
-              </p>
-              <ol>
-                <li>
-                  <b>여러 획 선택</b> 올가미로 원하는 획을 둘러싸 한꺼번에
-                  잡아요.
-                </li>
-                <li>
-                  <b>한 번에 배정</b> 선택한 획 목록에서 초성·중성·종성 버튼을
-                  누르세요.
-                </li>
-                <li>
-                  <b>모양 보정</b> 선택한 획을 끌어 위치를 옮기거나 부분 수정
-                  도구로 다듬어요.
-                </li>
-              </ol>
-            </details>
             {writtenHangul.length ? (
               <SeparationEditor
                 project={project}

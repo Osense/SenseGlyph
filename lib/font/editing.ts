@@ -1,6 +1,6 @@
 import type { GlyphSample, Stroke } from "../types";
 import type { Box, Separation } from "./types";
-import { outline } from "../brushes";
+import { outline, outlines } from "../brushes";
 
 export function activeSeparation(sample: GlyphSample, separation?: Separation) {
   return separation?.sourceUpdatedAt !== undefined &&
@@ -193,33 +193,33 @@ export function selectStrokesLasso(strokes: Stroke[], polygon: LassoPoint[]) {
     top = Math.min(...ys),
     bottom = Math.max(...ys);
   return strokes
-    .filter((stroke) => {
-      const ink = outline(stroke.points, stroke.brush, stroke.params).map(
-        ([x, y]) => ({ x, y }),
-      );
-      if (
-        !ink.length ||
-        ink.every((p) => p.x < left) ||
-        ink.every((p) => p.x > right) ||
-        ink.every((p) => p.y < top) ||
-        ink.every((p) => p.y > bottom)
-      )
-        return false;
-      if (
-        ink.some((p) => pointInLasso(p, polygon)) ||
-        polygon.some((p) => pointInLasso(p, ink))
-      )
-        return true;
-      return ink.some((a, i) =>
-        polygon.some((c, j) =>
-          segmentsIntersect(
-            a,
-            ink[(i + 1) % ink.length],
-            c,
-            polygon[(j + 1) % polygon.length],
+    .filter((stroke) =>
+      outlines(stroke.points, stroke.brush, stroke.params).some((contour) => {
+        const ink = contour.map(([x, y]) => ({ x, y }));
+        if (
+          !ink.length ||
+          ink.every((p) => p.x < left) ||
+          ink.every((p) => p.x > right) ||
+          ink.every((p) => p.y < top) ||
+          ink.every((p) => p.y > bottom)
+        )
+          return false;
+        if (
+          ink.some((p) => pointInLasso(p, polygon)) ||
+          polygon.some((p) => pointInLasso(p, ink))
+        )
+          return true;
+        return ink.some((a, i) =>
+          polygon.some((c, j) =>
+            segmentsIntersect(
+              a,
+              ink[(i + 1) % ink.length],
+              c,
+              polygon[(j + 1) % polygon.length],
+            ),
           ),
-        ),
-      );
-    })
+        );
+      }),
+    )
     .map((stroke) => stroke.id);
 }

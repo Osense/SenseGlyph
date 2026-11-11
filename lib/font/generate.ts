@@ -215,9 +215,9 @@ export function generateFont(
   for (const key of ["fontFamily", "fullName"] as const)
     font.names[key] = { en: englishName, ko: options.familyName.trim() };
   font.names.postScriptName = { en: internalName + "-Regular" };
-  font.names.version = { en: "Version 1.200" };
+  font.names.version = { en: "Version 1.300" };
   Object.assign(font.names, {
-    uniqueID: { en: internalName + "-1.200-" + project.updatedAt },
+    uniqueID: { en: internalName + "-1.300-" + project.updatedAt },
   });
   const mapping = glyphs.flatMap((glyph, index) =>
     glyph.unicodes.map((code) => ({ code, index })),

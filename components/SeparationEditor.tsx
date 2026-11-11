@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
 import CanvasStepButtons from "./CanvasStepButtons";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { outline } from "../lib/brushes";
+import { outlines } from "../lib/brushes";
 import { pixelToEm } from "../lib/geometry";
 import {
   assignStroke,
@@ -444,31 +444,6 @@ export default function SeparationEditor({
           다음 →
         </button>
       </div>
-      <div
-        className="character-slider"
-        ref={strip}
-        role="listbox"
-        aria-label="보정할 글자 슬라이드"
-      >
-        {chars.map((item) => (
-          <button
-            key={item}
-            role="option"
-            aria-label={item + " 보정"}
-            aria-selected={item === char}
-            aria-current={item === char ? "true" : undefined}
-            onClick={() => onSelect(item)}
-          >
-            <Thumbnail
-              strokes={effectiveStrokes(
-                project.samples[item],
-                prep.separations[item],
-              )}
-            />
-            <span>{item}</span>
-          </button>
-        ))}
-      </div>
       <div className="editor-toolbar">
         <div className="editor-modes">
           <button
@@ -646,16 +621,22 @@ export default function SeparationEditor({
                     separation,
                     project.settings,
                   ),
-                  poly = outline(stroke.points, stroke.brush, stroke.params);
+                  polygons = outlines(
+                    stroke.points,
+                    stroke.brush,
+                    stroke.params,
+                  );
                 return (
                   <path
                     key={stroke.id}
                     data-stroke-id={stroke.id}
-                    d={
-                      poly.length
-                        ? "M" + poly.map((p) => p.join(",")).join("L") + "Z"
-                        : ""
-                    }
+                    d={polygons
+                      .map(
+                        (poly) =>
+                          "M" + poly.map((p) => p.join(",")).join("L") + "Z",
+                      )
+                      .join(" ")}
+                    fillRule="nonzero"
                     fill={PART_COLORS[part]}
                     stroke={selection.includes(stroke.id) ? "#dca829" : "none"}
                     strokeWidth="6"
@@ -862,6 +843,31 @@ export default function SeparationEditor({
           </fieldset>
         ))}
       </details>
+      <div
+        className="character-slider"
+        ref={strip}
+        role="listbox"
+        aria-label="보정할 글자 슬라이드"
+      >
+        {chars.map((item) => (
+          <button
+            key={item}
+            role="option"
+            aria-label={item + " 보정"}
+            aria-selected={item === char}
+            aria-current={item === char ? "true" : undefined}
+            onClick={() => onSelect(item)}
+          >
+            <Thumbnail
+              strokes={effectiveStrokes(
+                project.samples[item],
+                prep.separations[item],
+              )}
+            />
+            <span>{item}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

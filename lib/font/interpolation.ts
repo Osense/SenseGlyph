@@ -81,7 +81,8 @@ function compatible(a: Description, b: Description) {
       return (
         s.brush === other.brush &&
         s.params.usePressure === other.params.usePressure &&
-        s.params.nibAngle === other.params.nibAngle
+        s.params.nibAngle === other.params.nibAngle &&
+        s.params.pixelSize === other.params.pixelSize
       );
     })
   );

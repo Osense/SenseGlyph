@@ -1,11 +1,29 @@
 import { it, expect } from "vitest";
-import { outline } from "./index";
+import { outline, outlines } from "./index";
 import type { BrushId } from "../types";
-it('all brushes produce visible ink for a tap with repeated identical points',()=>{
-  for(const brush of ['pen','marker','brush','pencil','nib'] as BrushId[]){
-    const polygon=outline([{x:400,y:400,p:.5,t:0},{x:400,y:400,p:.5,t:10}],brush,{size:50,usePressure:true,nibAngle:30});
-    const area=polygon.reduce((sum,p,i)=>{const n=polygon[(i+1)%polygon.length];return sum+p[0]*n[1]-n[0]*p[1];},0);
-    expect(polygon.length).toBeGreaterThan(3);expect(Math.abs(area)).toBeGreaterThan(1);
+it("all brushes produce visible ink for a tap with repeated identical points", () => {
+  for (const brush of [
+    "pen",
+    "marker",
+    "brush",
+    "pencil",
+    "nib",
+    "pixel",
+  ] as BrushId[]) {
+    const polygon = outline(
+      [
+        { x: 400, y: 400, p: 0.5, t: 0 },
+        { x: 400, y: 400, p: 0.5, t: 10 },
+      ],
+      brush,
+      { size: 50, usePressure: true, nibAngle: 30 },
+    );
+    const area = polygon.reduce((sum, p, i) => {
+      const n = polygon[(i + 1) % polygon.length];
+      return sum + p[0] * n[1] - n[0] * p[1];
+    }, 0);
+    expect(polygon.length).toBeGreaterThan(3);
+    expect(Math.abs(area)).toBeGreaterThan(1);
   }
 });
 const points = Array.from({ length: 20 }, (_, i) => ({
@@ -14,9 +32,9 @@ const points = Array.from({ length: 20 }, (_, i) => ({
   p: 0.1 + i / 25,
   t: i * 5,
 }));
-it("all five brushes deterministically regenerate finite distinct polygons", () => {
+it("all six brushes deterministically regenerate finite distinct polygons", () => {
   const results = (
-    ["pen", "marker", "brush", "pencil", "nib"] as BrushId[]
+    ["pen", "marker", "brush", "pencil", "nib", "pixel"] as BrushId[]
   ).map((b) => {
     const params = { size: 50, usePressure: true, nibAngle: 30 };
     const first = outline(points, b, params);
@@ -25,7 +43,7 @@ it("all five brushes deterministically regenerate finite distinct polygons", () 
     expect(first.flat().every(Number.isFinite)).toBe(true);
     return JSON.stringify(first);
   });
-  expect(new Set(results).size).toBe(5);
+  expect(new Set(results).size).toBe(6);
 });
 it("nib offsets follow configured angle and empty strokes are safe", () => {
   expect(outline([], "pen", { size: 50, usePressure: true })).toEqual([]);
@@ -37,9 +55,9 @@ it("nib offsets follow configured angle and empty strokes are safe", () => {
     "nib",
     { size: 40, usePressure: false, nibAngle: 90 },
   );
-  expect(n[0][0]).toBeCloseTo(100);
-  expect(n[0][1]).toBeCloseTo(120);
-  expect(n[3][1]).toBeCloseTo(80);
+  expect(Math.min(...n.map((p) => p[1]))).toBeCloseTo(80);
+  expect(Math.max(...n.map((p) => p[1]))).toBeCloseTo(120);
+  expect(Math.min(...n.map((p) => p[0]))).toBeLessThan(100);
 });
 it("stroke ends are a single half circle, not an extra loop hanging off the end", () => {
   // A pen slowing to a stop before lifting, plus the repeated pointer-up point.
@@ -54,7 +72,9 @@ it("stroke ends are a single half circle, not an extra loop hanging off the end"
     const size = 50 * (brush === "pencil" ? 0.5 : 1);
     const polygon = outline(points, brush, { size: 50, usePressure: false });
     // Nothing may reach further past the end than a round cap of the line width.
-    expect(Math.max(...polygon.map((p) => p[0]))).toBeLessThan(end + size * 0.8);
+    expect(Math.max(...polygon.map((p) => p[0]))).toBeLessThan(
+      end + size * 0.8,
+    );
     // The old 3π end cap looped around the end and crossed its own outline.
     expect(selfCrossingsNear(polygon, [end, 300], size * 1.5)).toBe(0);
   }

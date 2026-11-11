@@ -2,7 +2,7 @@ import { METRICS } from "../../config/metrics";
 import { categoryForChar, DIAMOND_RADIUS } from "../safety";
 import type { FontBuildSettings } from "./types";
 import type { Stroke } from "../types";
-import { outline } from "../brushes";
+import { outlines } from "../brushes";
 import { simplifyContour } from "./polygon";
 
 export type Contours = number[][][];
@@ -33,8 +33,10 @@ export interface LaidOutGlyph {
 }
 export function strokeContours(strokes: Stroke[]): Contours {
   return strokes
-    .map((stroke) =>
-      simplifyContour(outline(stroke.points, stroke.brush, stroke.params)),
+    .flatMap((stroke) =>
+      outlines(stroke.points, stroke.brush, stroke.params).map((poly) =>
+        simplifyContour(poly),
+      ),
     )
     .filter((path) => path.length >= 3);
 }

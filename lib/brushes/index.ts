@@ -1,4 +1,5 @@
 import { getStrokeOutlinePoints, getStrokePoints } from "perfect-freehand";
+import { nibContours, pixelContours } from "./solid";
 import type { Stroke, StrokePoint, BrushId, BrushParams } from "../types";
 
 /** Drops input points bunched at the same spot (a pen slowing down before it
@@ -47,7 +48,7 @@ function roundEnd(poly: number[][], end: number[], ahead: number[]) {
   return poly;
 }
 
-export function outline(
+function smoothOutline(
   points: StrokePoint[],
   brush: BrushId,
   params: BrushParams,
@@ -56,31 +57,6 @@ export function outline(
   const stationary = points.every(
     (point) => Math.hypot(point.x - points[0].x, point.y - points[0].y) < 0.5,
   );
-  if (brush === "nib") {
-    const a = ((params.nibAngle ?? 30) * Math.PI) / 180;
-    if (stationary) {
-      const p = points[0],
-        w = (params.size * (params.usePressure ? 0.3 + 0.7 * p.p : 1)) / 2;
-      const dx = Math.cos(a) * w,
-        dy = Math.sin(a) * w,
-        px = -Math.sin(a) * Math.max(2, params.size * 0.07),
-        py = Math.cos(a) * Math.max(2, params.size * 0.07);
-      return [
-        [p.x + dx + px, p.y + dy + py],
-        [p.x - dx + px, p.y - dy + py],
-        [p.x - dx - px, p.y - dy - py],
-        [p.x + dx - px, p.y + dy - py],
-      ];
-    }
-    const sides = points.map((p) => {
-      const w = (params.size * (params.usePressure ? 0.3 + 0.7 * p.p : 1)) / 2;
-      return [
-        [p.x + Math.cos(a) * w, p.y + Math.sin(a) * w],
-        [p.x - Math.cos(a) * w, p.y - Math.sin(a) * w],
-      ];
-    });
-    return [...sides.map((s) => s[0]), ...sides.map((s) => s[1]).reverse()];
-  }
   const size = params.size * (brush === "pencil" ? 0.5 : 1),
     tapered = brush === "brush" && !stationary;
   const options = {
@@ -113,12 +89,31 @@ export function outline(
   const last = strokePoints[strokePoints.length - 1];
   return roundEnd(poly, last.point, [-last.vector[0], -last.vector[1]]);
 }
+export function outlines(
+  points: StrokePoint[],
+  brush: BrushId,
+  params: BrushParams,
+): number[][][] {
+  if (brush === "nib") return nibContours(points, params);
+  if (brush === "pixel") return pixelContours(points, params);
+  const polygon = smoothOutline(points, brush, params);
+  return polygon.length ? [polygon] : [];
+}
+// For coordinate bounds only. Rendering must retain separate contours.
+export function outline(
+  points: StrokePoint[],
+  brush: BrushId,
+  params: BrushParams,
+): number[][] {
+  return outlines(points, brush, params).flat();
+}
 export function paintStroke(ctx: CanvasRenderingContext2D, s: Stroke) {
-  const poly = outline(s.points, s.brush, s.params);
-  if (!poly.length) return;
   ctx.beginPath();
-  ctx.moveTo(poly[0][0], poly[0][1]);
-  for (const p of poly) ctx.lineTo(p[0], p[1]);
-  ctx.closePath();
-  ctx.fill();
+  for (const poly of outlines(s.points, s.brush, s.params)) {
+    if (!poly.length) continue;
+    ctx.moveTo(poly[0][0], poly[0][1]);
+    for (const p of poly.slice(1)) ctx.lineTo(p[0], p[1]);
+    ctx.closePath();
+  }
+  ctx.fill("nonzero");
 }

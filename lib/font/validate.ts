@@ -56,7 +56,7 @@ export function validPreparation(value: unknown): value is FontPreparation {
           !record(stroke) ||
           typeof stroke.id !== "string" ||
           ids.has(stroke.id) ||
-          !["pen", "marker", "brush", "pencil", "nib"].includes(
+          !["pen", "marker", "brush", "pencil", "nib", "pixel"].includes(
             String(stroke.brush),
           ) ||
           !finite(stroke.order) ||
@@ -68,6 +68,10 @@ export function validPreparation(value: unknown): value is FontPreparation {
           stroke.params.size < 20 ||
           stroke.params.size > 120 ||
           typeof stroke.params.usePressure !== "boolean" ||
+          (stroke.params.pixelSize !== undefined &&
+            (!finite(stroke.params.pixelSize) ||
+              stroke.params.pixelSize < 4 ||
+              stroke.params.pixelSize > 40)) ||
           (stroke.brush === "nib" &&
             (!finite(stroke.params.nibAngle) ||
               stroke.params.nibAngle < 0 ||

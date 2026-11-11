@@ -1,8 +1,9 @@
-export type BrushId = "pen" | "marker" | "brush" | "pencil" | "nib";
+export type BrushId = "pen" | "marker" | "brush" | "pencil" | "nib" | "pixel";
 export interface BrushParams {
   size: number;
   usePressure: boolean;
   nibAngle?: number;
+  pixelSize?: number;
 }
 export interface StrokePoint {
   x: number;
@@ -38,6 +39,7 @@ export interface GlyphSample {
   status: "empty" | "done" | "skipped";
 }
 export interface ProjectSettings {
+  writingSize?: number;
   referenceFont?: import("./reference-fonts").ReferenceFontId;
   grid: {
     halfVertical: boolean;

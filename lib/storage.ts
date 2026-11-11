@@ -3,7 +3,7 @@ import type { BrushParams, FontProject } from "./types";
 import { CHARSET } from "../data/charset";
 import { validPreparation } from "./font/validate";
 import { REFERENCE_FONTS } from "./reference-fonts";
-import { newProject } from "./defaults";
+import { newProject, defaultSettings } from "./defaults";
 const database = () =>
   openDB("handwriting-studio", 1, {
     upgrade(db) {
@@ -75,7 +75,7 @@ export async function deleteProject(id: string) {
   await tx.objectStore("projects").delete(id);
   await tx.done;
 }
-const brushes = ["pen", "marker", "brush", "pencil", "nib"];
+const brushes = ["pen", "marker", "brush", "pencil", "nib", "pixel"];
 function record(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
@@ -89,6 +89,8 @@ function params(v: unknown, nib: boolean): v is BrushParams {
     v.size >= 20 &&
     v.size <= 120 &&
     typeof v.usePressure === "boolean" &&
+    (v.pixelSize === undefined ||
+      (finite(v.pixelSize) && v.pixelSize >= 4 && v.pixelSize <= 40)) &&
     (!nib || (finite(v.nibAngle) && v.nibAngle >= 0 && v.nibAngle <= 180))
   );
 }
@@ -107,6 +109,11 @@ export function parseProject(text: string): FontProject {
   )
     throw new Error("지원하지 않는 프로젝트 형식입니다.");
   const s = p.settings;
+  if (
+    s.writingSize !== undefined &&
+    (!finite(s.writingSize) || s.writingSize < 180 || s.writingSize > 900)
+  )
+    throw new Error("쓰기 칸 크기 설정 오류");
   if (
     s.referenceFont !== undefined &&
     !REFERENCE_FONTS.some((font) => font.id === s.referenceFont)
@@ -133,8 +140,13 @@ export function parseProject(text: string): FontProject {
   for (const key of ["halfVertical", "halfHorizontal", "diamond", "sizeGuide"])
     if (typeof s.grid[key] !== "boolean") throw new Error("격자 설정 오류");
   for (const b of brushes)
-    if (!params(s.brushParams[b], b === "nib"))
+    if (
+      !(b === "pixel" && s.brushParams[b] === undefined) &&
+      !params(s.brushParams[b], b === "nib")
+    )
       throw new Error("브러시 설정 오류");
+  if (s.brushParams.pixel === undefined)
+    s.brushParams.pixel = defaultSettings().brushParams.pixel;
   for (const [char, g] of Object.entries(p.samples)) {
     if (
       record(g) &&

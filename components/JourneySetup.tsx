@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { BrushPreview } from "./Preview";
 import WritingPad from "./WritingPad";
+import PixelSizeControl from "./PixelSizeControl";
 import { REFERENCE_FONTS, referenceStack } from "../lib/reference-fonts";
 import type { BrushId, ProjectSettings } from "../lib/types";
 const brushes: { id: BrushId; label: string; note: string }[] = [
@@ -10,6 +11,7 @@ const brushes: { id: BrushId; label: string; note: string }[] = [
   { id: "brush", label: "붓", note: "힘에 따라 유연하게" },
   { id: "pencil", label: "연필", note: "가볍고 가는 선" },
   { id: "nib", label: "납작펜", note: "각도에 따라 다르게" },
+  { id: "pixel", label: "픽셀펜", note: "네모 입자로 또렷하게" },
 ];
 export default function JourneySetup({
   step,
@@ -94,6 +96,14 @@ export default function JourneySetup({
               />
               펜을 누르는 힘 반영하기
             </label>
+            {settings.activeBrush === "pixel" && (
+              <PixelSizeControl
+                params={params}
+                onChange={(pixel) =>
+                  update({ brushParams: { ...settings.brushParams, pixel } })
+                }
+              />
+            )}
             {settings.activeBrush === "nib" && (
               <label className="setup-thickness">
                 펜촉 각도 <b>{params.nibAngle}°</b>

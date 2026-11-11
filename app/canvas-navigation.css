@@ -1,9 +1,33 @@
 /* Dedicated side rails keep navigation beside, never on, the editable ink. */
 .separation-canvas-frame {
   position: relative;
-  padding-inline: 52px;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
   box-sizing: border-box;
-  width: 100%;
+  width: min(100%, calc(min(60dvh, 600px) + 96px));
+  margin-inline: auto;
+}
+.separation-canvas-frame > .canvas-step-button {
+  position: static;
+  transform: none;
+  grid-row: 1;
+}
+.separation-canvas-frame > .canvas-step-previous {
+  grid-column: 1;
+}
+.separation-canvas-frame > .canvas-step-next {
+  grid-column: 3;
+}
+.font-workshop .separation-canvas-frame > .separation-svg {
+  grid-column: 2;
+  grid-row: 1;
+  width: 100% !important;
+  height: auto;
+  aspect-ratio: 1;
+  margin: 0;
 }
 .canvas-step-button {
   position: absolute;
@@ -56,4 +80,109 @@
 }
 .dark .canvas-step-button:not(:disabled):active {
   background: #394937;
+}
+
+.studio .writing-area > .canvas-toolbar {
+  flex-wrap: wrap;
+  gap: 6px;
+  height: auto;
+}
+.writing-size-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.writing-size-control input {
+  width: 90px;
+  min-width: 60px;
+}
+.writing-size-control button {
+  padding: 4px 6px;
+  min-height: 32px;
+}
+.studio .writing-area.custom-writing-size {
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow: auto !important;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  gap: 8px;
+  overscroll-behavior: contain;
+}
+.studio .writing-area.custom-writing-size > * {
+  flex-shrink: 0;
+}
+.studio .writing-area.custom-writing-size > .pad {
+  width: calc(var(--writing-size) + 104px) !important;
+  height: var(--writing-size) !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin-inline: auto;
+  aspect-ratio: auto;
+}
+.studio .writing-area.custom-writing-size > .canvas-toolbar {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  width: 100%;
+  background: var(--paper, #fffef8);
+}
+.font-workshop .font-header {
+  position: relative;
+}
+.font-workshop .font-header > .separation-welcome {
+  flex: 0 1 auto;
+  max-width: 48%;
+  margin: 0 0 0 auto;
+  padding: 0;
+}
+.font-workshop .font-header .jamo-example {
+  gap: 6px;
+  font-size: 19px;
+  margin: 0;
+  padding: 0;
+}
+.font-workshop .font-header .jamo-example small {
+  font-size: 9px;
+}
+.font-workshop .font-header .separation-welcome[open] > p,
+.font-workshop .font-header .separation-welcome[open] > ol {
+  max-width: 340px;
+  font-size: 12px;
+}
+.font-workshop .separation-editor > .character-slider {
+  margin-top: 12px;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+@media (max-width: 600px) {
+  .font-workshop .font-header .jamo-example {
+    gap: 3px;
+    font-size: 15px;
+  }
+  .font-workshop .font-header .jamo-example small {
+    font-size: 8px;
+  }
+  .font-workshop .font-header .welcome-toggle {
+    display: none;
+  }
+}
+
+.setup-brushes {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (min-width: 900px) {
+  .setup-brushes {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+/* Keep the size control accessible before a custom size has been chosen. */
+.studio.journey.journey-step-2 .writing-area:not(.custom-writing-size) {
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
 }

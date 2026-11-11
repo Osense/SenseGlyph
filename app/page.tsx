@@ -12,6 +12,7 @@ import {
 } from "../lib/storage";
 import { useStudio } from "../lib/store";
 import WritingPad from "../components/WritingPad";
+import PixelSizeControl from "../components/PixelSizeControl";
 import FontWorkshop from "../components/FontWorkshop";
 import { REFERENCE_FONTS, referenceStack } from "../lib/reference-fonts";
 import { projectIssues } from "../lib/review";
@@ -28,6 +29,7 @@ const BRUSHES: { id: BrushId; label: string }[] = [
   { id: "brush", label: "붓" },
   { id: "pencil", label: "연필" },
   { id: "nib", label: "납작펜" },
+  { id: "pixel", label: "픽셀펜" },
 ];
 export default function Page() {
   const {
@@ -596,6 +598,15 @@ export default function Page() {
                   />
                   필압 반영
                 </label>
+                {s.activeBrush === "pixel" && (
+                  <PixelSizeControl
+                    params={params}
+                    disabled={busy}
+                    onChange={(pixel) =>
+                      update({ brushParams: { ...s.brushParams, pixel } })
+                    }
+                  />
+                )}
                 {s.activeBrush === "nib" && (
                   <label className="slider-label">
                     펜촉 각도 <b>{params.nibAngle}°</b>
@@ -681,7 +692,18 @@ export default function Page() {
                 ↺ 다시쓰기
               </button>
             </aside>
-            <div className="writing-area">
+            <div
+              className={
+                "writing-area" + (s.writingSize ? " custom-writing-size" : "")
+              }
+              style={
+                s.writingSize
+                  ? ({
+                      "--writing-size": `${s.writingSize}px`,
+                    } as React.CSSProperties)
+                  : undefined
+              }
+            >
               <div className="character-instruction">
                 <div>
                   <strong>{char}</strong>
@@ -737,7 +759,6 @@ export default function Page() {
                     [
                       { id: "inside-faint", label: "따라 쓰기" },
                       { id: "outside", label: "보고 쓰기" },
-                      { id: "hidden", label: "혼자 쓰기" },
                     ] as const
                   ).map((m) => (
                     <button
@@ -750,9 +771,26 @@ export default function Page() {
                     </button>
                   ))}
                 </div>
-                <span className="canvas-caption">
-                  바깥 안전선 안에 써주세요
-                </span>
+                <label className="writing-size-control">
+                  쓰기 칸 <b>{s.writingSize ? `${s.writingSize}px` : "자동"}</b>
+                  <input
+                    aria-label="쓰기 칸 크기"
+                    type="range"
+                    min="180"
+                    max="900"
+                    step="20"
+                    value={s.writingSize ?? 400}
+                    disabled={busy}
+                    onChange={(e) => update({ writingSize: +e.target.value })}
+                  />
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => update({ writingSize: undefined })}
+                  >
+                    자동
+                  </button>
+                </label>
               </div>
               <WritingPad
                 key={char}

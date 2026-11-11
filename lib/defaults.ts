@@ -19,6 +19,7 @@ export function defaultSettings(): ProjectSettings {
       brush: { size: 50, usePressure: true },
       pencil: { size: 50, usePressure: true },
       nib: { size: 50, usePressure: true, nibAngle: 30 },
+      pixel: { size: 50, usePressure: false, pixelSize: 12 },
     },
     eraserSize: 70,
     eraserMode: "stroke",

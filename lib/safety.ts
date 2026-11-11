@@ -27,6 +27,13 @@ export function strokeIsSafe(
   const box = safetyBounds(category);
   return (
     stroke.points.length > 0 &&
+    stroke.points.every(
+      (p) =>
+        p.x >= box.left &&
+        p.x <= box.right &&
+        p.y >= box.top &&
+        p.y <= box.bottom,
+    ) &&
     outline(stroke.points, stroke.brush, stroke.params).every(
       ([x, y]) =>
         x >= box.left && y >= box.top && x <= box.right && y <= box.bottom,

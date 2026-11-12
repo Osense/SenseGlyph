@@ -1,20 +1,11 @@
-import { RETIRED_SPECIAL_SYMBOLS } from "../../data/charset";
+import { isPremiumCategory, RETIRED_SPECIAL_SYMBOLS } from "../../data/charset";
 import opentype from "opentype.js";
-import { prepareHandwriting, composeGlyph } from "./composition";
+import { fontPipeline } from "./pipeline";
 import type { BuildRequest, FontStats } from "./types";
 import { FONT_SETTING_LIMITS as LIMITS } from "./types";
 import { defaultEnglishFontName, isEnglishFontName } from "./names";
 import { replaceCmap } from "./cmap";
-import { effectiveSample } from "./editing";
-import { strokesAreSafe } from "../safety";
-import {
-  bodySize,
-  createLayoutPlan,
-  createStrokeRenderer,
-  mergeInk,
-  layoutGlyph,
-  strokeContours as contours,
-} from "./layout";
+import { bodySize, mergeInk } from "./layout";
 
 type Polygon = number[][];
 
@@ -34,7 +25,7 @@ export function appendContour(
 }
 
 export function generateFont(
-  { project, preparation, includeSpecial = true }: BuildRequest,
+  { project, preparation, includePremium = true }: BuildRequest,
   progress: (value: number, message: string) => void = () => {},
 ): { buffer: ArrayBuffer; stats: FontStats } {
   const options = { ...preparation.settings, includeComposed: true };
@@ -49,11 +40,7 @@ export function generateFont(
   const postScriptName =
     englishName.replace(/[^a-zA-Z0-9]/g, "").slice(0, 55) + "-Regular";
   if (
-    [
-      options.positionCorrection,
-      options.shapeInterpolation,
-      options.widthCorrection,
-    ].some(
+    [options.correction, ...Object.values(options.correctionDetail ?? {})].some(
       (v) => v !== undefined && (!Number.isFinite(v) || v < 0 || v > 100),
     ) ||
     (options.strokeWeight !== undefined &&
@@ -73,49 +60,20 @@ export function generateFont(
     bodySize(options) > LIMITS.bodyMax
   )
     throw new Error("폰트 메트릭 범위를 확인하세요.");
-  const samples = Object.values(project.samples)
-    .map((sample) =>
-      effectiveSample(sample, preparation.separations[sample.char]),
-    )
-    .filter(
-      (s) =>
-        s.strokes.length &&
-        !RETIRED_SPECIAL_SYMBOLS.has(s.char) &&
-        (includeSpecial || s.category !== "special-symbol"),
-    );
-  if (!samples.length) throw new Error("먼저 한 글자 이상 써주세요.");
-  const unsafe = samples.filter(
-    (sample) => !strokesAreSafe(sample.strokes, sample.category),
+  const written = Object.values(project.samples).filter(
+    (s) =>
+      s.strokes.length &&
+      !RETIRED_SPECIAL_SYMBOLS.has(s.char) &&
+      (includePremium || !isPremiumCategory(s.category)),
   );
-  if (unsafe.length)
-    throw new Error(
-      "안전영역을 벗어난 글자가 있습니다: " +
-        unsafe.map((sample) => sample.char).join(" ") +
-        ". 쓰기 또는 자모 보정 화면에서 수정해 주세요.",
-    );
+  if (!written.length) throw new Error("먼저 한 글자 이상 써주세요.");
   progress(2, "손글씨 외곽선을 준비하고 있어요");
-  const handwriting = prepareHandwriting(project, preparation, true);
-  const render = createStrokeRenderer(options);
-  const references = new Map(samples.map((s) => [s.char, contours(s.strokes)]));
-  const direct = new Map(
-    samples.map((s) => [
-      s.char,
-      render(handwriting.direct.get(s.char) ?? s.strokes),
-    ]),
-  );
-  const polygons = new Map(direct);
-  const layout = createLayoutPlan(references, options);
-  let composed = 0;
-  for (let code = 0xac00; code <= 0xd7a3; code++) {
-    const char = String.fromCharCode(code);
-    if (direct.has(char)) continue;
-    const strokes = composeGlyph(char, handwriting.library, handwriting.pools);
-    if (!strokes) continue;
-    const ink = contours(strokes);
-    polygons.set(char, ink);
-    references.set(char, ink);
-    composed++;
-  }
+  // 칸 밖으로 나간 글자는 버리지 않고 안전영역 안으로 줄여 넣습니다(prepareHandwriting).
+  const pipeline = fontPipeline(project, preparation, { includePremium });
+  const layout = pipeline.plan;
+  const chars = new Set(pipeline.direct.keys());
+  for (let code = 0xac00; code <= 0xd7a3; code++)
+    chars.add(String.fromCharCode(code));
   const missingPath = new opentype.Path();
   missingPath.moveTo(160, 0);
   missingPath.lineTo(160, 650);
@@ -147,21 +105,25 @@ export function generateFont(
       path: new opentype.Path(),
     }),
   ];
-  const entries = [...polygons].sort(
-    (a, b) => a[0].codePointAt(0)! - b[0].codePointAt(0)!,
+  const entries = [...chars].sort(
+    (a, b) => a.codePointAt(0)! - b.codePointAt(0)!,
   );
   let highest = options.baseline,
-    lowest = options.baseline - 1000;
+    lowest = options.baseline - 1000,
+    composed = 0;
+  const characters: string[] = [];
   for (let i = 0; i < entries.length; i++) {
-    const [char, paths] = entries[i],
-      path = new opentype.Path();
-    const shaped = layoutGlyph(
-      char,
-      paths,
-      layout,
-      references.get(char),
-      !direct.has(char),
-    );
+    const char = entries[i];
+    if (i % 400 === 0)
+      progress(
+        5 + Math.round((i / entries.length) * 72),
+        `${(i + 1).toLocaleString()} / ${entries.length.toLocaleString()} 글자를 만들고 있어요`,
+      );
+    const shaped = pipeline.glyph(char);
+    if (!shaped || !shaped.contours.length) continue;
+    if (!shaped.direct) composed++;
+    characters.push(char);
+    const path = new opentype.Path();
     for (const ring of mergeInk(shaped.contours))
       appendContour(path, ring, options.baseline);
     for (const polygon of shaped.contours) {
@@ -179,11 +141,6 @@ export function generateFont(
         path,
       }),
     );
-    if (i % 100 === 0)
-      progress(
-        10 + Math.round((i / entries.length) * 65),
-        `${i + 1} / ${entries.length} 글자를 만들고 있어요`,
-      );
   }
   progress(80, "설치 가능한 OTF 파일로 묶고 있어요");
   // opentype.js 1.x ignores leftSideBearing in Glyph constructor options.
@@ -225,10 +182,10 @@ export function generateFont(
   return {
     buffer,
     stats: {
-      direct: direct.size,
+      direct: pipeline.direct.size,
       composed,
       glyphs: glyphs.length,
-      characters: entries.map((e) => e[0]),
+      characters,
     },
   };
 }

@@ -106,3 +106,18 @@ CATEGORIES[2].chars = [
 export const CHARSET = CATEGORIES.flatMap((c) =>
   c.chars.map((char) => ({ char, category: c.id })),
 );
+
+/** 기본형: 한글 필수 138자·숫자·기본 기호·영문. 프리미엄: 낱자모·문장 기호·특수 기호를 더합니다. */
+export const PREMIUM_CATEGORIES: ReadonlySet<CharCategory> = new Set([
+  "hangul-jamo",
+  "korean-punct",
+  "special-symbol",
+]);
+export const isPremiumCategory = (category: CharCategory) =>
+  PREMIUM_CATEGORIES.has(category);
+export const BASIC_CHARSET = CHARSET.filter(
+  ({ category }) => !PREMIUM_CATEGORIES.has(category),
+);
+export const PREMIUM_CHARSET = CHARSET.filter(({ category }) =>
+  PREMIUM_CATEGORIES.has(category),
+);

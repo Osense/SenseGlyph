@@ -1,6 +1,12 @@
 import { HANGUL, RETIRED_SPECIAL_SYMBOLS } from "../../data/charset";
-import { strokesAreSafe } from "../safety";
-import { refinePool } from "./interpolation";
+import { fitStrokesToSafety } from "../safety";
+import {
+  beautifyStrokes,
+  correctionAmounts,
+  hasCorrection,
+  medianPressure,
+  NO_CORRECTION,
+} from "./beautify";
 import { decompose, slotKeys, vowelType } from "../hangul";
 import { activeSeparation, effectiveSample } from "./editing";
 import {
@@ -149,31 +155,11 @@ export function componentLibrary(project: FontProject, prep: FontPreparation) {
   return prepareHandwriting(project, prep).library;
 }
 
-function alignComponent(source: ComponentSample, target: Box): ComponentSample {
-  const centers = source.strokes.map(strokeCenter);
-  const xs = centers.map(({ x }) => x);
-  const ys = centers.map(({ y }) => y);
-  const shift = (distance: number) =>
-    Math.max(-35, Math.min(35, distance * 0.35));
-  const dx = shift(
-    target.x + target.width / 2 - (Math.min(...xs) + Math.max(...xs)) / 2,
-  );
-  const dy = shift(
-    target.y + target.height / 2 - (Math.min(...ys) + Math.max(...ys)) / 2,
-  );
-  return {
-    ...source,
-    strokes: source.strokes.map((stroke) => ({
-      ...stroke,
-      points: stroke.points.map((point) => ({
-        ...point,
-        x: point.x + dx,
-        y: point.y + dy,
-      })),
-    })),
-  };
-}
-
+/** 쓴 글자 → 출력용 획과 자모 표본.
+ * - 칸 밖으로 나간 글자는 비율을 유지한 채 안전영역 안으로 줄여 넣습니다.
+ * - applyCorrection이면 설정한 강도만큼 손글씨를 정돈합니다(lib/font/beautify.ts).
+ *   정돈한 획은 직접 쓴 글자와 조합 글자에 똑같이 쓰이므로 둘의 모양이 어긋나지 않습니다.
+ * - 원본 프로젝트는 바꾸지 않습니다. */
 export function prepareHandwriting(
   project: FontProject,
   prep: FontPreparation,
@@ -182,65 +168,59 @@ export function prepareHandwriting(
   const library = new Map<string, ComponentSample>();
   const pools = new Map<string, ComponentSample[]>();
   const direct = new Map<string, Stroke[]>();
+  const amounts = applyCorrection
+    ? correctionAmounts(prep.settings)
+    : NO_CORRECTION;
+  const correcting = hasCorrection(amounts);
   const chars = [
     ...new Set([...HANGUL, ...Object.keys(project.samples).sort()]),
   ];
-  for (const char of chars) {
+  const written = chars.flatMap((char) => {
     const sample = project.samples[char];
-    if (!sample?.strokes.length) continue;
-    // A written glyph keeps its own strokes. Component interpolation only feeds unwritten glyphs.
-    direct.set(char, effectiveSample(sample, prep.separations[char]).strokes);
-    const parts = separateSample(
+    return sample?.strokes.length && !RETIRED_SPECIAL_SYMBOLS.has(char)
+      ? [sample]
+      : [];
+  });
+  const pressureTarget = correcting
+    ? medianPressure(
+        written.flatMap(
+          (sample) =>
+            effectiveSample(sample, prep.separations[sample.char]).strokes,
+        ),
+      )
+    : NaN;
+  for (const sample of written) {
+    const char = sample.char;
+    const effective = effectiveSample(sample, prep.separations[char]).strokes;
+    const fitted = fitStrokesToSafety(effective, sample.category);
+    let parts = separateSample(
       sample,
       prep.separations[char],
       project.settings,
     );
+    let strokes = fitted;
+    if (correcting || fitted !== effective) {
+      const partOf = new Map<string, Part>();
+      for (const part of parts)
+        for (const stroke of part.strokes) partOf.set(stroke.id, part.part);
+      strokes = correcting
+        ? beautifyStrokes(fitted, {
+            amounts,
+            category: sample.category,
+            partOf,
+            boxes: referenceGuide(char, project.settings)?.boxes,
+            pressureTarget,
+          })
+        : fitted;
+      const byId = new Map(strokes.map((stroke) => [stroke.id, stroke]));
+      parts = parts.map((part) => ({
+        ...part,
+        strokes: part.strokes.map((stroke) => byId.get(stroke.id) ?? stroke),
+      }));
+    }
+    direct.set(char, strokes);
     for (const part of parts)
       pools.set(part.key, [...(pools.get(part.key) ?? []), part]);
-  }
-  const { alignToReference, averageStrokes } = prep.settings;
-  if (applyCorrection && (alignToReference || averageStrokes)) {
-    const changed = new Map<string, Map<string, Stroke>>();
-    for (const [key, pool] of pools) {
-      const averaging =
-        averageStrokes && pool.length > 1
-          ? refinePool(pool, {
-              ...prep.settings,
-              positionCorrection: 0,
-              shapeInterpolation: 45,
-              widthCorrection: 35,
-            })
-          : null;
-      pools.set(
-        key,
-        pool.map((source) => {
-          const reference = alignToReference
-            ? referenceGuide(source.char, project.settings)?.boxes[source.part]
-            : undefined;
-          const averaged = averaging?.refine(source) ?? source;
-          const adjusted = reference
-            ? alignComponent(averaged, reference)
-            : averaged;
-          if (
-            adjusted === source ||
-            !strokesAreSafe(adjusted.strokes, "hangul-syllable")
-          )
-            return source;
-          const strokes = changed.get(source.char) ?? new Map();
-          for (const stroke of adjusted.strokes) strokes.set(stroke.id, stroke);
-          changed.set(source.char, strokes);
-          return adjusted;
-        }),
-      );
-    }
-    for (const [char, replacements] of changed) {
-      direct.set(
-        char,
-        direct
-          .get(char)!
-          .map((stroke) => replacements.get(stroke.id) ?? stroke),
-      );
-    }
   }
   for (const [key, pool] of pools) {
     const confirmed = pool.filter((component) => component.confirmed);

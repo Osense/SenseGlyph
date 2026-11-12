@@ -1,6 +1,12 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CATEGORIES, CHARSET, SPECIAL_SYMBOLS } from "../data/charset";
+import {
+  BASIC_CHARSET,
+  CATEGORIES,
+  CHARSET,
+  PREMIUM_CHARSET,
+  isPremiumCategory,
+} from "../data/charset";
 import { newProject } from "../lib/defaults";
 import { BASE_PATH } from "../lib/base-path";
 import {
@@ -14,7 +20,7 @@ import { useStudio } from "../lib/store";
 import WritingPad from "../components/WritingPad";
 import PixelSizeControl from "../components/PixelSizeControl";
 import FontWorkshop from "../components/FontWorkshop";
-import { REFERENCE_FONTS, referenceStack } from "../lib/reference-fonts";
+import { REFERENCE_FONTS, referenceFont } from "../lib/reference-fonts";
 import { referenceUsesFallback } from "../lib/font/reference";
 import { projectIssues } from "../lib/review";
 import { BrushPreview, Thumbnail } from "../components/Preview";
@@ -23,15 +29,37 @@ import JourneySetup from "../components/JourneySetup";
 import { characterGuide } from "../lib/character-guide";
 import { gsap } from "gsap";
 import ProjectManager from "../components/ProjectManager";
-const WRITING_FILTERS = [
-  ["all", "전체"],
-  ["hangul", "한글"],
-  ["latin", "영어"],
-  ["basic", "기본 기호"],
-  ["special", "특수 기호"],
-  ["review", "다시 확인"],
-] as const;
-type WritingFilter = (typeof WRITING_FILTERS)[number][0];
+
+type CharEntry = { char: string; category: CharCategory };
+const inCategories =
+  (...ids: CharCategory[]) =>
+  ({ category }: CharEntry) =>
+    ids.includes(category);
+const LISTS = {
+  basic: { label: "기본 글자", chars: BASIC_CHARSET },
+  hangul: {
+    label: "한글",
+    chars: CHARSET.filter(inCategories("hangul-syllable")),
+  },
+  latin: {
+    label: "영어·숫자",
+    chars: CHARSET.filter(inCategories("latin-upper", "latin-lower", "digit")),
+  },
+  symbol: {
+    label: "기호",
+    chars: CHARSET.filter(inCategories("ascii-symbol")),
+  },
+  premium: { label: "특수문자", chars: PREMIUM_CHARSET },
+} as const;
+type ListId = keyof typeof LISTS | "review";
+const LIST_IDS: ListId[] = [
+  "basic",
+  "hangul",
+  "latin",
+  "symbol",
+  "premium",
+  "review",
+];
 const STEPS = ["브러시", "견본", "글자 쓰기", "자모 나누기", "폰트 완성"];
 const BRUSHES: { id: BrushId; label: string }[] = [
   { id: "pen", label: "펜" },
@@ -41,6 +69,8 @@ const BRUSHES: { id: BrushId; label: string }[] = [
   { id: "nib", label: "납작펜" },
   { id: "pixel", label: "픽셀펜" },
 ];
+const STEP_KEY = "hanhoek-journey";
+
 export default function Page() {
   const {
     project,
@@ -55,20 +85,17 @@ export default function Page() {
   } = useStudio();
   const [index, setIndex] = useState(0),
     [step, setStep] = useState(0),
-    [listFilter, setListFilter] = useState<WritingFilter>("all"),
+    [list, setList] = useState<ListId>("basic"),
     [tool, setTool] = useState<"pen" | "eraser">("pen"),
     [modal, setModal] = useState(false),
+    [toolSheet, setToolSheet] = useState(false),
     [projectsOpen, setProjectsOpen] = useState(false),
-    [fontOpen, setFontOpen] = useState(false),
     [fontReviewChar, setFontReviewChar] = useState<string | undefined>(),
     [dark, setDark] = useState(false),
     [busy, setBusy] = useState(false),
     [toast, setToast] = useState(""),
     [toastUndo, setToastUndo] = useState(false),
-    [saved, setSaved] = useState("불러오는 중"),
-    [enabled, setEnabled] = useState<CharCategory[]>(
-      CATEGORIES.map((c) => c.id),
-    );
+    [saved, setSaved] = useState("불러오는 중");
   const file = useRef<HTMLInputElement>(null),
     stageRoot = useRef<HTMLElement>(null),
     timer = useRef<ReturnType<typeof setTimeout> | null>(null),
@@ -78,10 +105,10 @@ export default function Page() {
   const changeStep = (next: number) => {
     if (busy) return;
     setStep(next);
-    setFontOpen(next >= 3);
-    setFontReviewChar(undefined);
+    setToolSheet(false);
+    if (next !== 3) setFontReviewChar(undefined);
     try {
-      localStorage.setItem("hanhoek-journey", String(next));
+      localStorage.setItem(STEP_KEY, String(next));
     } catch {}
     const url = new URL(window.location.href);
     if (url.searchParams.has("step")) {
@@ -96,19 +123,14 @@ export default function Page() {
       () => {
         gsap.fromTo(
           ".journey-panel",
-          { opacity: 0, y: 14 },
+          { opacity: 0, y: 12 },
           {
             opacity: 1,
             y: 0,
-            duration: 0.42,
+            duration: 0.38,
             ease: "power2.out",
             clearProps: "all",
           },
-        );
-        gsap.fromTo(
-          ".journey-track .is-current .step-number",
-          { scale: 0.88 },
-          { scale: 1, duration: 0.35, ease: "power2.out" },
         );
       },
       stageRoot,
@@ -118,9 +140,7 @@ export default function Page() {
       ?.focus({ preventScroll: true });
     return () => motion.revert();
   }, [step, !!project]);
-  const chars = CHARSET.filter(
-    (c) => c.category !== "special-symbol" && enabled.includes(c.category),
-  );
+
   const issues = useMemo(
     () => projectIssues(project),
     [
@@ -131,28 +151,15 @@ export default function Page() {
     ],
   );
   const reviewChars = CHARSET.filter((entry) => issues[entry.char]?.length);
-  const filteredChars = {
-    all: chars,
-    hangul: chars.filter(({ category }) => category.startsWith("hangul")),
-    latin: chars.filter(({ category }) => category.startsWith("latin")),
-    basic: chars.filter(({ category }) =>
-      ["digit", "ascii-symbol", "korean-punct"].includes(category),
-    ),
-    special: CHARSET.filter(({ category }) => category === "special-symbol"),
-    review: reviewChars,
-  };
-  const navigationChars = filteredChars[listFilter];
+  const listChars = (id: ListId): readonly CharEntry[] =>
+    id === "review" ? reviewChars : LISTS[id].chars;
+  const navigationChars = listChars(list);
   const current = CHARSET[Math.max(0, Math.min(index, CHARSET.length - 1))],
     char = current.char,
     category = current.category;
   const currentPosition = navigationChars.findIndex(
     (entry) => entry.char === char,
   );
-  const previousUnavailable =
-    listFilter === "all"
-      ? currentPosition <= 0
-      : navigationChars.every((entry) => entry.char === char);
-
   const currentIssues = issues[char] ?? [];
   const strokes = project?.samples[char]?.strokes ?? [],
     s = project?.settings;
@@ -161,49 +168,42 @@ export default function Page() {
     setToast(message);
     setToastUndo(canUndo);
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setToast(""), 3000);
+    timer.current = setTimeout(() => setToast(""), 3500);
   };
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
-    const requestedFont = query.has("font");
-    const stepParameter = query.has("step") ? Number(query.get("step")) : null;
-    const requestedStep = requestedFont
+    const stepParameter = query.has("font")
       ? 4
-      : stepParameter !== null &&
-          Number.isInteger(stepParameter) &&
-          stepParameter >= 0 &&
-          stepParameter <= 4
+      : query.has("step")
+        ? Number(query.get("step"))
+        : null;
+    const requestedStep =
+      stepParameter !== null &&
+      Number.isInteger(stepParameter) &&
+      stepParameter >= 0 &&
+      stepParameter <= 4
         ? stepParameter
         : null;
-    if (requestedStep !== null) {
-      setStep(requestedStep);
-      setFontOpen(requestedStep >= 3);
-    }
-    if (requestedFont) {
-      setFontOpen(true);
-      setStep(4);
-    }
+    if (requestedStep !== null) setStep(requestedStep);
     if ("serviceWorker" in navigator)
       navigator.serviceWorker.register(BASE_PATH + "/sw.js").catch(() => {});
     let alive = true;
     loadProject()
       .then((p) => {
-        if (alive) {
-          setProject(p ?? newProject());
-          if (requestedStep === null && p) {
-            let savedStep = 2;
-            try {
-              savedStep = Number(localStorage.getItem("hanhoek-journey") ?? 2);
-            } catch {}
-            const resumed =
-              Number.isInteger(savedStep) && savedStep >= 0 && savedStep <= 4
-                ? savedStep
-                : 2;
-            setStep(resumed);
-            setFontOpen(resumed >= 3);
-          }
-          setSaved("기기에 저장됨");
+        if (!alive) return;
+        setProject(p ?? newProject());
+        if (requestedStep === null && p) {
+          let savedStep = 2;
+          try {
+            savedStep = Number(localStorage.getItem(STEP_KEY) ?? 2);
+          } catch {}
+          setStep(
+            Number.isInteger(savedStep) && savedStep >= 0 && savedStep <= 4
+              ? savedStep
+              : 2,
+          );
         }
+        setSaved("기기에 저장됨");
       })
       .catch(() => {
         if (alive) {
@@ -214,15 +214,6 @@ export default function Page() {
     try {
       const pref = JSON.parse(localStorage.getItem("hanhoek-ui") ?? "{}");
       setDark(!!pref.dark);
-      if (Array.isArray(pref.enabled))
-        setEnabled(
-          CATEGORIES.filter(
-            (c) =>
-              c.required ||
-              pref.enabled.includes(c.id) ||
-              (!pref.journeyVersion && c.id === "korean-punct"),
-          ).map((c) => c.id),
-        );
     } catch {}
     return () => {
       alive = false;
@@ -231,14 +222,15 @@ export default function Page() {
   useEffect(() => {
     if (!project) return;
     try {
+      const pref = JSON.parse(localStorage.getItem("hanhoek-ui") ?? "{}");
       localStorage.setItem(
         "hanhoek-ui",
-        JSON.stringify({ dark, enabled, journeyVersion: 1 }),
+        JSON.stringify({ ...pref, dark, journeyVersion: 2 }),
       );
     } catch {
       /* UI 선호 저장이 차단돼도 벡터 입력은 계속 허용한다. */
     }
-  }, [dark, enabled, project]);
+  }, [dark, !!project]);
   const persist = () => {
     if (switching.current) return saveChain.current;
     const p = useStudio.getState().project;
@@ -250,8 +242,12 @@ export default function Page() {
       .then(() =>
         setSaved(
           useStudio.getState().project === p
-            ? "저장됨 · " +
-                new Date().toLocaleTimeString("ko-KR", { hour12: false })
+            ? "저장됨 " +
+                new Date().toLocaleTimeString("ko-KR", {
+                  hour12: false,
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
             : "저장 대기 중",
         ),
       )
@@ -271,13 +267,13 @@ export default function Page() {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     try {
       await saveChain.current.catch(() => {});
-      const current = useStudio.getState().project!;
+      const active = useStudio.getState().project!;
       const next = await (create
-        ? startProject(current, value)
-        : switchProject(current, value));
+        ? startProject(active, value)
+        : switchProject(active, value));
       setProject(next);
       setIndex(0);
-      setListFilter("all");
+      setList("basic");
       setTool("pen");
       setProjectsOpen(false);
       changeStep(create ? 0 : 2);
@@ -302,44 +298,41 @@ export default function Page() {
       window.removeEventListener("pagehide", persist);
     };
   }, []);
+  const goTo = (target: string) =>
+    setIndex(CHARSET.findIndex((entry) => entry.char === target));
   const go = (delta: number) => {
     if (busy || !navigationChars.length) return;
+    const order = (entry: CharEntry) =>
+      CHARSET.findIndex((item) => item.char === entry.char);
     const candidates = navigationChars.filter((entry) =>
-      delta > 0
-        ? CHARSET.findIndex((item) => item.char === entry.char) > index
-        : CHARSET.findIndex((item) => item.char === entry.char) < index,
+      delta > 0 ? order(entry) > index : order(entry) < index,
     );
     const target =
       delta > 0 ? candidates[0] : candidates[candidates.length - 1];
     const fallback =
-      listFilter === "all"
-        ? undefined
-        : delta > 0
+      list === "review"
+        ? delta > 0
           ? navigationChars[0]
-          : navigationChars[navigationChars.length - 1];
-    if (target ?? fallback)
-      setIndex(
-        CHARSET.findIndex((entry) => entry.char === (target ?? fallback)!.char),
-      );
+          : navigationChars[navigationChars.length - 1]
+        : undefined;
+    if (target ?? fallback) goTo((target ?? fallback)!.char);
   };
-  const selectFilter = (filter: WritingFilter) => {
-    setListFilter(filter);
-    const entries = filteredChars[filter];
-    if (
-      filter === "all" &&
-      category !== "special-symbol" &&
-      !enabled.includes(category)
-    )
-      setEnabled((previous) => [...previous, category]);
-    else if (entries.length && !entries.some((entry) => entry.char === char))
-      setIndex(CHARSET.findIndex((entry) => entry.char === entries[0].char));
+  const selectList = (id: ListId) => {
+    setList(id);
+    const entries = listChars(id);
+    if (entries.length && !entries.some((entry) => entry.char === char)) {
+      const firstEmpty = entries.find(
+        (entry) => !project?.samples[entry.char]?.strokes.length,
+      );
+      goTo((firstEmpty ?? entries[0]).char);
+    }
   };
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (
         modal ||
         projectsOpen ||
-        fontOpen ||
+        toolSheet ||
         step !== 2 ||
         busy ||
         (e.target instanceof HTMLElement &&
@@ -365,16 +358,7 @@ export default function Page() {
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [
-    char,
-    modal,
-    projectsOpen,
-    fontOpen,
-    busy,
-    navigationChars,
-    listFilter,
-    step,
-  ]);
+  }, [char, modal, projectsOpen, toolSheet, busy, navigationChars, list, step]);
   useEffect(() => {
     if (toastUndo) {
       setToast("");
@@ -391,14 +375,19 @@ export default function Page() {
           selected.offsetWidth / 2,
         behavior: "smooth",
       });
-  }, [char, listFilter, step, project?.id]);
+  }, [char, list, step, project?.id]);
   useEffect(() => {
-    if (!modal) return;
+    if (!modal && !toolSheet) return;
     const prev = document.activeElement as HTMLElement | null;
-    const dialog = document.getElementById("settings-dialog");
+    const dialog = document.getElementById(
+      modal ? "settings-dialog" : "tool-sheet",
+    );
     dialog?.querySelector<HTMLElement>("button,input")?.focus();
     const handle = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setModal(false);
+      if (e.key === "Escape") {
+        setModal(false);
+        setToolSheet(false);
+      }
       if (e.key === "Tab") {
         const items = Array.from(
           dialog?.querySelectorAll<HTMLElement>("button,input,select") ?? [],
@@ -419,7 +408,7 @@ export default function Page() {
       document.removeEventListener("keydown", handle);
       prev?.focus();
     };
-  }, [modal]);
+  }, [modal, toolSheet]);
   const exportJSON = () => {
     if (!project) return;
     const url = URL.createObjectURL(
@@ -439,7 +428,7 @@ export default function Page() {
       const p = parseProject(await f.text());
       setProject(p);
       setIndex(0);
-      setListFilter("all");
+      setList("basic");
       notify("새 프로젝트로 가져왔습니다");
     } catch (e) {
       notify(e instanceof Error ? e.message : "가져오기 실패");
@@ -456,64 +445,95 @@ export default function Page() {
     );
   const params = s.brushParams[s.activeBrush],
     history = histories[char];
-  const done = chars.filter(
-    (c) =>
-      project.samples[c.char]?.status === "done" && !issues[c.char]?.length,
-  ).length;
-  const isLast = currentPosition === navigationChars.length - 1;
-  const specialWritten = SPECIAL_SYMBOLS.filter(
-    (symbol) => project.samples[symbol]?.strokes.length,
-  ).length;
-  const specialComplete =
-    listFilter === "special" && specialWritten === SPECIAL_SYMBOLS.length;
+  const isWritten = (entry: CharEntry) =>
+    !!project.samples[entry.char]?.strokes.length;
+  const written = (id: ListId) => listChars(id).filter(isWritten).length;
+  const basicDone = written("basic");
+  const isLast =
+    currentPosition >= 0 && currentPosition === navigationChars.length - 1;
+  const nextLabel =
+    list === "review"
+      ? "다음 →"
+      : isLast
+        ? list === "premium"
+          ? "폰트 완성 →"
+          : "자모 나누기 →"
+        : "다음 →";
   const nextWritingChar = () => {
-    if (specialComplete && isLast) changeStep(4);
-    else if (listFilter !== "all" && !navigationChars.length)
-      selectFilter("all");
-    else if (listFilter === "all" && isLast) changeStep(3);
+    if (list !== "review" && isLast) changeStep(list === "premium" ? 4 : 3);
+    else if (list === "review" && !navigationChars.length) selectList("basic");
     else go(1);
   };
+  const usedBrushes = new Set(
+    Object.values(project.samples).flatMap((sample) =>
+      sample.strokes.map((stroke) => stroke.brush),
+    ),
+  );
+  const mixedBrush =
+    usedBrushes.size > 0 && !usedBrushes.has(s.activeBrush) && tool === "pen";
+  const setParams = (changes: Partial<typeof params>) =>
+    update({
+      brushParams: {
+        ...s.brushParams,
+        [s.activeBrush]: { ...params, ...changes },
+      },
+    });
+  const resetGlyph = () => {
+    commit(char, category, []);
+    notify("지웠어요. 다시 써 주세요.", true);
+  };
+  const brushLabel = BRUSHES.find((b) => b.id === s.activeBrush)?.label;
+  const sampleName = referenceFont(s.referenceFont).name;
+
   return (
     <main
       ref={stageRoot}
-      className={
-        (dark ? "studio dark" : "studio") + " journey journey-step-" + step
-      }
+      className={(dark ? "studio dark" : "studio") + " journey sg-step-" + step}
     >
-      <header className="topbar">
-        <a className="brand" href="./">
+      <header className="sg-topbar">
+        <a className="sg-brand" href="./" aria-label="쎈스 글리프 처음 화면">
           <span className="brand-mark" aria-hidden="true">
             ㅆ
           </span>
-          <span>
-            쎈스 글리프<small className="brand-credit">OSNS.studio 제작</small>
+          <span className="sg-brand-name">
+            쎈스 글리프<small>OSNS.studio</small>
           </span>
         </a>
-        <span className="journey-tagline">손글씨가 글꼴이 되는 다섯 걸음</span>
-        <div className="top-actions">
+        <nav className="sg-steps" aria-label="폰트 만드는 순서">
+          {STEPS.map((label, position) => (
+            <button
+              key={label}
+              className={
+                step === position
+                  ? "is-current"
+                  : position < step
+                    ? "is-past"
+                    : ""
+              }
+              aria-current={step === position ? "step" : undefined}
+              data-ink-locked={busy || undefined}
+              disabled={busy}
+              onClick={() => changeStep(position)}
+            >
+              <span className="step-number">{position + 1}</span>
+              <span>{label}</span>
+            </button>
+          ))}
+        </nav>
+        <div className="sg-top-actions">
+          <span className="sg-save" role="status">
+            {saved}
+          </span>
           <button
-            className="new-project-trigger"
-            aria-label="처음부터 다시하기"
+            className="sg-top-button"
             data-ink-locked={busy || undefined}
             disabled={busy}
             onClick={() => setProjectsOpen(true)}
           >
-            <span>처음부터 다시하기</span>
-            <small>새 폰트</small>
-          </button>
-          <span className="save-state" role="status">
-            {saved}
-          </span>
-          <button
-            className="make-font-button"
-            data-ink-locked={busy || undefined}
-            disabled={busy}
-            onClick={() => changeStep(3)}
-          >
-            자모 확인하기 →
+            내 폰트
           </button>
           <button
-            className="icon-button"
+            className="sg-top-button sg-icon"
             onClick={() => setModal(true)}
             data-ink-locked={busy || undefined}
             disabled={busy}
@@ -523,301 +543,109 @@ export default function Page() {
           </button>
         </div>
       </header>
-      <nav className="journey-track" aria-label="서비스 이용 순서">
-        {STEPS.map((label, position) => (
-          <button
-            key={label}
-            className={
-              step === position
-                ? "is-current"
-                : position < step
-                  ? "is-past"
-                  : ""
-            }
-            aria-current={step === position ? "step" : undefined}
-            data-ink-locked={busy || undefined}
-            disabled={busy}
-            onClick={() => changeStep(position)}
-          >
-            <span className="step-number">
-              {String(position + 1).padStart(2, "0")}
-            </span>
-            <span>{label}</span>
-          </button>
-        ))}
-      </nav>
+
       {step < 2 && (
         <JourneySetup
           step={step}
           settings={s}
           update={update}
           next={() => changeStep(step + 1)}
+          hasWriting={usedBrushes.size > 0}
         />
       )}
+
       {step === 2 && (
         <>
-          <section className="writing-intro journey-panel">
-            <div>
-              <span className="step-kicker">03 / 한 글자씩, 차근차근</span>
-              <h1 tabIndex={-1}>이제 한 글자씩 써봅시다!</h1>
-            </div>
-            <button
-              onClick={() => changeStep(3)}
-              data-ink-locked={busy || undefined}
-              disabled={busy}
-            >
-              쓴 글자로 자모 나누기 →
-            </button>
-          </section>
-          <section className="workspace journey-panel">
-            <aside className="tools" aria-label="그리기 도구">
-              <div className="section-label">
-                쓰는 도구{" "}
-                <button className="change-brush" onClick={() => changeStep(0)}>
-                  바꾸기
-                </button>
-              </div>
-              <div className="brushes">
-                {BRUSHES.map((b) => (
-                  <button
-                    key={b.id}
-                    className={
-                      "brush-button " +
-                      (s.activeBrush === b.id && tool === "pen"
-                        ? "selected"
-                        : "")
-                    }
-                    data-ink-locked={busy || undefined}
-                    disabled={busy}
-                    onClick={() => {
-                      update({ activeBrush: b.id });
-                      setTool("pen");
-                    }}
-                  >
-                    <span>{b.label}</span>
-                    <BrushPreview brush={b.id} />
-                  </button>
-                ))}
-              </div>
-              <div className="tool-divider" />
-              <div className="pen-options" hidden={tool === "eraser"}>
-                <label className="slider-label">
-                  굵기 <b>{params.size}</b>
-                  <input
-                    aria-label="펜 굵기"
-                    type="range"
-                    min="20"
-                    max="120"
-                    value={params.size}
-                    data-ink-locked={busy || undefined}
-                    disabled={busy}
-                    onChange={(e) =>
-                      update({
-                        brushParams: {
-                          ...s.brushParams,
-                          [s.activeBrush]: { ...params, size: +e.target.value },
-                        },
-                      })
-                    }
-                  />
-                </label>
-                <label className="check">
-                  <input
-                    type="checkbox"
-                    checked={params.usePressure}
-                    data-ink-locked={busy || undefined}
-                    disabled={busy}
-                    onChange={(e) =>
-                      update({
-                        brushParams: {
-                          ...s.brushParams,
-                          [s.activeBrush]: {
-                            ...params,
-                            usePressure: e.target.checked,
-                          },
-                        },
-                      })
-                    }
-                  />
-                  필압 반영
-                </label>
-                {s.activeBrush === "pixel" && (
-                  <PixelSizeControl
-                    params={params}
-                    data-ink-locked={busy || undefined}
-                    disabled={busy}
-                    onChange={(pixel) =>
-                      update({ brushParams: { ...s.brushParams, pixel } })
-                    }
-                  />
-                )}
-                {s.activeBrush === "nib" && (
-                  <label className="slider-label">
-                    펜촉 각도 <b>{params.nibAngle}°</b>
-                    <input
-                      type="range"
-                      min="0"
-                      max="180"
-                      value={params.nibAngle}
-                      onChange={(e) =>
-                        update({
-                          brushParams: {
-                            ...s.brushParams,
-                            nib: { ...params, nibAngle: +e.target.value },
-                          },
-                        })
-                      }
-                    />
-                  </label>
-                )}
-              </div>
-              <div className="tool-divider" />
+          <section className="sg-write journey-panel">
+            <h1 className="sg-visually-hidden" tabIndex={-1}>
+              글자 쓰기
+            </h1>
+            <div className="sg-rail" role="toolbar" aria-label="쓰기 도구">
               <button
-                className={
-                  "wide-button " + (tool === "eraser" ? "selected" : "")
-                }
+                className="sg-tool"
+                aria-pressed={tool === "pen"}
+                data-ink-locked={busy || undefined}
+                disabled={busy}
+                onClick={() => setTool("pen")}
+              >
+                <BrushPreview brush={s.activeBrush} />
+                <span>{brushLabel}</span>
+              </button>
+              <button
+                className="sg-tool"
+                aria-pressed={tool === "eraser"}
                 data-ink-locked={busy || undefined}
                 disabled={busy}
                 onClick={() => setTool(tool === "eraser" ? "pen" : "eraser")}
               >
-                ◇ 지우개 <kbd>E</kbd>
+                <i aria-hidden="true">◇</i>
+                <span>지우개</span>
               </button>
-              {tool === "eraser" && (
-                <div className="eraser-controls">
-                  <select
-                    aria-label="지우개 모드"
-                    value={s.eraserMode}
-                    data-ink-locked={busy || undefined}
-                    disabled={busy}
-                    onChange={(e) =>
-                      update({
-                        eraserMode: e.target.value as "stroke" | "partial",
-                      })
-                    }
-                  >
-                    <option value="stroke">획 전체 지우기</option>
-                    <option value="partial">부분 지우기</option>
-                  </select>
-                  <label className="slider-label">
-                    크기 <b>{s.eraserSize}</b>
-                    <input
-                      type="range"
-                      min="20"
-                      max="200"
-                      value={s.eraserSize}
-                      data-ink-locked={busy || undefined}
-                      disabled={busy}
-                      onChange={(e) => update({ eraserSize: +e.target.value })}
-                    />
-                  </label>
-                </div>
-              )}
-              <div className="history-buttons">
-                <button
-                  data-ink-locked={
-                    (busy && !!history?.past.length) || undefined
-                  }
-                  disabled={busy || !history?.past.length}
-                  onClick={() => undo(char)}
-                  aria-label="실행 취소"
-                >
-                  ↶
-                </button>
-                <button
-                  data-ink-locked={
-                    (busy && !!history?.future.length) || undefined
-                  }
-                  disabled={busy || !history?.future.length}
-                  onClick={() => redo(char)}
-                  aria-label="다시 실행"
-                >
-                  ↷
-                </button>
-              </div>
+              <span className="sg-rail-gap" />
               <button
-                className="reset-button"
+                className="sg-tool"
+                aria-label="실행 취소"
+                data-ink-locked={(busy && !!history?.past.length) || undefined}
+                disabled={busy || !history?.past.length}
+                onClick={() => undo(char)}
+              >
+                <i aria-hidden="true">↶</i>
+                <span>취소</span>
+              </button>
+              <button
+                className="sg-tool"
+                aria-label="다시 실행"
+                data-ink-locked={
+                  (busy && !!history?.future.length) || undefined
+                }
+                disabled={busy || !history?.future.length}
+                onClick={() => redo(char)}
+              >
+                <i aria-hidden="true">↷</i>
+                <span>다시</span>
+              </button>
+              <button
+                className="sg-tool"
                 data-ink-locked={(busy && !!strokes.length) || undefined}
                 disabled={busy || !strokes.length}
-                onClick={() => {
-                  commit(char, category, []);
-                  notify("다시 쓸 준비가 됐어요", true);
-                }}
+                onClick={resetGlyph}
               >
-                ↺ 다시쓰기
+                <i aria-hidden="true">↺</i>
+                <span>다시쓰기</span>
               </button>
-            </aside>
-            <div
-              className={
-                "writing-area" + (s.writingSize ? " custom-writing-size" : "")
-              }
-              style={
-                s.writingSize
-                  ? ({
-                      "--writing-size": `${s.writingSize}px`,
-                    } as React.CSSProperties)
-                  : undefined
-              }
-            >
-              <div className="character-instruction">
-                <div>
-                  <strong>{char}</strong>
+              <span className="sg-rail-gap" />
+              <button
+                className="sg-tool"
+                aria-haspopup="dialog"
+                aria-expanded={toolSheet}
+                data-ink-locked={busy || undefined}
+                disabled={busy}
+                onClick={() => setToolSheet(true)}
+              >
+                <i aria-hidden="true">⚙</i>
+                <span>도구 설정</span>
+              </button>
+            </div>
+
+            <div className="sg-stage">
+              <div className="sg-char-head">
+                <strong className="sg-char">{char}</strong>
+                <div className="sg-char-info">
                   <span>
-                    {cat.label} · {currentPosition + 1} /{" "}
-                    {navigationChars.length}
+                    {cat.label}
+                    {isPremiumCategory(category) && (
+                      <em className="sg-tag">특수문자</em>
+                    )}
+                    {currentPosition >= 0 && (
+                      <>
+                        {" "}
+                        · {currentPosition + 1} / {navigationChars.length}
+                      </>
+                    )}
                   </span>
+                  <p>{characterGuide(char, category)}</p>
                 </div>
-                <p>{characterGuide(char, category)}</p>
-              </div>
-              <div className="mobile-ink-tools" aria-label="간단한 그리기 도구">
-                <button
-                  aria-pressed={tool === "pen"}
-                  onClick={() => setTool("pen")}
-                  data-ink-locked={busy || undefined}
-                  disabled={busy}
-                >
-                  펜
-                </button>
-                <button
-                  aria-pressed={tool === "eraser"}
-                  onClick={() => setTool("eraser")}
-                  data-ink-locked={busy || undefined}
-                  disabled={busy}
-                >
-                  지우개
-                </button>
-                <button
-                  aria-label="간단 실행 취소"
-                  onClick={() => undo(char)}
-                  data-ink-locked={
-                    (busy && !!history?.past.length) || undefined
-                  }
-                  disabled={busy || !history?.past.length}
-                >
-                  ↶
-                </button>
-                <button
-                  aria-label="간단 다시 실행"
-                  onClick={() => redo(char)}
-                  data-ink-locked={
-                    (busy && !!history?.future.length) || undefined
-                  }
-                  disabled={busy || !history?.future.length}
-                >
-                  ↷
-                </button>
-                <button
-                  onClick={() => {
-                    commit(char, category, []);
-                    notify("다시 쓸 준비가 됐어요", true);
-                  }}
-                  data-ink-locked={(busy && !!strokes.length) || undefined}
-                  disabled={busy || !strokes.length}
-                >
-                  다시쓰기
-                </button>
-              </div>
-              <div className="canvas-toolbar">
-                <div className="mode-tabs" aria-label="견본 표시">
+                <div className="sg-segment" role="group" aria-label="견본 보기">
                   {(
                     [
                       { id: "inside-faint", label: "따라 쓰기" },
@@ -826,152 +654,116 @@ export default function Page() {
                   ).map((m) => (
                     <button
                       key={m.id}
+                      aria-pressed={s.sampleMode === m.id}
                       data-ink-locked={busy || undefined}
                       disabled={busy}
-                      className={s.sampleMode === m.id ? "active" : ""}
                       onClick={() => update({ sampleMode: m.id })}
                     >
                       {m.label}
                     </button>
                   ))}
                 </div>
-                <label className="writing-size-control">
-                  쓰기 칸 <b>{s.writingSize ? `${s.writingSize}px` : "자동"}</b>
-                  <input
-                    aria-label="쓰기 칸 크기"
-                    type="range"
-                    min="180"
-                    max="900"
-                    step="20"
-                    value={s.writingSize ?? 400}
-                    data-ink-locked={busy || undefined}
-                    disabled={busy}
-                    onChange={(e) => update({ writingSize: +e.target.value })}
-                  />
+              </div>
+              <div
+                className="sg-pad-area"
+                style={
+                  s.writingSize
+                    ? ({
+                        "--writing-size": `${s.writingSize}px`,
+                      } as React.CSSProperties)
+                    : undefined
+                }
+                data-fixed-size={s.writingSize ? true : undefined}
+              >
+                <WritingPad
+                  key={char}
+                  char={char}
+                  category={category}
+                  strokes={strokes}
+                  settings={s}
+                  tool={tool}
+                  dark={dark}
+                  onBusy={setBusy}
+                  navigation={{
+                    previousDisabled:
+                      list === "review"
+                        ? navigationChars.length < 2
+                        : currentPosition <= 0,
+                    nextDisabled: false,
+                    inkLocked: busy,
+                    onPrevious: () => go(-1),
+                    onNext: nextWritingChar,
+                  }}
+                />
+              </div>
+              {mixedBrush && (
+                <p className="sg-hint" role="note">
+                  앞에서 쓴 글자와 다른 도구({brushLabel})예요. 한 폰트는 한
+                  가지 도구로 쓰면 더 고르게 나와요.
+                </p>
+              )}
+            </div>
+
+            <aside className="sg-side" aria-label="이동과 글자 확인">
+              <div className="sg-nav">
+                <button
+                  className="sg-primary"
+                  data-ink-locked={busy || undefined}
+                  disabled={busy}
+                  onClick={nextWritingChar}
+                >
+                  {nextLabel}
+                </button>
+                <div className="sg-nav-row">
                   <button
-                    type="button"
                     data-ink-locked={busy || undefined}
-                    disabled={busy}
-                    onClick={() => update({ writingSize: undefined })}
+                    disabled={
+                      busy ||
+                      (list === "review"
+                        ? navigationChars.length < 2
+                        : currentPosition <= 0)
+                    }
+                    onClick={() => go(-1)}
                   >
-                    자동
+                    ← 이전
                   </button>
-                </label>
-                {category === "hangul-syllable" && (
                   <button
-                    className="write-to-separation"
-                    disabled={busy || !strokes.length}
+                    data-ink-locked={busy || undefined}
+                    disabled={busy}
                     onClick={() => {
-                      changeStep(3);
-                      setFontReviewChar(char);
+                      if (!strokes.length)
+                        commit(char, category, strokes, "skipped");
+                      go(1);
                     }}
                   >
-                    이 글자 자모 나누기 →
+                    건너뛰기
                   </button>
-                )}
+                </div>
               </div>
-              <WritingPad
-                key={char}
-                char={char}
-                category={category}
-                strokes={strokes}
-                settings={s}
-                tool={tool}
-                dark={dark}
-                onBusy={setBusy}
-                navigation={{
-                  previousDisabled: previousUnavailable,
-                  nextDisabled: false,
-                  inkLocked: busy,
-                  onPrevious: () => go(-1),
-                  onNext: nextWritingChar,
-                }}
-              />
-              <div className="canvas-footer">
-                <span>
-                  <i className="small-dot" />
-                  {s.penOnly ? "펜 전용 입력" : "펜 또는 터치로 입력"}
-                  {s.allowMouse ? " · 마우스 허용" : ""}
-                </span>
-                <span>{strokes.length}획 · 자동 저장</span>
-              </div>
-              <p className="safety-caption">
-                {category.startsWith("hangul")
-                  ? "갈색 점선은 한글 안전영역입니다. 획의 가장자리까지 안쪽에 써주세요."
-                  : "기준선 아래는 디센더·문장부호 영역입니다. 아래쪽 점선까지 사용할 수 있어요."}
-              </p>
-            </div>
-            <aside className="reference-panel">
-              <div
-                className="reference-font-picker"
-                role="radiogroup"
-                aria-label="견본 글꼴"
-              >
-                {REFERENCE_FONTS.map((font) => (
-                  <button
-                    key={font.id}
-                    role="radio"
-                    aria-checked={(s.referenceFont ?? "sans") === font.id}
-                    data-ink-locked={busy || undefined}
-                    disabled={busy}
-                    className={
-                      (s.referenceFont ?? "sans") === font.id ? "selected" : ""
-                    }
-                    onClick={() => update({ referenceFont: font.id })}
-                  >
-                    <span style={{ fontFamily: referenceStack(font.id) }}>
-                      한글
-                    </span>
-                    <small>{font.label}</small>
-                  </button>
-                ))}
-              </div>
-
-              <div className="section-label">YOUR HANDWRITING</div>
-              {s.sampleMode !== "hidden" &&
-                referenceUsesFallback(char, s.referenceFont) && (
-                  <small className="reference-region-note">
-                    ‘{char}’은 대체 견본으로 표시됩니다.
-                  </small>
-                )}
-              {s.sampleMode === "inside-faint" && (
-                <label className="slider-label opacity-control">
-                  견본 농도 <b>{Math.round(s.sampleOpacity * 100)}%</b>
-                  <input
-                    type="range"
-                    min="5"
-                    max="40"
-                    value={Math.round(s.sampleOpacity * 100)}
-                    onChange={(e) =>
-                      update({ sampleOpacity: +e.target.value / 100 })
-                    }
-                  />
-                </label>
-              )}
               <section
                 className={
-                  "review-card " + (currentIssues.length ? "has-issues" : "")
+                  "sg-check" + (currentIssues.length ? " has-issues" : "")
                 }
-                aria-label="현재 글자 확인 상태"
+                aria-label="현재 글자 확인"
               >
-                <div className="review-card-heading">
+                <div className="sg-check-head">
                   <strong>
-                    {currentIssues.length ? "다시 확인할 글자" : "글자 확인"}
-                  </strong>
-                  <span>
                     {currentIssues.length
-                      ? currentIssues.length + "개 항목"
+                      ? "다시 볼 글자"
                       : strokes.length
-                        ? "문제 없음"
-                        : "미작성"}
-                  </span>
+                        ? "잘 썼어요"
+                        : "아직 안 쓴 글자"}
+                  </strong>
+                  <span>{strokes.length}획</span>
                 </div>
                 {currentIssues.length > 0 && (
-                  <p className="review-reasons" role="status">
-                    {currentIssues.map((issue) => issue.label).join(" · ")}
-                  </p>
+                  <ul className="sg-reasons">
+                    {currentIssues.map((issue) => (
+                      <li key={issue.kind}>{issue.label}</li>
+                    ))}
+                  </ul>
                 )}
-                <div className="review-actions">
+                <div className="sg-check-actions">
                   <button
                     data-ink-locked={busy || undefined}
                     disabled={busy}
@@ -985,12 +777,10 @@ export default function Page() {
                     }
                   >
                     {project.samples[char]?.needsReview
-                      ? "직접 표시 해제"
-                      : "다시 확인 표시"}
+                      ? "표시 지우기"
+                      : "나중에 다시 보기"}
                   </button>
-                  {currentIssues.some(
-                    (issue) => issue.kind === "components",
-                  ) && (
+                  {category === "hangul-syllable" && strokes.length > 0 && (
                     <button
                       data-ink-locked={busy || undefined}
                       disabled={busy}
@@ -1004,161 +794,130 @@ export default function Page() {
                   )}
                 </div>
               </section>
-              <div className="next-block">
-                <span className="section-label">
-                  {listFilter === "review" ? "확인 목록" : "진행"}{" "}
-                  {currentPosition >= 0
-                    ? currentPosition + 1
-                    : "현재 글자 완료"}{" "}
-                  / {navigationChars.length}
-                </span>
-                <div className="navigation">
+              <section className="sg-sample" aria-label="견본">
+                <div className="sg-sample-head">
+                  <span>
+                    견본 <b>{sampleName}</b>
+                  </span>
                   <button
-                    data-ink-locked={
-                      (busy && !previousUnavailable) || undefined
-                    }
-                    disabled={busy || previousUnavailable}
-                    onClick={() => go(-1)}
-                  >
-                    ← 이전
-                  </button>
-                  <button
-                    className="primary"
+                    className="sg-link"
                     data-ink-locked={busy || undefined}
                     disabled={busy}
-                    onClick={nextWritingChar}
+                    onClick={() => changeStep(1)}
                   >
-                    {listFilter !== "all" && !navigationChars.length
-                      ? "전체 글자로 →"
-                      : listFilter === "all" && isLast
-                        ? "자모 나누기 →"
-                        : specialComplete && isLast
-                          ? "폰트 완성 →"
-                          : "다음 →"}
+                    바꾸기
                   </button>
                 </div>
-                <button
-                  className="skip-button"
-                  data-ink-locked={busy || undefined}
-                  disabled={busy}
-                  onClick={() => {
-                    commit(char, category, strokes, "skipped");
-                    go(1);
-                  }}
-                >
-                  지금은 건너뛰기
-                </button>
-                <p className="tiny-note">
-                  언제든 아래 글자를 눌러 돌아올 수 있어요.
-                </p>
-              </div>
+                {referenceUsesFallback(char, s.referenceFont) && (
+                  <small>‘{char}’은 기본 견본으로 보여요.</small>
+                )}
+                {s.sampleMode === "inside-faint" && (
+                  <label className="sg-slider">
+                    <span>
+                      견본 진하기 <b>{Math.round(s.sampleOpacity * 100)}%</b>
+                    </span>
+                    <input
+                      type="range"
+                      aria-label="견본 진하기"
+                      min="5"
+                      max="40"
+                      value={Math.round(s.sampleOpacity * 100)}
+                      onChange={(e) =>
+                        update({ sampleOpacity: +e.target.value / 100 })
+                      }
+                    />
+                  </label>
+                )}
+              </section>
+              <button
+                className="sg-next-step"
+                data-ink-locked={busy || undefined}
+                disabled={busy}
+                onClick={() => changeStep(3)}
+              >
+                쓴 글자로 자모 나누기 →
+              </button>
             </aside>
           </section>
-          <footer className="progress-panel">
-            <div className="progress-heading">
-              <div>
-                <strong>나의 글자 모음</strong>
-                <span>
-                  {listFilter === "special" ? specialWritten : done} /{" "}
-                  {listFilter === "special"
-                    ? SPECIAL_SYMBOLS.length
-                    : chars.length}{" "}
-                  완료
-                </span>
-              </div>
-              <div
-                className="strip-filters"
-                role="group"
-                aria-label="글자 목록 필터"
-              >
-                {WRITING_FILTERS.map(([id, label]) => (
+
+          <footer className="sg-strip" aria-label="글자 모음">
+            <div className="sg-strip-head">
+              <div className="sg-lists" role="group" aria-label="글자 목록">
+                {LIST_IDS.map((id) => (
                   <button
                     key={id}
+                    aria-pressed={list === id}
+                    data-list={id}
                     data-ink-locked={busy || undefined}
                     disabled={busy}
-                    aria-pressed={listFilter === id}
-                    onClick={() => selectFilter(id)}
+                    onClick={() => selectList(id)}
                   >
-                    {label} <b>{filteredChars[id].length}</b>
+                    {id === "review" ? "다시 확인" : LISTS[id].label}{" "}
+                    <b>
+                      {id === "review"
+                        ? reviewChars.length
+                        : `${written(id)}/${listChars(id).length}`}
+                    </b>
                   </button>
                 ))}
               </div>
-              <select
-                aria-label="카테고리로 이동"
-                value={category}
-                data-ink-locked={
-                  (busy && !!navigationChars.length) || undefined
-                }
-                disabled={busy || !navigationChars.length}
-                onChange={(e) => {
-                  const target = navigationChars.find(
-                    (entry) => entry.category === e.target.value,
-                  );
-                  if (target)
-                    setIndex(CHARSET.findIndex((c) => c.char === target.char));
-                }}
-              >
-                {CATEGORIES.filter((c) =>
-                  listFilter === "all"
-                    ? c.id !== "special-symbol" && enabled.includes(c.id)
-                    : navigationChars.some(
-                        (entry) => entry.category === c.id,
-                      ) || category === c.id,
-                ).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label} {c.chars.length}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="progress-track">
-              <div
-                style={{
-                  width:
-                    (listFilter === "special"
-                      ? specialWritten / SPECIAL_SYMBOLS.length
-                      : done / chars.length) *
-                      100 +
-                    "%",
-                }}
-              />
+              <div className="sg-progress" aria-label="기본 글자 진행률">
+                <span>
+                  기본 글자 <b>{basicDone}</b> / {BASIC_CHARSET.length}
+                </span>
+                <span className="sg-progress-bar">
+                  <i
+                    style={{
+                      width: (basicDone / BASIC_CHARSET.length) * 100 + "%",
+                    }}
+                  />
+                </span>
+              </div>
             </div>
             <div
-              className="glyph-strip"
+              className="sg-glyphs"
               aria-label={
-                WRITING_FILTERS.find(([id]) => id === listFilter)?.[1] +
-                " 글자 목록"
+                (list === "review" ? "다시 확인" : LISTS[list].label) + " 목록"
               }
             >
               {!navigationChars.length && (
-                <div className="strip-empty" role="status">
-                  {listFilter === "review"
-                    ? "다시 확인할 글자가 없습니다."
-                    : "이 분류에 표시할 글자가 없습니다."}
-                  <button onClick={() => selectFilter("all")}>
-                    전체 글자 보기
+                <div className="sg-strip-empty" role="status">
+                  {list === "review"
+                    ? "다시 볼 글자가 없어요."
+                    : "이 목록에 글자가 없어요."}
+                  <button onClick={() => selectList("basic")}>
+                    기본 글자 보기
                   </button>
                 </div>
               )}
               {navigationChars.map((c, i) => {
                 const sample = project.samples[c.char];
-                const problems = issues[c.char] ?? [],
-                  unsafe = problems.some((issue) => issue.kind === "unsafe");
+                const problems = issues[c.char] ?? [];
+                const state = problems.length
+                  ? "review"
+                  : sample?.strokes.length
+                    ? "done"
+                    : sample?.status === "skipped"
+                      ? "skipped"
+                      : "empty";
                 return (
                   <button
                     id={"glyph-" + c.char}
                     key={c.char}
+                    className="sg-glyph"
+                    data-state={state}
                     data-ink-locked={busy || undefined}
                     disabled={busy}
+                    aria-current={c.char === char ? "step" : undefined}
                     aria-label={
                       c.char +
                       " " +
                       (problems.length
                         ? "다시 확인 · " +
                           problems.map((issue) => issue.label).join(" · ")
-                        : sample?.status === "done"
+                        : state === "done"
                           ? "완료"
-                          : sample?.status === "skipped"
+                          : state === "skipped"
                             ? "건너뜀"
                             : "미완료")
                     }
@@ -1167,21 +926,7 @@ export default function Page() {
                         ? problems.map((issue) => issue.label).join(" · ")
                         : c.char
                     }
-                    aria-current={c.char === char ? "step" : undefined}
-                    data-review={problems.length > 0}
-                    data-unsafe={unsafe}
-                    className={
-                      "glyph " +
-                      (c.char === char ? "current " : "") +
-                      (sample?.status ?? "empty") +
-                      (problems.length ? " needs-review" : "") +
-                      (unsafe ? " unsafe" : "")
-                    }
-                    onClick={() =>
-                      setIndex(
-                        CHARSET.findIndex((entry) => entry.char === c.char),
-                      )
-                    }
+                    onClick={() => goTo(c.char)}
                   >
                     {sample?.strokes.length ? (
                       <Thumbnail
@@ -1192,49 +937,212 @@ export default function Page() {
                       <span>{c.char}</span>
                     )}
                     <small>
-                      {problems.length
+                      {state === "review"
                         ? "!"
-                        : sample?.status === "done"
+                        : state === "done"
                           ? "✓"
-                          : sample?.status === "skipped"
+                          : state === "skipped"
                             ? "–"
-                            : String(i + 1).padStart(2, "0")}
+                            : i + 1}
                     </small>
                   </button>
                 );
               })}
             </div>
           </footer>
+
+          {toolSheet && (
+            <div
+              className="sg-sheet-backdrop"
+              onClick={() => setToolSheet(false)}
+            >
+              <section
+                className="sg-sheet"
+                id="tool-sheet"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="tool-sheet-title"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="sg-sheet-head">
+                  <h2 id="tool-sheet-title">도구 설정</h2>
+                  <button
+                    onClick={() => setToolSheet(false)}
+                    aria-label="도구 설정 닫기"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <h3>쓰는 도구</h3>
+                <div className="sg-brushes">
+                  {BRUSHES.map((b) => (
+                    <button
+                      key={b.id}
+                      aria-pressed={s.activeBrush === b.id}
+                      onClick={() => {
+                        update({ activeBrush: b.id });
+                        setTool("pen");
+                      }}
+                    >
+                      <BrushPreview brush={b.id} />
+                      <span>{b.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="sg-help">
+                  한 폰트는 한 가지 도구로 쓰면 글자 모양이 고르게 나와요.
+                </p>
+                <label className="sg-slider">
+                  <span>
+                    굵기 <b>{params.size}</b>
+                  </span>
+                  <input
+                    aria-label="펜 굵기"
+                    type="range"
+                    min="20"
+                    max="120"
+                    value={params.size}
+                    onChange={(e) => setParams({ size: +e.target.value })}
+                  />
+                </label>
+                <label className="sg-check-row">
+                  <input
+                    type="checkbox"
+                    checked={params.usePressure}
+                    onChange={(e) =>
+                      setParams({ usePressure: e.target.checked })
+                    }
+                  />
+                  펜 누르는 힘 반영
+                </label>
+                {s.activeBrush === "pixel" && (
+                  <PixelSizeControl
+                    params={params}
+                    onChange={(pixel) =>
+                      update({ brushParams: { ...s.brushParams, pixel } })
+                    }
+                  />
+                )}
+                {s.activeBrush === "nib" && (
+                  <label className="sg-slider">
+                    <span>
+                      펜촉 각도 <b>{params.nibAngle}°</b>
+                    </span>
+                    <input
+                      aria-label="펜촉 각도"
+                      type="range"
+                      min="0"
+                      max="180"
+                      value={params.nibAngle}
+                      onChange={(e) => setParams({ nibAngle: +e.target.value })}
+                    />
+                  </label>
+                )}
+                <h3>지우개</h3>
+                <div
+                  className="sg-segment"
+                  role="group"
+                  aria-label="지우개 방식"
+                >
+                  {(
+                    [
+                      ["stroke", "획 통째로"],
+                      ["partial", "닿은 부분만"],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <button
+                      key={id}
+                      aria-pressed={s.eraserMode === id}
+                      onClick={() => update({ eraserMode: id })}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <label className="sg-slider">
+                  <span>
+                    지우개 크기 <b>{s.eraserSize}</b>
+                  </span>
+                  <input
+                    aria-label="지우개 크기"
+                    type="range"
+                    min="20"
+                    max="200"
+                    value={s.eraserSize}
+                    onChange={(e) => update({ eraserSize: +e.target.value })}
+                  />
+                </label>
+                <h3>쓰기 칸</h3>
+                <div
+                  className="sg-segment"
+                  role="group"
+                  aria-label="쓰기 칸 크기"
+                >
+                  <button
+                    aria-pressed={!s.writingSize}
+                    onClick={() => update({ writingSize: undefined })}
+                  >
+                    화면에 맞춤
+                  </button>
+                  <button
+                    aria-pressed={!!s.writingSize}
+                    onClick={() =>
+                      update({ writingSize: s.writingSize ?? 480 })
+                    }
+                  >
+                    직접 정하기
+                  </button>
+                </div>
+                {s.writingSize && (
+                  <label className="sg-slider">
+                    <span>
+                      칸 크기 <b>{s.writingSize}px</b>
+                    </span>
+                    <input
+                      aria-label="쓰기 칸 크기"
+                      type="range"
+                      min="240"
+                      max="900"
+                      step="20"
+                      value={s.writingSize}
+                      onChange={(e) => update({ writingSize: +e.target.value })}
+                    />
+                  </label>
+                )}
+                <p className="sg-help">
+                  칸 크기를 바꿔도 폰트의 글자 크기는 바뀌지 않아요.
+                </p>
+              </section>
+            </div>
+          )}
         </>
       )}
-      {fontOpen && !projectsOpen && (
+
+      {step >= 3 && !projectsOpen && (
         <FontWorkshop
           key={project.id}
-          guided
-          journeyStage={step === 3 ? "separation" : "build"}
+          stage={step === 3 ? "separation" : "build"}
           onStageChange={(next) => changeStep(next === "separation" ? 3 : 4)}
           project={project}
           onChange={useStudio.getState().prepareFont}
-          saveStatus={saved}
           initialChar={fontReviewChar}
-          onWriteSpecial={() => {
+          onWritePremium={() => {
             changeStep(2);
-            setListFilter("special");
+            setList("premium");
             const next =
-              SPECIAL_SYMBOLS.find(
-                (symbol) => !project.samples[symbol]?.strokes.length,
-              ) ?? SPECIAL_SYMBOLS[0];
-            setIndex(CHARSET.findIndex(({ char }) => char === next));
+              PREMIUM_CHARSET.find(
+                ({ char: c }) => !project.samples[c]?.strokes.length,
+              ) ?? PREMIUM_CHARSET[0];
+            goTo(next.char);
           }}
-          initialStage={step === 3 ? "separation" : "build"}
-          onSave={persist}
-          onClose={() => {
-            changeStep(2);
-          }}
+          onClose={() => changeStep(2)}
           onWrite={(next) => {
             changeStep(2);
-            setListFilter("all");
-            setIndex(CHARSET.findIndex((c) => c.char === next));
+            const entry = CHARSET.find((c) => c.char === next);
+            setList(
+              entry && isPremiumCategory(entry.category) ? "premium" : "basic",
+            );
+            goTo(next);
           }}
         />
       )}
@@ -1255,7 +1163,7 @@ export default function Page() {
                 setToast("");
               }}
             >
-              실행 취소
+              되돌리기
             </button>
           )}
         </div>
@@ -1271,7 +1179,7 @@ export default function Page() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-title">
-              <h2 id="settings-title">작업실 설정</h2>
+              <h2 id="settings-title">설정</h2>
               <button onClick={() => setModal(false)} aria-label="설정 닫기">
                 ✕
               </button>
@@ -1284,6 +1192,32 @@ export default function Page() {
                 onChange={(e) => rename(e.target.value)}
               />
             </label>
+            <h3>입력</h3>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={s.penOnly}
+                onChange={(e) => update({ penOnly: e.target.checked })}
+              />
+              펜으로만 쓰기 (손바닥 오인식 방지)
+            </label>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={s.allowMouse}
+                onChange={(e) => update({ allowMouse: e.target.checked })}
+              />
+              마우스로 쓰기 허용
+            </label>
+            <h3>화면</h3>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={dark}
+                onChange={(e) => setDark(e.target.checked)}
+              />
+              어두운 화면
+            </label>
             <label className="check">
               <input
                 type="checkbox"
@@ -1294,59 +1228,12 @@ export default function Page() {
                   })
                 }
               />
-              글자 크기 가이드
+              글자 크기 안내선
             </label>
-            <h3>입력과 화면</h3>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={s.penOnly}
-                onChange={(e) => update({ penOnly: e.target.checked })}
-              />
-              펜으로만 쓰기
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={s.allowMouse}
-                onChange={(e) => update({ allowMouse: e.target.checked })}
-              />
-              마우스로 쓰기 허용
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={dark}
-                onChange={(e) => setDark(e.target.checked)}
-              />
-              어두운 화면
-            </label>
-            <h3>모을 글자</h3>
-            <div className="settings-grid">
-              {CATEGORIES.filter((c) => c.id !== "special-symbol").map((c) => (
-                <label className="check" key={c.id}>
-                  <input
-                    type="checkbox"
-                    disabled={c.required}
-                    checked={enabled.includes(c.id)}
-                    onChange={(e) => {
-                      setIndex(0);
-                      setEnabled(
-                        e.target.checked
-                          ? [...enabled, c.id]
-                          : enabled.filter((x) => x !== c.id),
-                      );
-                    }}
-                  />
-                  {c.label} {c.chars.length}
-                  {c.required ? " · 필수" : ""}
-                </label>
-              ))}
-            </div>
             <h3>백업</h3>
             <p className="settings-help">
-              글씨는 이 브라우저에 저장됩니다. JSON 백업을 보관하면 다른 기기로
-              옮길 수 있어요. 가져오기는 새 프로젝트로 열립니다.
+              글씨는 이 브라우저에 저장돼요. JSON으로 백업하면 다른 기기로 옮길
+              수 있어요. 가져오기는 새 프로젝트로 열려요.
             </p>
             <div className="backup-buttons">
               <button onClick={exportJSON}>JSON 내보내기 ↓</button>
@@ -1366,12 +1253,12 @@ export default function Page() {
               }}
             />
             <p className="settings-help">
-              단축키: P 펜 · E 지우개 · ← → 글자 이동
-              <br />
-              Ctrl / ⌘ + Z 실행 취소 · Shift + Z 다시 실행
+              키보드: P 펜 · E 지우개 · ← → 글자 이동 · Ctrl/⌘+Z 취소 · Shift+Z
+              다시
             </p>
             <p className="version">
-              쎈스 글리프 · 모든 획은 벡터로 보관됩니다.
+              쎈스 글리프 · {REFERENCE_FONTS.length}가지 견본 · 모든 획은 벡터로
+              보관됩니다.
             </p>
           </section>
         </div>

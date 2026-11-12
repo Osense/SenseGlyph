@@ -8,6 +8,7 @@ import "./touch.css";
 import "./mobile.css";
 import "./canvas-navigation.css";
 import "./paper-workspace.css";
+import "./studio.css";
 import { BASE_PATH } from "../lib/base-path";
 import { REFERENCE_FONTS } from "../lib/reference-fonts";
 

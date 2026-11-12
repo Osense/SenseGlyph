@@ -68,6 +68,14 @@ export function referencePart(
   stroke: Stroke,
   settings?: ReferenceSettings,
 ): Part | null {
+  return referenceVote(char, stroke, settings)?.part ?? null;
+}
+/** 견본 자모 영역 투표 결과. share는 가장 많이 겹친 자모의 비율(0~1)로, 낮을수록 애매한 획입니다. */
+export function referenceVote(
+  char: string,
+  stroke: Stroke,
+  settings?: ReferenceSettings,
+): { part: Part; share: number } | null {
   const guide = referenceGuide(char, settings);
   if (!guide) return null;
   const votes = [0, 0, 0];
@@ -104,7 +112,9 @@ export function referencePart(
         distance ? distance / count : i === 0 ? 1 : 0,
       );
   }
-  return parts[votes.indexOf(Math.max(...votes))];
+  const best = Math.max(...votes),
+    total = votes[0] + votes[1] + votes[2];
+  return { part: parts[votes.indexOf(best)], share: total ? best / total : 1 };
 }
 export function referenceUsesFallback(char: string, font = "sans") {
   return !fonts[font]?.[char] && !!fonts.fallback?.[char];

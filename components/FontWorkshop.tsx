@@ -1,9 +1,14 @@
 "use client";
 
-import FontOutput, { FontDialog, type OutputPlan } from "./FontOutput";
+import FontOutput, { type OutputPlan } from "./FontOutput";
 import { OUTPUT_PREFIX, type OutputNames } from "../lib/font/output-names";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { HANGUL, SPECIAL_SYMBOLS } from "../data/charset";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  BASIC_CHARSET,
+  HANGUL,
+  PREMIUM_CHARSET,
+  isPremiumCategory,
+} from "../data/charset";
 import HandwritingSearch from "./HandwritingSearch";
 import SeparationEditor from "./SeparationEditor";
 import MetricPreview from "./MetricPreview";
@@ -19,16 +24,23 @@ import {
 import { decompose } from "../lib/hangul";
 import { coverage } from "../lib/font/composition";
 import {
+  CORRECTION_KEYS,
   defaultPreparation,
   FONT_SETTING_LIMITS as LIMITS,
+  type CorrectionDetail,
 } from "../lib/font/types";
+import { correctionDetail, detailFromStrength } from "../lib/font/beautify";
+import {
+  confirmSeparation,
+  separationStatus,
+  type SeparationStatus,
+} from "../lib/font/separation-status";
 import { bodySize } from "../lib/font/layout";
 import type { FontProject } from "../lib/types";
 import type {
   BuildRequest,
   FontPreparation,
   FontStats,
-  Part,
   WorkerReply,
 } from "../lib/font/types";
 
@@ -43,19 +55,38 @@ type GeneratedFont = {
 
 let lastGeneratedFont: GeneratedFont | null = null;
 
+const PRESETS = [
+  { value: 0, label: "쓴 그대로" },
+  { value: 25, label: "살짝" },
+  { value: 50, label: "단정하게" },
+  { value: 80, label: "많이" },
+];
+const DETAIL_LABELS: Record<
+  keyof CorrectionDetail,
+  { label: string; note: string }
+> = {
+  layout: {
+    label: "자모 배치",
+    note: "초성·중성·종성의 위치와 비율을 견본 쪽으로",
+  },
+  straighten: {
+    label: "기울기",
+    note: "거의 가로·세로인 획만 반듯하게",
+  },
+  smooth: { label: "떨림", note: "획의 잔떨림을 부드럽게" },
+  size: { label: "글자 크기", note: "작게 쓴 글자를 보통 크기 쪽으로" },
+  weight: { label: "굵기 고르게", note: "획마다 다른 필압을 고르게" },
+};
+
 interface Props {
-  guided?: boolean;
-  journeyStage?: "separation" | "build";
-  onStageChange?: (stage: "separation" | "build") => void;
+  stage: "separation" | "build";
+  onStageChange: (stage: "separation" | "build") => void;
   initialChar?: string;
-  initialStage?: "separation" | "build";
   project: FontProject;
   onChange: (preparation: FontPreparation) => void;
   onClose: () => void;
   onWrite: (char: string) => void;
-  onWriteSpecial?: () => void;
-  saveStatus: string;
-  onSave: () => void;
+  onWritePremium?: () => void;
 }
 
 export default function FontWorkshop({
@@ -63,16 +94,11 @@ export default function FontWorkshop({
   onChange,
   onClose,
   onWrite,
-  onWriteSpecial,
-  saveStatus,
-  onSave,
+  onWritePremium,
   initialChar,
-  initialStage = "build",
-  guided = false,
-  journeyStage,
-  onStageChange,
+  stage,
+  onStageChange: setStage,
 }: Props) {
-  const controlId = useId();
   const defaults = useMemo(
     () => defaultPreparation(project.name),
     [project.id, project.name],
@@ -95,20 +121,47 @@ export default function FontWorkshop({
   const writtenHangul = HANGUL.filter(
     (char) => project.samples[char]?.strokes.length,
   );
-  const [localStage, setLocalStage] = useState<"separation" | "build">(
-    initialStage,
+  const statuses = useMemo(
+    () =>
+      Object.fromEntries(
+        writtenHangul.map((char) => [
+          char,
+          separationStatus(project, prep, char),
+        ]),
+      ) as Record<string, SeparationStatus>,
+    [project.samples, prep.separations, project.settings.referenceFont],
   );
-  const stage = journeyStage ?? localStage;
-  const setStage = (next: "separation" | "build") => {
-    setLocalStage(next);
-    onStageChange?.(next);
-  };
+  const checkCount = writtenHangul.filter(
+    (char) => statuses[char] === "check",
+  ).length;
+  const confirmedCount = writtenHangul.filter(
+    (char) => statuses[char] === "confirmed",
+  ).length;
+  const [listMode, setListMode] = useState<"check" | "all">(() =>
+    checkCount ? "check" : "all",
+  );
   const [finishStep, setFinishStep] = useState<"refine" | "export">("refine");
-  const [selected, setSelected] = useState(
-    initialChar && writtenHangul.includes(initialChar)
-      ? initialChar
-      : (writtenHangul[0] ?? ""),
-  );
+  const [selected, setSelected] = useState(() => {
+    if (initialChar && writtenHangul.includes(initialChar)) return initialChar;
+    return (
+      writtenHangul.find((char) => statuses[char] === "check") ??
+      writtenHangul[0] ??
+      ""
+    );
+  });
+  useEffect(() => {
+    if (initialChar && writtenHangul.includes(initialChar)) {
+      setSelected(initialChar);
+      setListMode("all");
+    }
+  }, [initialChar]);
+  const visibleChars =
+    listMode === "check"
+      ? writtenHangul.filter(
+          (char) => statuses[char] === "check" || char === selected,
+        )
+      : writtenHangul;
+
   const [building, setBuilding] = useState(false);
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState("");
@@ -121,17 +174,18 @@ export default function FontWorkshop({
       : null,
   );
   const isCurrent =
-    result?.request.project.samples === project.samples &&
+    !!result &&
+    result.request.project.samples === project.samples &&
     result.preparation === prep &&
     result.request.project.settings.referenceFont ===
       project.settings.referenceFont;
   const worker = useRef<Worker | null>(null),
     exportWorker = useRef<Worker | null>(null),
-    dialog = useRef<HTMLElement>(null);
+    root = useRef<HTMLElement>(null);
   useEffect(() => {
-    if (guided && dialog.current?.parentElement)
-      dialog.current.parentElement.scrollTop = 0;
-  }, [guided, stage, finishStep]);
+    root.current?.parentElement?.scrollTo?.({ top: 0 });
+    window.scrollTo({ top: 0 });
+  }, [stage, finishStep]);
   const generation = useRef(0);
   const resetResult = () => {
     generation.current++;
@@ -144,7 +198,6 @@ export default function FontWorkshop({
     setBuilding(false);
     setError("");
   };
-
   useEffect(() => {
     resetResult();
   }, [
@@ -153,47 +206,6 @@ export default function FontWorkshop({
     project.settings.referenceFont,
     project.settings.grid.diamond,
   ]);
-  useEffect(() => {
-    if (guided) return;
-    const previous = document.activeElement as HTMLElement | null;
-    dialog.current?.querySelector<HTMLElement>("button")?.focus();
-    const keydown = (event: KeyboardEvent) => {
-      if (dialog.current?.querySelector("dialog[open]")) return;
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
-      if (event.key === "Tab") {
-        const nodes = Array.from(
-          dialog.current?.querySelectorAll<HTMLElement>(
-            'button,input,select,textarea,a[href],[tabindex="0"],summary',
-          ) ?? [],
-        ).filter(
-          (el) => !el.hasAttribute("disabled") && el.getClientRects().length,
-        );
-        const first = nodes[0],
-          last = nodes[nodes.length - 1];
-        if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last?.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first?.focus();
-        }
-      }
-    };
-    document.addEventListener("keydown", keydown);
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      generation.current++;
-      worker.current?.terminate();
-      exportWorker.current?.terminate();
-      document.removeEventListener("keydown", keydown);
-      document.body.style.overflow = overflow;
-      previous?.focus();
-    };
-  }, [guided]);
   useEffect(
     () => () => {
       generation.current++;
@@ -206,7 +218,7 @@ export default function FontWorkshop({
   const settings = (changes: Partial<FontPreparation["settings"]>) =>
     onChange({ ...prep, settings: { ...prep.settings, ...changes } });
   const build = () => {
-    if (isCurrent || building || worker.current || !report.direct) return;
+    if (isCurrent || worker.current || !report.direct) return;
     resetResult();
     setBuilding(true);
     setProgress(0);
@@ -224,7 +236,6 @@ export default function FontWorkshop({
     };
     const token = generation.current;
     try {
-      // Bundle locally before dev/build so the worker is available offline as plain JavaScript.
       const nextWorker = new Worker(FONT_WORKER_URL);
       worker.current = nextWorker;
       nextWorker.onmessage = async (event: MessageEvent<WorkerReply>) => {
@@ -242,7 +253,7 @@ export default function FontWorkshop({
           nextWorker.terminate();
           worker.current = null;
           try {
-            const family = "HanhoekPreview-" + crypto.randomUUID();
+            const family = "SenseGlyphPreview-" + crypto.randomUUID();
             const loaded = await new FontFace(family, reply.buffer).load();
             if (token !== generation.current) return;
             if (lastGeneratedFont)
@@ -262,7 +273,7 @@ export default function FontWorkshop({
           } catch {
             if (token === generation.current) {
               setError(
-                "폰트 미리보기를 불러오지 못했습니다. 자모와 획을 확인한 뒤 다시 생성하세요.",
+                "폰트 미리보기를 불러오지 못했어요. 다시 만들어 주세요.",
               );
               setBuilding(false);
             }
@@ -271,7 +282,7 @@ export default function FontWorkshop({
       };
       nextWorker.onerror = () => {
         if (token === generation.current) {
-          setError("폰트 생성 중 오류가 발생했습니다. 다시 시도해 주세요.");
+          setError("폰트를 만드는 중 문제가 생겼어요. 다시 시도해 주세요.");
           setBuilding(false);
           nextWorker.terminate();
           worker.current = null;
@@ -283,32 +294,33 @@ export default function FontWorkshop({
       setError(
         error instanceof Error
           ? error.message
-          : "폰트 생성기를 시작하지 못했습니다.",
+          : "폰트 생성기를 시작하지 못했어요.",
       );
     }
   };
+  // 내보내기 화면에 오면 최신 설정의 폰트를 바로 만듭니다.
   useEffect(() => {
-    if (stage === "separation") setFinishStep("refine");
-  }, [stage]);
+    if (
+      stage === "build" &&
+      finishStep === "export" &&
+      !isCurrent &&
+      !building &&
+      !error &&
+      report.direct
+    )
+      build();
+  }, [stage, finishStep, isCurrent, building]);
 
-  const specialWritten = SPECIAL_SYMBOLS.filter(
-    (symbol) => project.samples[symbol]?.strokes.length,
-  ).length;
-  const resultSymbols = new Set(result?.stats.characters);
-  const premiumReady = SPECIAL_SYMBOLS.every((symbol) =>
-    resultSymbols.has(symbol),
-  );
+  const written = (list: { char: string }[]) =>
+    list.filter(({ char }) => project.samples[char]?.strokes.length).length;
+  const basicWritten = written(BASIC_CHARSET);
+  const premiumWritten = written(PREMIUM_CHARSET);
   const download = (
     format: ExportFormat,
     names: OutputNames,
     plan: OutputPlan,
   ) => {
-    if (
-      !result ||
-      exportWorker.current ||
-      (plan === "premium" && !premiumReady)
-    )
-      return;
+    if (!result || !isCurrent || exportWorker.current) return;
     const filename = OUTPUT_PREFIX + names.korean;
     const save = (buffer: ArrayBuffer) => {
       const type = format === "zip" ? "application/zip" : "font/" + format;
@@ -316,7 +328,9 @@ export default function FontWorkshop({
       const link = document.createElement("a");
       link.href = url;
       link.download = filename + "." + format;
+      document.body.appendChild(link);
       link.click();
+      link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     };
     setExportError("");
@@ -345,18 +359,18 @@ export default function FontWorkshop({
         };
         converter.onerror = () => {
           if (exportWorker.current === converter)
-            fail("파일 변환에 실패했습니다. 다시 시도해 주세요.");
+            fail("파일 변환에 실패했어요. 다시 시도해 주세요.");
         };
         const request: ConversionRequest = { buffer, format, filename, names };
         converter.postMessage(request);
       } catch {
-        fail("파일 변환을 시작하지 못했습니다. 다시 시도해 주세요.");
+        fail("파일 변환을 시작하지 못했어요. 다시 시도해 주세요.");
       }
     };
-    if (
-      plan === "premium" ||
-      !SPECIAL_SYMBOLS.some((symbol) => resultSymbols.has(symbol))
-    ) {
+    const hasPremium = Object.values(project.samples).some(
+      (sample) => sample.strokes.length && isPremiumCategory(sample.category),
+    );
+    if (plan === "premium" || !hasPremium) {
       convert(result.buffer);
       return;
     }
@@ -379,466 +393,510 @@ export default function FontWorkshop({
       };
       basicWorker.onerror = () => {
         if (exportWorker.current === basicWorker)
-          fail("기본 폰트를 생성하지 못했습니다.");
+          fail("기본형 폰트를 만들지 못했어요.");
       };
       basicWorker.postMessage({
         ...result.request,
-        includeSpecial: false,
+        includePremium: false,
       } satisfies BuildRequest);
     } catch {
-      fail("기본 폰트 생성을 시작하지 못했습니다.");
+      fail("기본형 폰트 생성을 시작하지 못했어요.");
     }
   };
-  const bothCorrections =
-    prep.settings.alignToReference && prep.settings.averageStrokes;
   const syllables = report.available.filter((ch) => decompose(ch)).length;
+  const detail = correctionDetail(prep.settings);
+  const strength = prep.settings.correction ?? (detail.layout || 0);
+  const customDetail = !!prep.settings.correctionDetail;
 
-  return (
-    <div className={guided ? "guided-workshop journey-panel" : "font-backdrop"}>
-      <section
-        className="font-workshop"
-        role={guided ? undefined : "dialog"}
-        aria-modal={guided ? undefined : true}
-        aria-labelledby="font-title"
-        ref={dialog}
-      >
-        <header className="font-header">
-          <div>
-            <span className="eyebrow">
-              {stage === "separation"
-                ? "04 / 다른 글자도 만들 수 있도록"
-                : "05 / 나만의 글꼴 완성"}
-            </span>
-            <h2 id="font-title">
-              {stage === "separation"
-                ? "자음과 모음을 나눠요."
-                : finishStep === "refine"
-                  ? "폰트 다듬기"
-                  : "폰트 내보내기"}
-            </h2>
-          </div>
-          {stage === "separation" && (
-            <details className="separation-welcome">
-              <summary
-                className="jamo-example"
-                aria-label="한의 초성 중성 종성 예시"
-              >
-                <span>한</span>
-                <i>=</i>
-                <span>
-                  ㅎ<small>초성 · 첫 자음</small>
-                </span>
-                <span>
-                  ㅏ<small>중성 · 모음</small>
-                </span>
-                <span>
-                  ㄴ<small>종성 · 받침</small>
-                </span>
-                <em className="welcome-toggle">설명</em>
-              </summary>
+  const missingSlots =
+    report.missingSlots.length > 0 ? (
+      <details className="fw-missing">
+        <summary>
+          자모 자리 {report.missingSlots.length}개가 비어 있어 한글{" "}
+          {(11172 - syllables).toLocaleString()}자는 아직 만들 수 없어요
+        </summary>
+        <p>아래 글자를 쓰면 빈 자리가 채워져요.</p>
+        <div className="fw-chip-list">
+          {report.missingSamples.map((char) => (
+            <button
+              key={char}
+              type="button"
+              onClick={() => {
+                if (project.samples[char]?.strokes.length) {
+                  setSelected(char);
+                  setListMode("all");
+                  setStage("separation");
+                } else onWrite(char);
+              }}
+            >
+              {char}
+              <small>
+                {project.samples[char]?.strokes.length ? "확인" : "쓰기"}
+              </small>
+            </button>
+          ))}
+        </div>
+      </details>
+    ) : null;
+
+  if (stage === "separation")
+    return (
+      <div className="guided-workshop journey-panel">
+        <section
+          className="font-workshop fw"
+          ref={root}
+          aria-labelledby="fw-title"
+        >
+          <header className="fw-head">
+            <div>
+              <span className="step-kicker">04 / 자모 나누기</span>
+              <h1 id="fw-title" tabIndex={-1}>
+                자음과 모음이 잘 나뉘었는지 확인해요
+              </h1>
               <p>
-                한 글자에서 초성·중성·종성을 나누면, 아직 쓰지 않은 한글도 만들
-                수 있어요. 우선 자동으로 나눈 결과를 확인해주세요.
+                <b>한 = ㅎ + ㅏ + ㄴ</b>처럼 글자를 나눠 두면, 쓰지 않은 한글
+                11,172자를 내 글씨로 만들 수 있어요. 자동으로 나눈 결과 중{" "}
+                <b>확인이 필요한 글자</b>만 보면 돼요.
               </p>
-              <ol>
-                <li>
-                  <b>여러 획 선택</b> 올가미로 원하는 획을 둘러싸 한꺼번에
-                  잡아요.
-                </li>
-                <li>
-                  <b>한 번에 배정</b> 선택 테두리 위에서 초성·중성·종성 버튼을
-                  누르세요.
-                </li>
-                <li>
-                  <b>모양 보정</b> 선택한 획을 끌어 위치를 옮기거나 부분 수정
-                  도구로 다듬어요.
-                </li>
-              </ol>
-            </details>
-          )}
-          <div className="font-save-controls">
-            <span role="status">자동 저장 · {saveStatus}</span>
-            <button className="font-secondary" onClick={onSave}>
-              지금 저장
-            </button>
-          </div>
-          <button onClick={onClose} aria-label="폰트 완성 닫기">
-            ✕
-          </button>
-        </header>
-        {!guided && (
-          <nav className="font-steps" aria-label="폰트 제작 단계">
-            <button
-              className={stage === "separation" ? "active" : ""}
-              disabled={building}
-              onClick={() => setStage("separation")}
-            >
-              1. 자모 확인·보정
-            </button>
-            <button
-              className={stage === "build" ? "active" : ""}
-              disabled={building}
-              onClick={() => setStage("build")}
-            >
-              2. 폰트 생성·다운로드
-            </button>
-          </nav>
-        )}
-        {!guided && (
-          <div className="font-summary">
-            <div>
-              <b>{report.direct}</b>
-              <span>직접 쓴 글자</span>
             </div>
-            <div>
-              <b>
-                {report.slots} <small>/ 237</small>
-              </b>
-              <span>분리된 자모 자리</span>
+            <div className="fw-head-side">
+              <div className="fw-stats" role="status">
+                <span>
+                  <b>{confirmedCount}</b> / {writtenHangul.length} 확인 완료
+                </span>
+                <span>
+                  <b>{syllables.toLocaleString()}</b> / 11,172 만들 수 있음
+                </span>
+              </div>
+              {writtenHangul.length > 0 && (
+                <div
+                  className="fw-segment"
+                  role="group"
+                  aria-label="보여줄 글자"
+                >
+                  <button
+                    type="button"
+                    aria-pressed={listMode === "check"}
+                    onClick={() => setListMode("check")}
+                  >
+                    확인 필요 <b>{checkCount}</b>
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={listMode === "all"}
+                    onClick={() => setListMode("all")}
+                  >
+                    쓴 한글 전체 <b>{writtenHangul.length}</b>
+                  </button>
+                </div>
+              )}
             </div>
-            <div>
-              <b>
-                {syllables.toLocaleString()} <small>/ 11,172</small>
-              </b>
-              <span>사용 가능한 한글</span>
-            </div>
-          </div>
-        )}
-        {stage === "separation" ? (
-          <div className="separation-stage">
-            {writtenHangul.length ? (
+          </header>
+          {writtenHangul.length ? (
+            <>
+              {listMode === "check" && !checkCount && (
+                <p className="fw-done-note" role="status">
+                  확인이 필요한 글자가 없어요. 바로 폰트를 다듬어도 좋아요.
+                </p>
+              )}
               <SeparationEditor
                 project={project}
                 preparation={prep}
                 char={selected}
-                chars={writtenHangul}
+                chars={visibleChars}
+                statuses={statuses}
                 onSelect={setSelected}
                 onWrite={() => onWrite(selected)}
                 onChange={onChange}
+                onConfirm={() => {
+                  onChange(confirmSeparation(project, prep, selected));
+                  const order = writtenHangul;
+                  const start = order.indexOf(selected);
+                  const next = [
+                    ...order.slice(start + 1),
+                    ...order.slice(0, start),
+                  ].find((char) =>
+                    listMode === "check"
+                      ? statuses[char] === "check"
+                      : statuses[char] !== "confirmed",
+                  );
+                  if (next) setSelected(next);
+                }}
               />
-            ) : (
-              <div className="font-empty">
-                아직 쓴 한글이 없습니다.
-                <button onClick={() => onWrite(HANGUL[0])}>
-                  한글 쓰러 가기 →
-                </button>
-              </div>
-            )}
-            {report.missingSlots.length > 0 && (
-              <details className="missing-details">
-                <summary>
-                  비어 있는 자모 자리 {report.missingSlots.length}개 · 추가
-                  확인할 글자
-                </summary>
-                <div className="missing-chars">
-                  {report.missingSamples.map((char) => (
-                    <button
-                      key={char}
-                      onClick={() => {
-                        if (project.samples[char]?.strokes.length)
-                          setSelected(char);
-                        else onWrite(char);
-                      }}
-                    >
-                      {char}
-                      {project.samples[char]?.strokes.length ? " · 확인" : ""}
-                    </button>
-                  ))}
-                </div>
-              </details>
-            )}
+            </>
+          ) : (
+            <div className="fw-empty">
+              아직 쓴 한글이 없어요.
+              <button
+                type="button"
+                className="fw-primary"
+                onClick={() => onWrite(HANGUL[0])}
+              >
+                한글 쓰러 가기 →
+              </button>
+            </div>
+          )}
+          {missingSlots}
+          <footer className="fw-actions">
+            <button type="button" className="fw-secondary" onClick={onClose}>
+              ← 글자 쓰기
+            </button>
             <button
-              className="font-primary"
+              type="button"
+              className="fw-primary"
               disabled={!report.direct}
               onClick={() => {
+                setFinishStep("refine");
                 setStage("build");
-                build();
               }}
             >
-              손글씨를 이용해 폰트 생성하기 →
+              폰트 다듬기 →
+            </button>
+          </footer>
+        </section>
+      </div>
+    );
+
+  const slider = (
+    label: string,
+    value: number,
+    min: number,
+    max: number,
+    onInput: (value: number) => void,
+    shown: string = String(value),
+    note?: string,
+    step = 1,
+  ) => (
+    <label className="fw-slider">
+      <span>
+        {label} <b>{shown}</b>
+      </span>
+      <input
+        type="range"
+        aria-label={label}
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => onInput(+event.target.value)}
+      />
+      {note && <small>{note}</small>}
+    </label>
+  );
+
+  return (
+    <div className="guided-workshop journey-panel">
+      <section
+        className="font-workshop fw"
+        ref={root}
+        aria-labelledby="fw-title"
+      >
+        <header className="fw-head">
+          <div>
+            <span className="step-kicker">05 / 폰트 완성</span>
+            <h1 id="fw-title" tabIndex={-1}>
+              {finishStep === "refine" ? "폰트를 다듬어요" : "폰트를 내보내요"}
+            </h1>
+          </div>
+          <nav className="fw-tabs" aria-label="폰트 완성 순서">
+            <button
+              type="button"
+              aria-current={finishStep === "refine" ? "step" : undefined}
+              onClick={() => setFinishStep("refine")}
+            >
+              <span>1</span> 다듬기
+            </button>
+            <button
+              type="button"
+              aria-current={finishStep === "export" ? "step" : undefined}
+              disabled={!report.direct}
+              onClick={() => setFinishStep("export")}
+            >
+              <span>2</span> 내보내기
+            </button>
+          </nav>
+        </header>
+
+        {!report.direct ? (
+          <div className="fw-empty">
+            한 글자 이상 쓰면 폰트를 만들 수 있어요.
+            <button
+              type="button"
+              className="fw-primary"
+              onClick={() => onWrite(HANGUL[0])}
+            >
+              첫 글자 쓰러 가기 →
             </button>
           </div>
-        ) : (
-          <div className="font-build-stage" data-font-current={isCurrent}>
-            <nav className="finish-track" aria-label="폰트 완성 순서">
-              <button
-                aria-current={finishStep === "refine" ? "step" : undefined}
-                onClick={() => setFinishStep("refine")}
-              >
-                다듬기
-              </button>
-              <button
-                aria-current={finishStep === "export" ? "step" : undefined}
-                onClick={() => setFinishStep("export")}
-              >
-                내보내기
-              </button>
-            </nav>
-            {finishStep === "refine" ? (
-              <>
-                <div className="font-specimen-layout" data-step="refine">
-                  <div className="font-settings">
-                    <label className="font-field">
-                      출력 글자 크기 <b>{bodySize(prep.settings) / 10}%</b>
-                      <input
-                        aria-describedby={`${controlId}-font-range-note-0`}
-                        aria-label="출력 글자 크기"
-                        type="range"
-                        min={LIMITS.bodyMin}
-                        max={LIMITS.bodyMax}
-                        step="10"
-                        value={bodySize(prep.settings)}
-                        disabled={building}
-                        onChange={(e) =>
-                          settings({ bodySize: +e.target.value })
-                        }
-                      />
-                      <small
-                        className="font-field-note"
-                        id={`${controlId}-font-range-note-0`}
-                      >
-                        직접 쓴 글자의 출력 크기를 바꿉니다. 조합 글자는 원본
-                        크기를 사용합니다.
-                      </small>
-                    </label>
-                    <label className="font-field">
-                      글자 사이 간격 <b>{prep.settings.letterSpacing}</b>
-                      <input
-                        aria-describedby={`${controlId}-font-range-note-1`}
-                        aria-label="글자 사이 간격"
-                        type="range"
-                        min={LIMITS.spacingMin}
-                        max={LIMITS.spacingMax}
-                        value={prep.settings.letterSpacing}
-                        disabled={building}
-                        onChange={(e) =>
-                          settings({ letterSpacing: +e.target.value })
-                        }
-                      />
-                      <small
-                        className="font-field-note"
-                        id={`${controlId}-font-range-note-1`}
-                      >
-                        이웃 글자의 획 가장자리 사이를 좁히거나 넓힙니다.
-                      </small>
-                    </label>
-                    <label className="font-field">
-                      전체 획 굵기 <b>{prep.settings.strokeWeight ?? 100}%</b>
-                      <input
-                        aria-describedby={`${controlId}-font-range-note-5`}
-                        aria-label="전체 획 굵기"
-                        type="range"
-                        min={LIMITS.weightMin}
-                        max={LIMITS.weightMax}
-                        value={prep.settings.strokeWeight ?? 100}
-                        onChange={(e) =>
-                          settings({ strokeWeight: +e.target.value })
-                        }
-                      />
-                      <small
-                        className="font-field-note"
-                        id={`${controlId}-font-range-note-5`}
-                      >
-                        직접 쓴 글자의 획 굵기를 바꿉니다. 조합 글자는 원본
-                        굵기를 사용합니다.
-                      </small>
-                    </label>
-                    <label className="font-field">
-                      획 끝 모양
-                      <select
-                        aria-label="획 끝 모양"
-                        value={prep.settings.strokeFinish ?? "original"}
-                        onChange={(e) =>
-                          settings({
-                            strokeFinish: e.target
-                              .value as FontPreparation["settings"]["strokeFinish"],
-                          })
-                        }
-                      >
-                        <option value="original">원본</option>
-                        <option value="round">둥글게</option>
-                        <option value="pointed">뾰족하게</option>
-                      </select>
-                      <small className="font-field-note">
-                        직접 쓴 글자의 획 끝을 둥글거나 뾰족하게 다듬습니다.
-                      </small>
-                    </label>
-                    <label className="font-field">
-                      기준선 <b>{prep.settings.baseline}</b>
-                      <input
-                        aria-describedby={`${controlId}-font-range-note-6`}
-                        aria-label="기준선"
-                        type="range"
-                        min="650"
-                        max="900"
-                        value={prep.settings.baseline}
-                        disabled={building}
-                        onChange={(e) =>
-                          settings({ baseline: +e.target.value })
-                        }
-                      />
-                      <small
-                        className="font-field-note"
-                        id={`${controlId}-font-range-note-6`}
-                      >
-                        글자가 줄 위에 놓이는 세로 위치를 바꿉니다.
-                      </small>
-                    </label>
-                    <fieldset className="font-correction-controls">
-                      <legend>자동 보정</legend>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={!!prep.settings.alignToReference}
-                          onChange={(event) =>
-                            settings({ alignToReference: event.target.checked })
-                          }
-                        />
-                        견본에 맞춰 자모 위치 다듬기
-                      </label>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={!!prep.settings.averageStrokes}
-                          onChange={(event) =>
-                            settings({ averageStrokes: event.target.checked })
-                          }
-                        />
-                        비슷한 손글씨 획 평균으로 다듬기
-                      </label>
+        ) : finishStep === "refine" ? (
+          <>
+            <div className="fw-refine">
+              <div className="fw-controls">
+                <section className="fw-card" aria-labelledby="fw-correction">
+                  <div className="fw-card-head">
+                    <h3 id="fw-correction">손글씨 정돈</h3>
+                    {customDetail && (
+                      <span className="fw-badge">고급 설정 사용 중</span>
+                    )}
+                  </div>
+                  <p className="fw-help">
+                    0%는 쓴 획 그대로예요. 올릴수록 자모 배치와 기울기를 견본
+                    글꼴 쪽으로 정돈하지만, 내 글씨의 획과 개성은 남겨요.
+                  </p>
+                  <div
+                    className="fw-segment"
+                    role="group"
+                    aria-label="정돈 단계"
+                  >
+                    {PRESETS.map((preset) => (
                       <button
+                        key={preset.value}
                         type="button"
-                        className="font-secondary"
+                        aria-pressed={
+                          !customDetail && strength === preset.value
+                        }
                         onClick={() =>
                           settings({
-                            alignToReference: !bothCorrections,
-                            averageStrokes: !bothCorrections,
+                            correction: preset.value,
+                            correctionDetail: undefined,
+                            alignToReference: undefined,
+                            averageStrokes: undefined,
                           })
                         }
                       >
-                        {bothCorrections
-                          ? "자동 보정 끄기"
-                          : "한 번에 보정하기"}
+                        {preset.label}
                       </button>
-                    </fieldset>
+                    ))}
                   </div>
-                  <MetricPreview project={project} preparation={prep} />
-                </div>
-                <HandwritingSearch
-                  project={project}
-                  preparation={prep}
-                  onSeparate={(char) => {
-                    setSelected(char);
-                    setStage("separation");
-                  }}
-                  onWrite={onWrite}
-                />
-                {report.missingSlots.length > 0 && (
-                  <div className="font-notice">
-                    자모 자리 {report.missingSlots.length}개가 비어 있어 한글{" "}
-                    {11172 - syllables}자는 아직 만들 수 없어요.{" "}
-                    <button onClick={() => setStage("separation")}>
-                      비어 있는 자모 확인 →
-                    </button>
-                  </div>
-                )}
-                {error && (
-                  <p className="font-error" role="alert">
-                    {error}
-                  </p>
-                )}
-                <div className="finish-navigation">
-                  {isCurrent ? (
-                    <button
-                      className="font-primary"
-                      onClick={() => setFinishStep("export")}
-                    >
-                      내보내기 →
-                    </button>
-                  ) : (
-                    <button
-                      className="font-primary"
-                      disabled={building || !report.direct}
-                      onClick={build}
-                    >
-                      폰트 생성하기
-                    </button>
+                  {slider(
+                    "정돈 강도",
+                    strength,
+                    0,
+                    100,
+                    (value) =>
+                      settings({
+                        correction: value,
+                        correctionDetail: undefined,
+                        alignToReference: undefined,
+                        averageStrokes: undefined,
+                      }),
+                    strength + "%",
+                    undefined,
+                    5,
                   )}
-                </div>
-              </>
-            ) : null}
-            <div hidden={finishStep !== "export"}>
-              {finishStep === "export" && !isCurrent && (
-                <div className="font-notice">
-                  {result
-                    ? "마지막으로 생성한 폰트를 표시합니다."
-                    : "아직 생성된 폰트가 없습니다. 내보내기 설정을 먼저 확인할 수 있어요."}
-                  {building ? (
-                    <p role="status">폰트 만드는 중 · {progress}%</p>
-                  ) : (
-                    report.direct > 0 && (
-                      <button type="button" onClick={build}>
-                        현재 설정으로 폰트 생성하기 →
-                      </button>
-                    )
-                  )}
-                  {error && <p role="alert">{error}</p>}
-                </div>
-              )}
-              <FontOutput
-                family={result?.face.family}
-                characters={result?.stats.characters ?? []}
-                exporting={exporting}
-                exportError={exportError}
-                onDownload={download}
-                onWriteSpecial={onWriteSpecial}
-                specialWritten={specialWritten}
-                specialTotal={SPECIAL_SYMBOLS.length}
-                premiumReady={premiumReady}
-              />
-            </div>
-            {building && finishStep === "refine" && (
-              <FontDialog title="손글씨로 폰트를 만들고 있어요">
-                <div className="font-progress-number" aria-hidden="true">
-                  {progress}%
-                </div>
-                <progress
-                  className="font-progress-bar"
-                  aria-label="폰트 생성 진행률"
-                  max={100}
-                  value={progress}
-                />
-                <p role="status">{message}</p>
-                <div className="font-dialog-actions">
-                  <button
-                    className="font-secondary"
-                    onClick={() => setFinishStep("export")}
+                  <details
+                    className="fw-advanced"
+                    open={customDetail || undefined}
                   >
-                    내보내기 화면 열기
+                    <summary>고급 설정 · 항목별로 조절</summary>
+                    {CORRECTION_KEYS.map((key) =>
+                      slider(
+                        DETAIL_LABELS[key].label,
+                        detail[key],
+                        0,
+                        100,
+                        (value) =>
+                          settings({
+                            correctionDetail: { ...detail, [key]: value },
+                            alignToReference: undefined,
+                            averageStrokes: undefined,
+                          }),
+                        detail[key] + "%",
+                        DETAIL_LABELS[key].note,
+                        5,
+                      ),
+                    )}
+                    {customDetail && (
+                      <button
+                        type="button"
+                        className="fw-link"
+                        onClick={() =>
+                          settings({
+                            correctionDetail: undefined,
+                            correction: strength,
+                          })
+                        }
+                      >
+                        정돈 강도에 맞춰 되돌리기
+                      </button>
+                    )}
+                  </details>
+                </section>
+                <section className="fw-card" aria-labelledby="fw-size">
+                  <h3 id="fw-size">크기와 간격</h3>
+                  {slider(
+                    "글자 크기",
+                    bodySize(prep.settings),
+                    LIMITS.bodyMin,
+                    LIMITS.bodyMax,
+                    (value) => settings({ bodySize: value }),
+                    bodySize(prep.settings) / 10 + "%",
+                    undefined,
+                    10,
+                  )}
+                  {slider(
+                    "글자 사이 간격",
+                    prep.settings.letterSpacing,
+                    LIMITS.spacingMin,
+                    LIMITS.spacingMax,
+                    (value) => settings({ letterSpacing: value }),
+                    String(prep.settings.letterSpacing),
+                    "음수로 줄이면 획이 겹칠 수 있어요.",
+                    10,
+                  )}
+                  {slider(
+                    "기준선 높이",
+                    prep.settings.baseline,
+                    650,
+                    900,
+                    (value) => settings({ baseline: value }),
+                    String(prep.settings.baseline),
+                    "글자가 줄 위에 놓이는 높이예요.",
+                    5,
+                  )}
+                </section>
+                <section className="fw-card" aria-labelledby="fw-stroke">
+                  <h3 id="fw-stroke">획</h3>
+                  {slider(
+                    "획 굵기",
+                    prep.settings.strokeWeight ?? 100,
+                    LIMITS.weightMin,
+                    LIMITS.weightMax,
+                    (value) => settings({ strokeWeight: value }),
+                    (prep.settings.strokeWeight ?? 100) + "%",
+                    undefined,
+                    5,
+                  )}
+                  <div className="fw-field-row">
+                    <span>획 끝</span>
+                    <div
+                      className="fw-segment"
+                      role="group"
+                      aria-label="획 끝 모양"
+                    >
+                      {(
+                        [
+                          ["original", "쓴 그대로"],
+                          ["round", "둥글게"],
+                          ["pointed", "뾰족하게"],
+                        ] as const
+                      ).map(([value, label]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          aria-pressed={
+                            (prep.settings.strokeFinish ?? "original") === value
+                          }
+                          onClick={() => settings({ strokeFinish: value })}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="fw-link"
+                    onClick={() =>
+                      settings({
+                        correction: 0,
+                        correctionDetail: undefined,
+                        alignToReference: undefined,
+                        averageStrokes: undefined,
+                        bodySize: defaults.settings.bodySize,
+                        letterSpacing: 0,
+                        baseline: 800,
+                        strokeWeight: 100,
+                        strokeFinish: "original",
+                      })
+                    }
+                  >
+                    모든 다듬기 설정 처음으로
                   </button>
-                  <button className="font-secondary" onClick={resetResult}>
-                    생성 취소
-                  </button>
-                </div>
-              </FontDialog>
-            )}
-            {!report.direct && (
-              <p className="font-empty">
-                한 글자 이상 쓰면 폰트를 만들 수 있어요.
-                <button
-                  className="font-primary"
-                  onClick={() => onWrite(HANGUL[0])}
-                >
-                  첫 글자 쓰러 가기 →
-                </button>
-              </p>
-            )}
-          </div>
+                </section>
+              </div>
+              <MetricPreview project={project} preparation={prep} />
+            </div>
+            {missingSlots}
+            <details className="fw-more">
+              <summary>
+                원본 손글씨 찾기 · 어떤 글자의 자모가 쓰였는지 보기
+              </summary>
+              <HandwritingSearch
+                project={project}
+                preparation={prep}
+                onSeparate={(char) => {
+                  setSelected(char);
+                  setListMode("all");
+                  setStage("separation");
+                }}
+                onWrite={onWrite}
+              />
+            </details>
+            <footer className="fw-actions">
+              <button
+                type="button"
+                className="fw-secondary"
+                onClick={() => setStage("separation")}
+              >
+                ← 자모 나누기
+              </button>
+              <button
+                type="button"
+                className="fw-primary"
+                onClick={() => {
+                  setFinishStep("export");
+                  build();
+                }}
+              >
+                폰트 만들기 →
+              </button>
+            </footer>
+          </>
+        ) : (
+          <>
+            <FontOutput
+              projectName={project.name}
+              family={result?.face.family}
+              characters={result?.stats.characters ?? []}
+              status={
+                building
+                  ? "building"
+                  : result
+                    ? isCurrent
+                      ? "ready"
+                      : "stale"
+                    : "empty"
+              }
+              progress={progress}
+              message={message}
+              error={error}
+              onBuild={() => {
+                setError("");
+                build();
+              }}
+              exporting={exporting}
+              exportError={exportError}
+              onDownload={download}
+              basicWritten={basicWritten}
+              premiumWritten={premiumWritten}
+              premiumTotal={PREMIUM_CHARSET.length}
+              onWritePremium={onWritePremium}
+            />
+            <footer className="fw-actions">
+              <button
+                type="button"
+                className="fw-secondary"
+                onClick={() => setFinishStep("refine")}
+              >
+                ← 다듬기
+              </button>
+              <span className="fw-note">
+                손글씨와 폰트는 이 기기 안에서만 만들어져요.
+              </span>
+            </footer>
+          </>
         )}
-        <footer className="font-footer">
-          손글씨와 폰트 생성은 이 기기 안에서만 처리됩니다.
-          <button onClick={onClose}>쓰기 화면으로 돌아가기</button>
-        </footer>
       </section>
     </div>
   );

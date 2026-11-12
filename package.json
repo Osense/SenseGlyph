@@ -5,6 +5,7 @@
   "scripts": {
     "test:regions-projects": "node scripts/regions-projects-check.mjs",
     "test:journey": "node scripts/journey-check.mjs",
+    "test:flow": "node scripts/flow-check.mjs",
     "test:layout": "node scripts/font-layout-check.mjs",
     "test:latin": "node scripts/latin-check.mjs",
     "test:workspace": "node scripts/workspace-check.mjs",

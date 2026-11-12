@@ -18,7 +18,9 @@ export default function JourneySetup({
   settings,
   update,
   next,
+  hasWriting = false,
 }: {
+  hasWriting?: boolean;
   step: number;
   settings: ProjectSettings;
   update: (settings: Partial<ProjectSettings>) => void;
@@ -53,7 +55,7 @@ export default function JourneySetup({
         <p>
           {step === 0
             ? "평소 쓰는 펜처럼 편한 도구로 시작해요. 굵기도 바꾸고, 옆 칸에 가볍게 그어보세요."
-            : "가장 비슷한 느낌이면 충분해요. 선택한 글씨가 한 글자씩 쓸 때 연한 견본이 되어줄 거예요."}
+            : "가장 비슷한 느낌이면 충분해요. 고른 글씨는 쓸 때 연한 안내선이 되고, 자모를 나누고 손글씨를 정돈할 때 기준이 돼요."}
         </p>
         {step === 0 ? (
           <>
@@ -140,7 +142,13 @@ export default function JourneySetup({
           {step === 0 ? "이 브러시로 할게요" : "이제 글자 써보기"}
           <span>→</span>
         </button>
-        <small>나중에 돌아와서 바꿀 수 있어요.</small>
+        <small>
+          {step === 0 && hasWriting
+            ? "이미 쓴 글자가 있어요. 도구를 바꾸면 이후 글자와 모양이 달라질 수 있어요."
+            : step === 0
+              ? "한 폰트는 한 가지 도구로 쓰면 가장 고르게 나와요. 나중에 바꿀 수도 있어요."
+              : "나중에 돌아와서 바꿀 수 있어요."}
+        </small>
       </div>
       {step === 0 ? (
         <div className="brush-experience">

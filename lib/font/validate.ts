@@ -1,5 +1,5 @@
 import type { FontPreparation } from "./types";
-import { FONT_SETTING_LIMITS as LIMITS } from "./types";
+import { CORRECTION_KEYS, FONT_SETTING_LIMITS as LIMITS } from "./types";
 
 export function validPreparation(value: unknown): value is FontPreparation {
   const record = (v: unknown): v is Record<string, unknown> =>
@@ -12,12 +12,20 @@ export function validPreparation(value: unknown): value is FontPreparation {
   for (const key of ["alignToReference", "averageStrokes"])
     if (s[key] !== undefined && typeof s[key] !== "boolean") return false;
   for (const key of [
+    "correction",
     "positionCorrection",
     "shapeInterpolation",
     "widthCorrection",
   ]) {
     if (s[key] !== undefined && (!finite(s[key]) || s[key] < 0 || s[key] > 100))
       return false;
+  }
+  if (s.correctionDetail !== undefined) {
+    const detail = s.correctionDetail;
+    if (!record(detail)) return false;
+    for (const key of CORRECTION_KEYS)
+      if (!finite(detail[key]) || detail[key] < 0 || detail[key] > 100)
+        return false;
   }
   if (
     s.strokeWeight !== undefined &&

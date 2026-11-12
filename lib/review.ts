@@ -56,7 +56,7 @@ export function glyphIssues(
         !strokesAreSafe(sample.strokes, sample.category) ||
         !strokesAreSafe(effective, sample.category)
       )
-        issues.push({ kind: "unsafe", label: "안전영역 벗어남" });
+        issues.push({ kind: "unsafe", label: "점선 밖으로 나간 획" });
       if (!effective.length)
         issues.push({ kind: "empty", label: "보정 후 남은 획이 없음" });
       else if (

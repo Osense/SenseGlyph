@@ -26,6 +26,8 @@ export interface LayoutPlan {
   sideBearing: number;
   digitInkWidth: number;
   spaceWidth: number;
+  /** 0~1. 작게 쓴 한글을 보통 크기 쪽으로 키우는 정도(손글씨 정돈의 '크기 고르게'). */
+  sizeEvening: number;
 }
 export interface LaidOutGlyph {
   contours: Contours;
@@ -119,6 +121,7 @@ export function bodySize(settings: FontBuildSettings) {
 export function createLayoutPlan(
   direct: Map<string, Contours>,
   settings: FontBuildSettings,
+  sizeEvening = 0,
 ): LayoutPlan {
   const target = bodySize(settings),
     measurements = [...direct].flatMap(([char, paths]) => {
@@ -183,15 +186,18 @@ export function createLayoutPlan(
       80,
       Math.round(target * 0.42 + settings.letterSpacing),
     ),
+    sizeEvening: Math.max(0, Math.min(1, sizeEvening)),
   };
 }
 
+/** 직접 쓴 글자와 조합 글자에 똑같은 배율을 적용합니다.
+ * 조합 글자는 쓴 글자의 자모를 같은 em 좌표 그대로 가져오므로, 같은 배율이어야
+ * 문장 안에서 크기가 들쭉날쭉하지 않습니다. */
 export function layoutGlyph(
   char: string,
   source: Contours,
   plan: LayoutPlan,
   reference: Contours = source,
-  preserveScale = false,
 ): LaidOutGlyph {
   const bounds = inkBounds(reference);
   if (!bounds)
@@ -208,12 +214,19 @@ export function layoutGlyph(
     : category === "ascii-symbol" || category === "korean-punct"
       ? plan.symbolScale
       : plan.latinScale;
-  if (preserveScale) scale = 1;
-  else if (hangul)
-    scale = Math.min(
-      scale,
-      plan.bodySize / Math.max(1, bounds.width, bounds.height),
-    );
+  if (hangul) {
+    const own = Math.max(1, bounds.width, bounds.height);
+    if (
+      category === "hangul-syllable" &&
+      plan.sizeEvening > 0 &&
+      own < plan.typicalHangulSize
+    )
+      scale *= Math.min(
+        1.25,
+        (plan.typicalHangulSize / own) ** (plan.sizeEvening * 0.8),
+      );
+    scale = Math.min(scale, plan.bodySize / own);
+  }
   const cy = (bounds.top + bounds.bottom) / 2;
   const referenceWidth = bounds.width * scale;
   const contentWidth =

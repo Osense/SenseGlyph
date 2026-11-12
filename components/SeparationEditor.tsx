@@ -27,6 +27,13 @@ import type { FontPreparation, Part, Separation } from "../lib/font/types";
 import { Thumbnail } from "./Preview";
 import { referenceFont } from "../lib/reference-fonts";
 import { referenceGuide, referenceUsesFallback } from "../lib/font/reference";
+import type { SeparationStatus } from "../lib/font/separation-status";
+
+const STATUS_LABEL: Record<SeparationStatus, string> = {
+  check: "확인 필요",
+  confirmed: "확인 완료",
+  auto: "자동",
+};
 
 /** Paints the reference font's real jamo regions: faint area = where a stroke
  * counts as that part, stronger tone = the font's own ink of that part. */
@@ -62,6 +69,8 @@ interface Props {
   onSelect: (char: string) => void;
   onWrite: () => void;
   onChange: (prep: FontPreparation) => void;
+  statuses?: Record<string, SeparationStatus>;
+  onConfirm?: () => void;
 }
 type Gesture = {
   id: number;
@@ -83,6 +92,8 @@ export default function SeparationEditor({
   onSelect,
   onWrite,
   onChange,
+  statuses = {},
+  onConfirm,
 }: Props) {
   const sample = project.samples[char];
   const separation = activeSeparation(sample, prep.separations[char]) ?? {
@@ -96,7 +107,7 @@ export default function SeparationEditor({
     : referenceGuide(char, project.settings);
   const regionImage = useRegionImage(guide);
   const [selection, setSelection] = useState<string[]>([]),
-    [mode, setMode] = useState<"select" | "lasso" | "point">("lasso"),
+    [mode, setMode] = useState<"lasso" | "point">("lasso"),
     [radius, setRadius] = useState(100);
   const [draft, setDraft] = useState<Stroke[] | null>(null),
     [lasso, setLasso] = useState<LassoPoint[] | null>(null),
@@ -383,7 +394,7 @@ export default function SeparationEditor({
         )
       )
         setError(
-          "안전영역을 벗어났어요. 이동을 취소했습니다. 점선 안쪽으로 옮겨주세요.",
+          "점선 밖으로 나가서 이동을 취소했어요. 점선 안쪽으로 옮겨 주세요.",
         );
       else
         update({
@@ -424,7 +435,7 @@ export default function SeparationEditor({
 
   return (
     <div className="separation-editor">
-      <div className="character-navigation">
+      <div className="character-navigation sg-sep-nav">
         <button
           aria-label="이전 보정 글자"
           disabled={currentIndex <= 0}
@@ -435,7 +446,12 @@ export default function SeparationEditor({
         <div>
           <strong>{char}</strong>
           <span>
-            {currentIndex + 1} / {chars.length} · ← → 키로 이동
+            {currentIndex + 1} / {chars.length}
+            {statuses[char] && (
+              <em data-status={statuses[char]}>
+                {STATUS_LABEL[statuses[char]]}
+              </em>
+            )}
           </span>
         </div>
         <button
@@ -445,23 +461,30 @@ export default function SeparationEditor({
         >
           다음 →
         </button>
+        {onConfirm && (
+          <button
+            className="sg-confirm"
+            data-confirmed={statuses[char] === "confirmed" || undefined}
+            onClick={onConfirm}
+          >
+            {statuses[char] === "confirmed"
+              ? "확인 완료 ✓ · 다음"
+              : "이대로 좋아요 ✓"}
+          </button>
+        )}
       </div>
-      <div className="editor-toolbar">
-        <div className="editor-modes">
+      <div className="editor-toolbar sg-sep-tools">
+        <div className="editor-modes" role="group" aria-label="편집 방식">
           <button
             className={mode === "lasso" ? "active" : ""}
+            aria-pressed={mode === "lasso"}
             onClick={() => setMode("lasso")}
-          >
-            올가미 선택
-          </button>
-          <button
-            className={mode === "select" ? "active" : ""}
-            onClick={() => setMode("select")}
           >
             선택·이동
           </button>
           <button
             className={mode === "point" ? "active" : ""}
+            aria-pressed={mode === "point"}
             onClick={() => setMode("point")}
           >
             부분 수정
@@ -472,35 +495,36 @@ export default function SeparationEditor({
           onClick={undo}
           aria-label="보정 실행 취소"
         >
-          ↶ 취소
+          ↶
         </button>
         <button
           disabled={!future.length}
           onClick={redo}
           aria-label="보정 다시 실행"
         >
-          ↷ 다시
+          ↷
         </button>
-        <button
-          onClick={() => setSelection(strokes.map((stroke) => stroke.id))}
-        >
-          전체 선택
-        </button>
-        <button disabled={!selection.length} onClick={() => setSelection([])}>
-          선택 해제
-        </button>
+        {selection.length ? (
+          <button onClick={() => setSelection([])}>선택 해제</button>
+        ) : (
+          <button
+            onClick={() => setSelection(strokes.map((stroke) => stroke.id))}
+          >
+            전체 선택
+          </button>
+        )}
+        <details className="sg-help">
+          <summary aria-label="자모 나누기 사용법">?</summary>
+          <p>
+            획을 누르거나 빈 곳에서 둘러싸 선택한 뒤, 선택 상자 위의
+            초성·중성·종성 버튼을 누르면 한 번에 바뀌어요. 선택한 획을 끌면
+            위치를 옮길 수 있어요.{" "}
+            {mode === "point"
+              ? "부분 수정에서는 점을 끌면 그 주변 획 모양만 부드럽게 바뀌어요."
+              : "오른쪽 목록의 체크로 선택을 더하거나 뺄 수 있어요."}
+          </p>
+        </details>
       </div>
-      <button className="font-secondary" type="button" onClick={onWrite}>
-        이 글자 다시 쓰러 가기
-      </button>
-      <p className="font-help">
-        올가미로 원하는 획을 둘러싸세요. 선택한 획은 오른쪽 목록 맨 위로
-        모입니다. 초·중·종성 버튼을 누르면 한 번에 배정돼요. 선택된 획을 끌면
-        함께 이동합니다.{" "}
-        {mode === "point"
-          ? "점을 드래그하면 주변 획 모양만 부드럽게 수정됩니다."
-          : "Shift를 누르거나 행의 체크박스를 누르면 선택을 더하거나 뺄 수 있어요."}
-      </p>
       {mode === "point" && (
         <label className="point-radius">
           부분 수정 범위 {radius} em
@@ -816,20 +840,21 @@ export default function SeparationEditor({
               </div>
             );
           })}
-          <p className="font-help">
-            여러 행이 선택된 상태에서는 선택된 행의 자모 버튼이 전체 선택에
-            적용됩니다.
-          </p>
-          <button
-            className="font-secondary"
-            onClick={() => update({ assignments: {} })}
-          >
-            이 글자 보정 초기화
-          </button>
+          <div className="sg-row-actions">
+            <button
+              className="font-secondary"
+              onClick={() => update({ assignments: {} })}
+            >
+              자동 결과로 되돌리기
+            </button>
+            <button className="font-secondary" type="button" onClick={onWrite}>
+              이 글자 다시 쓰기
+            </button>
+          </div>
         </div>
       </div>
       <details className="box-settings">
-        <summary>자모 위치 상자 조절</summary>
+        <summary>고급 · 자모 판정 상자 직접 조절</summary>
         {parts.map((part) => (
           <fieldset key={part}>
             <legend>{PART_LABELS[part]}</legend>
@@ -886,6 +911,14 @@ export default function SeparationEditor({
               )}
             />
             <span>{item}</span>
+            {statuses[item] && statuses[item] !== "auto" && (
+              <i
+                data-status={statuses[item]}
+                aria-label={STATUS_LABEL[statuses[item]]}
+              >
+                {statuses[item] === "check" ? "!" : "✓"}
+              </i>
+            )}
           </button>
         ))}
       </div>

@@ -13,7 +13,7 @@ import { drawGrid, drawSample } from "../lib/drawing";
 import { useStudio } from "../lib/store";
 import { referenceUsesFallback } from "../lib/font/reference";
 import { loadReferenceFont, referenceStack } from "../lib/reference-fonts";
-import { strokeIsSafe, strokesAreSafe } from "../lib/safety";
+import { strokesAreSafe } from "../lib/safety";
 import CanvasStepButtons, { type CanvasNavigation } from "./CanvasStepButtons";
 let penDetectedThisSession = false;
 interface Props {
@@ -154,8 +154,11 @@ export default function WritingPad({
     cancelAnimationFrame(frame.current);
     frame.current = 0;
     committed.current = strokes;
-    if (!strokesAreSafe(strokes, category))
-      setWarning("기존 획이 안전영역 밖에 있습니다. 지우거나 다시 써주세요.");
+    setWarning(
+      !practice && !strokesAreSafe(strokes, category)
+        ? "점선 밖으로 나간 획이 있어요. 폰트에는 칸 안으로 줄여서 넣어요."
+        : "",
+    );
     latestRender.current = render;
     const ctx = context(grid.current);
     if (ctx) drawGrid(ctx, settings, category, dark);
@@ -262,15 +265,8 @@ export default function WritingPad({
               createdAt: Date.now(),
             },
           ];
-      if (!a.erase && !strokeIsSafe(result[result.length - 1], category)) {
-        result = a.base;
-        setWarning(
-          "안전영역을 벗어났어요. 방금 획은 저장하지 않았습니다. 점선 안에 다시 써주세요.",
-        );
-      } else {
-        if (!a.erase || result !== a.base) commit(char, category, result);
-        setWarning("");
-      }
+      // 점선 밖으로 나간 획도 버리지 않습니다. 알림만 보여주고, 폰트에는 칸 안으로 줄여 넣습니다.
+      if (!a.erase || result !== a.base) commit(char, category, result);
     }
     active.current = null;
     committed.current = result;
@@ -326,9 +322,9 @@ export default function WritingPad({
         />
       </div>
       {warning && (
-        <div className="pad-warning" role="alert">
+        <div className="pad-warning" role="status">
           {warning}
-          <button onClick={() => setWarning("")}>다시 그리기</button>
+          <button onClick={() => setWarning("")}>확인</button>
         </div>
       )}
     </div>

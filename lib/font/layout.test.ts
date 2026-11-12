@@ -112,11 +112,32 @@ it("enlarges beyond one em and exports negative side bearings for tighter tracki
   expect(glyph.advanceWidth).toBeGreaterThan(0);
 });
 
-it("keeps composed ink at original em dimensions even with larger output size", () => {
+it("scales composed glyphs exactly like written glyphs", () => {
   const raw = rectangle(280, 260, 440, 480);
-  const settings = { ...defaultPreparation("Test").settings, bodySize: 1200 };
+  const settings = { ...defaultPreparation("Test").settings, bodySize: 960 };
   const plan = createLayoutPlan(new Map([["가", raw]]), settings);
-  const composed = layoutGlyph("좋", raw, plan, raw, true);
-  expect(composed.bounds?.width).toBe(440);
-  expect(composed.bounds?.height).toBe(480);
+  const written = layoutGlyph("가", raw, plan);
+  const composed = layoutGlyph("좋", raw, plan);
+  expect(composed.bounds).toEqual(written.bounds);
+  expect(composed.bounds?.height).toBe(960);
+});
+
+it("evens out small Hangul only when size correction is on", () => {
+  const big = rectangle(200, 200, 600, 600),
+    small = rectangle(300, 300, 400, 400);
+  const settings = defaultPreparation("Test").settings;
+  const references = new Map([
+    ["가", big],
+    ["나", big],
+    ["다", small],
+  ]);
+  const plain = createLayoutPlan(references, settings);
+  const evened = createLayoutPlan(references, settings, 1);
+  const before = layoutGlyph("다", small, plain).bounds!.height;
+  const after = layoutGlyph("다", small, evened).bounds!.height;
+  expect(after).toBeGreaterThan(before);
+  expect(after).toBeLessThanOrEqual(before * 1.25 + 1);
+  expect(layoutGlyph("가", big, evened).bounds).toEqual(
+    layoutGlyph("가", big, plain).bounds,
+  );
 });

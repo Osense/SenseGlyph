@@ -52,7 +52,6 @@ describe("Hangul component assembly", () => {
   it("reuses the original strokes and groups compatible parts from the same source", () => {
     const project = completeFixture();
     const prep = defaultPreparation(project.name);
-    prep.settings.shapeInterpolation = prep.settings.widthCorrection = 100;
     const { library, pools } = prepareHandwriting(project, prep);
     const strokes = composeGlyph("좋", library, pools)!;
     expect(strokes).toContain(project.samples["졺"].strokes[0]);
@@ -81,7 +80,6 @@ it("keeps a confirmed final consonant from the current project's source", () => 
     })),
   };
   project.samples[source.char] = source;
-  prep.settings.positionCorrection = prep.settings.shapeInterpolation = 0;
   expect(componentLibrary(project, prep).get("jong:21:V")?.char).toBe("펭");
   prep.separations[source.char] = {
     sourceUpdatedAt: source.updatedAt,
@@ -157,13 +155,13 @@ it("prefers the same vowel layout when borrowing a final with equal confirmation
   expect(composeGlyph("좋", library, pools)?.at(-1)).toBe(source.strokes[2]);
 });
 
-it("applies opt-in reference correction to output strokes without changing the written sample", () => {
+it("applies opt-in handwriting correction to output strokes without changing the written sample", () => {
   const project = completeFixture();
   const prep = defaultPreparation(project.name);
   const char = "졺";
   const source = project.samples[char].strokes;
   const points = structuredClone(source.map((stroke) => stroke.points));
-  prep.settings.alignToReference = true;
+  prep.settings.correction = 60;
   const original = prepareHandwriting(project, prep);
   const corrected = prepareHandwriting(project, prep, true);
   expect(original.direct.get(char)).toEqual(source);

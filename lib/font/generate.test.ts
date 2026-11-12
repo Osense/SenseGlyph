@@ -155,7 +155,7 @@ it("exports separate readable Korean and English names with a matching PostScrip
   expect(font.names.postScriptName.en).toBe("OsenseHand-Regular");
 });
 
-it("maps written special symbols in the full font and excludes them from the basic font", () => {
+it("maps written premium characters in the full font and excludes them from the basic font", () => {
   const project = newProject();
   const sample = completeFixture().samples["겨"];
   project.samples["겨"] = sample;
@@ -163,7 +163,7 @@ it("maps written special symbols in the full font and excludes them from the bas
   project.samples["⑪"] = { ...sample, char: "⑪", category: "special-symbol" };
   const preparation = defaultPreparation("Special Symbols");
   const full = generateFont({ project, preparation });
-  const basic = generateFont({ project, preparation, includeSpecial: false });
+  const basic = generateFont({ project, preparation, includePremium: false });
   expect(opentype.parse(full.buffer).charToGlyphIndex("①")).toBeGreaterThan(0);
   expect(opentype.parse(basic.buffer).charToGlyphIndex("①")).toBe(0);
   expect(full.stats.characters).not.toContain("⑪");

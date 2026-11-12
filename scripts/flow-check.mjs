@@ -23,6 +23,11 @@ for (const [label, viewport] of [
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(BASE + "/?step=2");
   await page.waitForSelector(".pad-sheet");
+  check(
+    `${label}: 처음 들어오면 쓰기 팁 애니메이션`,
+    await page.locator(".sg-tips").isVisible(),
+  );
+  await page.click("text=건너뛰고 바로 쓰기");
   await page.waitForTimeout(600);
   const pad = await page.evaluate(() => {
     const r = document.querySelector(".pad-sheet").getBoundingClientRect();
@@ -58,6 +63,8 @@ const page = await context.newPage();
 page.on("pageerror", (error) => errors.push(error.message));
 await page.goto(BASE + "/?step=2");
 await page.waitForSelector(".input-canvas");
+if (await page.locator(".sg-tips").count())
+  await page.click("text=건너뛰고 바로 쓰기");
 let seed = 3;
 const jitter = () =>
   ((seed = (seed * 9301 + 49297) % 233280) / 233280 - 0.5) * 6;
@@ -203,10 +210,22 @@ check(
       "placeholder",
     )) === "여기에 이름을 넣어주세요!",
 );
+await page.click(".fw-download");
 check(
-  "이름 없이는 다운로드 비활성",
-  await page.locator(".fw-download").isDisabled(),
+  "이름 없이 누르면 고칠 점 팝업",
+  await page
+    .locator(".fw-blockers >> text=한글 폰트 이름을 넣어주세요!")
+    .isVisible(),
 );
+await page.click("text=확인하고 고치기");
+await page.fill('[aria-label="한글 폰트 이름"]', "시험 글씨");
+await page.fill('[aria-label="영문 폰트 이름"]', "TestHand");
+await page.click(".fw-download");
+check(
+  "띄어쓰기 안내 팝업",
+  await page.locator(".fw-blockers >> text=띄어쓰기는 하지 마세요").isVisible(),
+);
+await page.click("text=확인하고 고치기");
 check("견본 글꼴 대체 경고", await page.locator(".fw-fallback").isVisible());
 check("출력 구성 구분 없음", !(await page.locator("text=프리미엄").count()));
 await page.fill('[aria-label="한글 폰트 이름"]', "시험글씨");

@@ -1,5 +1,10 @@
 import { it, expect } from "vitest";
-import { sampleFontSize, strokeIsSafe, safetyBounds, DIAMOND_MARGIN } from "./safety";
+import {
+  sampleFontSize,
+  strokeIsSafe,
+  safetyBounds,
+  DIAMOND_MARGIN,
+} from "./safety";
 import type { Stroke } from "./types";
 const stroke = (x: number): Stroke => ({
   id: "a",

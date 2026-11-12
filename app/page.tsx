@@ -29,6 +29,7 @@ import JourneySetup from "../components/JourneySetup";
 import { characterGuide } from "../lib/character-guide";
 import { gsap } from "gsap";
 import ProjectManager from "../components/ProjectManager";
+import WritingTips, { WRITING_TIPS_KEY } from "../components/WritingTips";
 
 type CharEntry = { char: string; category: CharCategory };
 const inCategories =
@@ -95,6 +96,7 @@ export default function Page() {
     [tool, setTool] = useState<"pen" | "eraser">("pen"),
     [modal, setModal] = useState(false),
     [toolSheet, setToolSheet] = useState(false),
+    [tipsOpen, setTipsOpen] = useState(false),
     [projectsOpen, setProjectsOpen] = useState(false),
     [fontReviewChar, setFontReviewChar] = useState<string | undefined>(),
     [dark, setDark] = useState(false),
@@ -237,6 +239,18 @@ export default function Page() {
       /* UI 선호 저장이 차단돼도 벡터 입력은 계속 허용한다. */
     }
   }, [dark, !!project]);
+  useEffect(() => {
+    if (step !== 2 || !project) return;
+    try {
+      if (!localStorage.getItem(WRITING_TIPS_KEY)) setTipsOpen(true);
+    } catch {}
+  }, [step, !!project]);
+  const closeTips = () => {
+    setTipsOpen(false);
+    try {
+      localStorage.setItem(WRITING_TIPS_KEY, "1");
+    } catch {}
+  };
   const persist = () => {
     if (switching.current) return saveChain.current;
     const p = useStudio.getState().project;
@@ -339,6 +353,7 @@ export default function Page() {
         modal ||
         projectsOpen ||
         toolSheet ||
+        tipsOpen ||
         step !== 2 ||
         busy ||
         (e.target instanceof HTMLElement &&
@@ -364,7 +379,17 @@ export default function Page() {
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [char, modal, projectsOpen, toolSheet, busy, navigationChars, list, step]);
+  }, [
+    char,
+    modal,
+    projectsOpen,
+    toolSheet,
+    tipsOpen,
+    busy,
+    navigationChars,
+    list,
+    step,
+  ]);
   useEffect(() => {
     if (toastUndo) {
       setToast("");
@@ -630,6 +655,16 @@ export default function Page() {
               >
                 <i aria-hidden="true">⚙</i>
                 <span>도구 설정</span>
+              </button>
+              <button
+                className="sg-tool"
+                aria-haspopup="dialog"
+                data-ink-locked={busy || undefined}
+                disabled={busy}
+                onClick={() => setTipsOpen(true)}
+              >
+                <i aria-hidden="true">💡</i>
+                <span>쓰기 팁</span>
               </button>
             </div>
 
@@ -993,6 +1028,7 @@ export default function Page() {
             </div>
           </footer>
 
+          {tipsOpen && <WritingTips onClose={closeTips} />}
           {toolSheet && (
             <div
               className="sg-sheet-backdrop"

@@ -92,6 +92,38 @@ export default function WritingPad({
     if (wrap.current) ob.observe(wrap.current);
     return () => ob.disconnect();
   }, [!!navigation, showOutside]);
+  // iPad Safari: 쓰는 도중 손바닥·손가락·펜이 페이지를 끌어당기거나(스크롤·고무줄 효과),
+  // 확대·돋보기·길게 누르기 메뉴가 뜨지 않도록 쓰기 영역의 기본 터치 동작을 막습니다.
+  // 버튼(이전/다음)의 탭은 막지 않습니다.
+  useEffect(() => {
+    const area = wrap.current,
+      canvas = live.current;
+    if (!area || !canvas) return;
+    const stop = (event: Event) => {
+      if (event.cancelable) event.preventDefault();
+    };
+    const onCanvas = { passive: false } as AddEventListenerOptions;
+    canvas.addEventListener("touchstart", stop, onCanvas);
+    canvas.addEventListener("touchmove", stop, onCanvas);
+    canvas.addEventListener("touchend", stop, onCanvas);
+    area.addEventListener("touchmove", stop, onCanvas);
+    area.addEventListener("gesturestart", stop, onCanvas);
+    area.addEventListener("gesturechange", stop, onCanvas);
+    area.addEventListener("contextmenu", stop);
+    area.addEventListener("selectstart", stop);
+    area.addEventListener("dblclick", stop);
+    return () => {
+      canvas.removeEventListener("touchstart", stop);
+      canvas.removeEventListener("touchmove", stop);
+      canvas.removeEventListener("touchend", stop);
+      area.removeEventListener("touchmove", stop);
+      area.removeEventListener("gesturestart", stop);
+      area.removeEventListener("gesturechange", stop);
+      area.removeEventListener("contextmenu", stop);
+      area.removeEventListener("selectstart", stop);
+      area.removeEventListener("dblclick", stop);
+    };
+  }, []);
   useEffect(() => {
     let alive = true;
     setFontReady(false);

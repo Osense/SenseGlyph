@@ -50,12 +50,68 @@ const SPECIMEN = `"세상에 당신만의 모양으로 이야기를 건넬 수 �
 'Hello, world!' (2026) ~ #1 & 100%? @_@ [OK]
 여기에 직접 써 보세요.`;
 const FORMATS: { id: ExportFormat; label: string; note: string }[] = [
-  { id: "zip", label: "전체 묶음", note: "ZIP · 모든 형식" },
-  { id: "otf", label: "OTF", note: "컴퓨터 설치용" },
-  { id: "ttf", label: "TTF", note: "컴퓨터·태블릿" },
-  { id: "woff2", label: "WOFF2", note: "웹사이트용" },
-  { id: "woff", label: "WOFF", note: "웹(예전 형식)" },
+  { id: "zip", label: "전체 묶음", note: "모든 형식 · 잘 모르겠다면" },
+  { id: "ttf", label: "TTF", note: "설치용 · 문서 프로그램" },
+  { id: "otf", label: "OTF", note: "설치용 · 디자인 프로그램" },
+  { id: "woff2", label: "WOFF2", note: "웹사이트용 · 설치 X" },
+  { id: "woff", label: "WOFF", note: "웹사이트용 · 예전 브라우저" },
 ];
+
+/** 내려받을 수 없는 이유를 사람이 바로 고칠 수 있는 말로 */
+function blockers(
+  status: string,
+  korean: string,
+  english: string,
+  exporting: boolean,
+) {
+  const list: { text: string; field?: "korean" | "english" }[] = [];
+  if (status === "building")
+    list.push({ text: "폰트를 만드는 중이에요. 잠시만 기다려 주세요!" });
+  else if (status !== "ready")
+    list.push({
+      text: "설정이 바뀌었어요. 위의 ‘바뀐 설정으로 다시 만들기’를 먼저 눌러 주세요!",
+    });
+  if (!korean)
+    list.push({ text: "한글 폰트 이름을 넣어주세요!", field: "korean" });
+  else {
+    if (/\s/.test(korean))
+      list.push({
+        text: "한글 폰트 이름에 띄어쓰기는 하지 마세요! (예: 나의손글씨)",
+        field: "korean",
+      });
+    if (!/[가-힣]/.test(korean))
+      list.push({
+        text: "한글 폰트 이름에는 한글이 한 글자 이상 들어가야 해요!",
+        field: "korean",
+      });
+    if (/[<>:"/\\|?*\x00-\x1f]/.test(korean) || korean.endsWith("."))
+      list.push({
+        text: '한글 폰트 이름에 < > : " / \\ | ? * 기호나 끝의 마침표는 쓸 수 없어요!',
+        field: "korean",
+      });
+  }
+  if (!english)
+    list.push({ text: "영문 폰트 이름을 넣어주세요!", field: "english" });
+  else {
+    if (/\s/.test(english))
+      list.push({
+        text: "영문 폰트 이름에 띄어쓰기는 하지 마세요! (예: MyHand)",
+        field: "english",
+      });
+    if (!/^[\x20-\x7e]+$/.test(english))
+      list.push({
+        text: "영문 폰트 이름은 영어·숫자로만 써 주세요! 한글은 넣을 수 없어요.",
+        field: "english",
+      });
+    else if (!/[a-zA-Z0-9]/.test(english))
+      list.push({
+        text: "영문 폰트 이름에 영어나 숫자를 한 글자 이상 넣어 주세요!",
+        field: "english",
+      });
+  }
+  if (exporting) list.push({ text: "파일을 준비하고 있어요. 잠시만요!" });
+  return list;
+}
 
 export default function FontOutput({
   family,
@@ -105,8 +161,13 @@ export default function FontOutput({
     koreanValid &&
     englishValid &&
     exporting === null;
+  const reasons = blockers(status, korean.trim(), english.trim(), !!exporting);
+  const [blocked, setBlocked] = useState(false);
   const start = () => {
-    if (!canDownload) return;
+    if (!canDownload) {
+      setBlocked(true);
+      return;
+    }
     if (rememberedDownloadCode()) onDownload(format, names);
     else {
       setCode("");
@@ -201,20 +262,17 @@ export default function FontOutput({
             <span className="fw-prefixed">
               <b>{OUTPUT_PREFIX.trim()}</b>
               <input
-                required
                 aria-label="한글 폰트 이름"
                 maxLength={60}
                 value={korean}
                 placeholder="여기에 이름을 넣어주세요!"
                 aria-invalid={(!!korean && !koreanValid) || undefined}
-                onChange={(event) =>
-                  setKorean(event.target.value.replace(/\s/g, ""))
-                }
+                onChange={(event) => setKorean(event.target.value)}
               />
             </span>
             {!!korean && !koreanValid && (
               <small className="fw-error">
-                공백 없이, 한글을 한 글자 이상 넣어 주세요.
+                띄어쓰기 없이, 한글을 한 글자 이상 넣어 주세요.
               </small>
             )}
           </label>
@@ -223,20 +281,17 @@ export default function FontOutput({
             <span className="fw-prefixed">
               <b>{OUTPUT_PREFIX.trim()}</b>
               <input
-                required
                 aria-label="영문 폰트 이름"
                 maxLength={60}
                 value={english}
                 placeholder="Type a name here!"
                 aria-invalid={(!!english && !englishValid) || undefined}
-                onChange={(event) =>
-                  setEnglish(event.target.value.replace(/\s/g, ""))
-                }
+                onChange={(event) => setEnglish(event.target.value)}
               />
             </span>
             {!!english && !englishValid && (
               <small className="fw-error">
-                공백 없이 영문자·숫자로 입력해 주세요.
+                띄어쓰기 없이 영어·숫자로만 입력해 주세요.
               </small>
             )}
           </label>
@@ -244,6 +299,32 @@ export default function FontOutput({
 
         <fieldset className="fw-formats">
           <legend>파일 형식</legend>
+          <details className="fw-format-help">
+            <summary>어떤 형식을 받아야 할까요?</summary>
+            <ul>
+              <li>
+                <b>한글·워드·파워포인트 같은 문서에 쓸 때 → TTF</b> 컴퓨터에
+                설치하는 글꼴 중 가장 널리 호환돼요.
+              </li>
+              <li>
+                <b>포토샵·일러스트·인디자인 등 디자인에 쓸 때 → OTF</b> 이 앱이
+                처음 만드는 원본 형식이에요. Mac·Windows 모두 설치돼요.
+              </li>
+              <li>
+                <b>아이패드(굿노트·키노트 등)</b> 글꼴 설치 앱이나 설정
+                프로파일로 TTF 또는 OTF를 설치해요.
+              </li>
+              <li>
+                <b>웹사이트에 쓸 때 → WOFF2</b> 컴퓨터에 설치하는 파일이
+                아니에요. 웹페이지에 연결해서 쓰는 가벼운 형식이에요.
+              </li>
+            </ul>
+            <p>
+              TTF와 OTF는 글자 모양이 같고 곡선을 저장하는 방식만 달라요. 어느
+              쪽이 더 무겁거나 고급인 것은 아니니, <b>둘 중 하나만</b>{" "}
+              설치하세요. 둘 다 설치하면 같은 이름의 글꼴이 겹칠 수 있어요.
+            </p>
+          </details>
           {FORMATS.map((item) => (
             <label
               key={item.id}
@@ -283,7 +364,7 @@ export default function FontOutput({
         <button
           className="fw-primary fw-download"
           type="submit"
-          disabled={!canDownload}
+          data-blocked={!canDownload || undefined}
         >
           {exporting
             ? "파일 준비 중…"
@@ -307,6 +388,44 @@ export default function FontOutput({
         )}
       </form>
 
+      {blocked && (
+        <FontDialog
+          title="⚠ 아직 내려받을 수 없어요"
+          onClose={() => setBlocked(false)}
+        >
+          <ul className="fw-blockers">
+            {(reasons.length
+              ? reasons
+              : [{ text: "잠시 후 다시 눌러 주세요." }]
+            ).map((reason) => (
+              <li key={reason.text}>{reason.text}</li>
+            ))}
+          </ul>
+          <div className="font-dialog-actions">
+            <button
+              type="button"
+              className="fw-primary"
+              autoFocus
+              onClick={() => {
+                setBlocked(false);
+                const field = reasons.find((reason) => reason.field)?.field;
+                if (field)
+                  setTimeout(
+                    () =>
+                      document
+                        .querySelector<HTMLInputElement>(
+                          `[aria-label="${field === "korean" ? "한글" : "영문"} 폰트 이름"]`,
+                        )
+                        ?.focus(),
+                    50,
+                  );
+              }}
+            >
+              확인하고 고치기
+            </button>
+          </div>
+        </FontDialog>
+      )}
       {asking && (
         <FontDialog title="다운로드 코드" onClose={() => setAsking(false)}>
           <form

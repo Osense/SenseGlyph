@@ -1708,388 +1708,6 @@ main.studio.journey h1[tabindex="-1"]:focus {
   margin-top: 12px;
 }
 
-/* ---------- 자모 나누기 안내 애니메이션 ---------- */
-.sg-tutorial {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  display: grid;
-  place-items: center;
-  padding: 8px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--paper) 88%, transparent);
-  backdrop-filter: blur(2px);
-}
-.sg-tutorial-card {
-  width: min(440px, 100%);
-  max-height: 100%;
-  overflow: auto;
-  display: grid;
-  gap: 10px;
-  padding: 16px 18px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--sheet);
-  box-shadow: 0 16px 50px #1c241f2e;
-}
-.sg-tutorial h2 {
-  margin: 0;
-  font-size: 18px;
-}
-.sg-tutorial svg {
-  width: min(100%, 44cqh, 300px);
-  justify-self: center;
-}
-.sg-tutorial ol {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 6px;
-  counter-reset: step;
-}
-.sg-tutorial li {
-  counter-increment: step;
-  display: grid;
-  grid-template-columns: 24px 1fr;
-  column-gap: 8px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--muted);
-  word-break: keep-all;
-}
-.sg-tutorial li::before {
-  content: counter(step);
-  grid-row: span 2;
-  width: 22px;
-  height: 22px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--active-wash);
-  color: var(--accent);
-  font-weight: 700;
-  font-size: 12px;
-}
-.sg-tutorial li b {
-  color: var(--ink);
-}
-.tut-sheet {
-  fill: var(--paper);
-  stroke: var(--line);
-  stroke-width: 4;
-}
-.sg-tutorial svg path,
-.sg-tutorial svg circle:not(.tut-tap):not(.tut-finger) {
-  fill: none;
-  stroke-width: 46;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.tut-cho path,
-.tut-cho circle,
-.tut-jong path {
-  stroke: #a9b0a6;
-}
-.tut-jung path {
-  stroke: var(--jung);
-}
-.tut-cho path,
-.tut-cho circle {
-  animation: tut-cho 8s infinite;
-}
-.tut-jong path {
-  animation: tut-jong 8s infinite;
-}
-.sg-tutorial svg .tut-lasso {
-  stroke: #497fba;
-  stroke-width: 8;
-  stroke-dasharray: 1400;
-  fill: #497fba1f;
-  animation: tut-lasso 8s infinite;
-}
-.tut-pick {
-  fill: none;
-  stroke: #d5a228;
-  stroke-width: 8;
-  stroke-dasharray: 18 12;
-  opacity: 0;
-}
-.tut-pick-cho {
-  animation: tut-pick-cho 8s infinite;
-}
-.tut-pick-jong {
-  animation: tut-pick-jong 8s infinite;
-}
-.tut-buttons {
-  opacity: 0;
-}
-.tut-buttons rect {
-  fill: var(--sheet);
-  stroke: var(--line);
-  stroke-width: 4;
-}
-.tut-buttons text {
-  font-size: 38px;
-  font-weight: 700;
-  fill: var(--muted);
-}
-.tut-buttons text.is-cho {
-  fill: var(--cho);
-}
-.tut-buttons text.is-jong {
-  fill: var(--jong);
-}
-.tut-buttons-cho {
-  animation: tut-buttons-cho 8s infinite;
-}
-.tut-buttons-jong {
-  animation: tut-buttons-jong 8s infinite;
-}
-.tut-tap {
-  fill: #497fba44;
-  stroke: #497fba;
-  stroke-width: 5;
-  opacity: 0;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: tut-tap 8s infinite;
-}
-.tut-tap-2 {
-  animation-name: tut-tap-2;
-}
-.tut-finger {
-  fill: #497fba55;
-  stroke: #497fba;
-  stroke-width: 5;
-  opacity: 0;
-  animation: tut-finger 8s infinite;
-}
-.tut-step-1 {
-  animation: tut-step-1 8s infinite;
-}
-.tut-step-2 {
-  animation: tut-step-2 8s infinite;
-}
-.tut-step-3 {
-  animation: tut-step-3 8s infinite;
-}
-@keyframes tut-lasso {
-  0%,
-  6% {
-    stroke-dashoffset: 1400;
-    opacity: 1;
-  }
-  24% {
-    stroke-dashoffset: 0;
-    opacity: 1;
-  }
-  44% {
-    stroke-dashoffset: 0;
-    opacity: 1;
-  }
-  50%,
-  100% {
-    stroke-dashoffset: 0;
-    opacity: 0;
-  }
-}
-@keyframes tut-pick-cho {
-  0%,
-  24% {
-    opacity: 0;
-  }
-  27%,
-  44% {
-    opacity: 1;
-  }
-  48%,
-  100% {
-    opacity: 0;
-  }
-}
-@keyframes tut-buttons-cho {
-  0%,
-  27% {
-    opacity: 0;
-  }
-  30%,
-  44% {
-    opacity: 1;
-  }
-  48%,
-  100% {
-    opacity: 0;
-  }
-}
-@keyframes tut-tap {
-  0%,
-  35% {
-    opacity: 0;
-    transform: scale(0.4);
-  }
-  38% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  43%,
-  100% {
-    opacity: 0;
-    transform: scale(1.4);
-  }
-}
-@keyframes tut-cho {
-  0%,
-  40% {
-    stroke: #a9b0a6;
-  }
-  43%,
-  92% {
-    stroke: var(--cho);
-  }
-  100% {
-    stroke: #a9b0a6;
-  }
-}
-@keyframes tut-finger {
-  0%,
-  52% {
-    opacity: 0;
-  }
-  55%,
-  60% {
-    opacity: 1;
-  }
-  63%,
-  100% {
-    opacity: 0;
-  }
-}
-@keyframes tut-pick-jong {
-  0%,
-  58% {
-    opacity: 0;
-  }
-  60%,
-  76% {
-    opacity: 1;
-  }
-  79%,
-  100% {
-    opacity: 0;
-  }
-}
-@keyframes tut-buttons-jong {
-  0%,
-  60% {
-    opacity: 0;
-  }
-  63%,
-  76% {
-    opacity: 1;
-  }
-  79%,
-  100% {
-    opacity: 0;
-  }
-}
-@keyframes tut-tap-2 {
-  0%,
-  68% {
-    opacity: 0;
-    transform: scale(0.4);
-  }
-  71% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  76%,
-  100% {
-    opacity: 0;
-    transform: scale(1.4);
-  }
-}
-@keyframes tut-jong {
-  0%,
-  72% {
-    stroke: #a9b0a6;
-  }
-  75%,
-  92% {
-    stroke: var(--jong);
-  }
-  100% {
-    stroke: #a9b0a6;
-  }
-}
-@keyframes tut-step-1 {
-  0%,
-  30% {
-    color: var(--ink);
-  }
-  33%,
-  52% {
-    color: var(--muted);
-  }
-  55%,
-  64% {
-    color: var(--ink);
-  }
-  66%,
-  100% {
-    color: var(--muted);
-  }
-}
-@keyframes tut-step-2 {
-  0%,
-  30% {
-    color: var(--muted);
-  }
-  33%,
-  50% {
-    color: var(--ink);
-  }
-  52%,
-  64% {
-    color: var(--muted);
-  }
-  66%,
-  80% {
-    color: var(--ink);
-  }
-  82%,
-  100% {
-    color: var(--muted);
-  }
-}
-@keyframes tut-step-3 {
-  0%,
-  82% {
-    color: var(--muted);
-  }
-  84%,
-  100% {
-    color: var(--ink);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .sg-tutorial svg *,
-  .sg-tutorial li {
-    animation: none !important;
-  }
-  .tut-cho path,
-  .tut-cho circle {
-    stroke: var(--cho);
-  }
-  .tut-jong path {
-    stroke: var(--jong);
-  }
-  .sg-tutorial svg .tut-lasso,
-  .tut-pick-cho,
-  .tut-buttons-cho {
-    opacity: 1;
-  }
-}
 @media (max-width: 640px) {
   .fw-sep-stats {
     margin-left: 0;
@@ -2848,4 +2466,396 @@ button {
   gap: 6px;
   font-size: 14px;
   line-height: 1.5;
+}
+
+/* ---------- 자모 나누기 안내 (쓰기 팁과 같은 형식) ---------- */
+.sep-part path,
+.sep-part circle {
+  fill: none;
+  stroke: #b6bcb2;
+  stroke-width: 14;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sep-c-cho path,
+.sep-c-cho circle {
+  stroke: var(--cho);
+}
+.sep-c-jung path {
+  stroke: var(--jung);
+}
+.sep-c-jong path {
+  stroke: var(--jong);
+}
+/* 1. 한 = ㅎ + ㅏ + ㄴ: 차례로 색이 들고 이름표가 붙음 */
+.sep-why .sep-part path,
+.sep-why .sep-part circle,
+.sep-label {
+  animation: sep-reveal 6s infinite;
+}
+.sep-why .sep-part.sep-d1 path,
+.sep-why .sep-part.sep-d1 circle,
+.sep-label.sep-d1 {
+  animation-name: sep-reveal-1;
+}
+.sep-why .sep-part.sep-d2 path,
+.sep-label.sep-d2 {
+  animation-name: sep-reveal-2;
+}
+.sep-why .sep-part.sep-d3 path,
+.sep-label.sep-d3 {
+  animation-name: sep-reveal-3;
+}
+.sep-label {
+  font-size: 19px;
+  font-weight: 700;
+}
+.sep-l-cho {
+  fill: var(--cho) !important;
+}
+.sep-l-jung {
+  fill: var(--jung) !important;
+}
+.sep-l-jong {
+  fill: var(--jong) !important;
+}
+@keyframes sep-reveal-1 {
+  0%,
+  10% {
+    stroke: #b6bcb2;
+    opacity: 0.35;
+  }
+  18%,
+  92% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.35;
+  }
+}
+@keyframes sep-reveal-2 {
+  0%,
+  32% {
+    stroke: #b6bcb2;
+    opacity: 0.35;
+  }
+  40%,
+  92% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.35;
+  }
+}
+@keyframes sep-reveal-3 {
+  0%,
+  54% {
+    stroke: #b6bcb2;
+    opacity: 0.35;
+  }
+  62%,
+  92% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.35;
+  }
+}
+/* 2~4. 고르기 → 버튼 → 색 바뀜 */
+.sep-lasso-path {
+  fill: #497fba1a;
+  stroke: #497fba;
+  stroke-width: 4;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: sep-lasso 6s infinite;
+}
+.sep-pick {
+  fill: none;
+  stroke: #d5a228;
+  stroke-width: 3;
+  stroke-dasharray: 8 5;
+  opacity: 0;
+  animation: sep-pick 6s infinite;
+}
+.sep-buttons {
+  opacity: 0;
+  animation: sep-buttons 6s infinite;
+}
+.sep-bar {
+  fill: var(--sheet);
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+.sep-b-cho {
+  fill: var(--cho);
+}
+.sep-b-jung {
+  fill: var(--jung);
+}
+.sep-b-jong {
+  fill: var(--jong);
+}
+.sep-buttons text {
+  font-size: 14px;
+  font-weight: 700;
+  fill: #fff !important;
+  text-anchor: middle;
+}
+.sep-tap {
+  fill: #ffffff55;
+  stroke: #fff;
+  stroke-width: 3;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sep-tap 6s infinite;
+}
+.sep-finger {
+  fill: #497fba44;
+  stroke: #497fba;
+  stroke-width: 3;
+  opacity: 0;
+  animation: sep-finger 6s infinite;
+}
+.sep-to-cho path,
+.sep-to-cho circle {
+  animation: sep-to-cho 6s infinite;
+}
+.sep-to-jong path {
+  animation: sep-to-jong 6s infinite;
+}
+.sep-wrong path {
+  stroke: var(--cho);
+  animation: sep-fix 6s infinite;
+}
+.sep-warn {
+  font-size: 22px;
+  font-weight: 800;
+  fill: var(--danger) !important;
+  animation: sep-warn 6s infinite;
+}
+@keyframes sep-lasso {
+  0%,
+  5% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  28%,
+  40% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  46%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes sep-finger {
+  0%,
+  10% {
+    opacity: 0;
+    transform: translate(0, 10px);
+  }
+  18%,
+  28% {
+    opacity: 1;
+    transform: none;
+  }
+  34%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes sep-pick {
+  0%,
+  28% {
+    opacity: 0;
+  }
+  32%,
+  62% {
+    opacity: 1;
+  }
+  66%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes sep-buttons {
+  0%,
+  32% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  38%,
+  62% {
+    opacity: 1;
+  }
+  66%,
+  100% {
+    opacity: 0;
+  }
+}
+.sep-buttons {
+  transform-box: view-box;
+}
+@keyframes sep-tap {
+  0%,
+  48% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  52% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  60%,
+  100% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+}
+@keyframes sep-to-cho {
+  0%,
+  54% {
+    stroke: #b6bcb2;
+  }
+  58%,
+  94% {
+    stroke: var(--cho);
+  }
+  100% {
+    stroke: #b6bcb2;
+  }
+}
+@keyframes sep-to-jong {
+  0%,
+  54% {
+    stroke: #b6bcb2;
+  }
+  58%,
+  94% {
+    stroke: var(--jong);
+  }
+  100% {
+    stroke: #b6bcb2;
+  }
+}
+@keyframes sep-fix {
+  0%,
+  54% {
+    stroke: var(--cho);
+  }
+  58%,
+  94% {
+    stroke: var(--jung);
+  }
+  100% {
+    stroke: var(--cho);
+  }
+}
+@keyframes sep-warn {
+  0%,
+  54% {
+    opacity: 1;
+  }
+  58%,
+  94% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+/* 5. 전체 넘겨 보기: 커서가 지나가며 ✓가 붙음 */
+.sep-cell {
+  fill: var(--sheet);
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+.sep-cell-char {
+  font-size: 26px;
+  text-anchor: middle;
+}
+.sep-cell-ok {
+  font-size: 13px;
+  fill: var(--ok) !important;
+  text-anchor: middle;
+  opacity: 0;
+  animation: sep-ok 6s infinite;
+}
+.sep-cell-warn circle {
+  fill: var(--danger);
+}
+.sep-cell-warn text {
+  font-size: 12px;
+  fill: #fff !important;
+  text-anchor: middle;
+}
+.sep-cursor {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  animation: sep-cursor 6s steps(1) infinite;
+}
+.sep-count {
+  font-size: 15px;
+  fill: var(--muted) !important;
+  text-anchor: middle;
+}
+@keyframes sep-ok {
+  0% {
+    opacity: 0;
+  }
+  4%,
+  94% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes sep-cursor {
+  0% {
+    transform: translateX(0);
+  }
+  13.3% {
+    transform: translateX(60px);
+  }
+  26.6% {
+    transform: translateX(120px);
+  }
+  40% {
+    transform: translateX(180px);
+  }
+  53.3% {
+    transform: translateX(240px);
+  }
+  66.6%,
+  100% {
+    transform: translateX(300px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sep-to-cho path,
+  .sep-to-cho circle {
+    stroke: var(--cho);
+  }
+  .sep-to-jong path {
+    stroke: var(--jong);
+  }
+  .sep-wrong path {
+    stroke: var(--jung);
+  }
+  .sep-buttons,
+  .sep-pick,
+  .sep-cell-ok {
+    opacity: 1;
+  }
+  .sep-warn,
+  .sep-lasso-path,
+  .sep-finger {
+    display: none;
+  }
 }

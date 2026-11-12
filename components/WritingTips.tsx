@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import TipDeck from "./TipDeck";
 
 export const WRITING_TIPS_KEY = "senseglyph-writing-tips-v1";
 
@@ -181,97 +181,18 @@ function Art({ kind }: { kind: (typeof TIPS)[number]["art"] }) {
 
 /** 글자 쓰기 단계에 들어올 때 보여 주는 '예쁜 폰트를 위한 쓰기 팁' 슬라이드 */
 export default function WritingTips({ onClose }: { onClose: () => void }) {
-  const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const start = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    start.current?.focus({ preventScroll: true });
-    const key = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-      if (event.key === "ArrowRight") {
-        setPaused(true);
-        setIndex((i) => Math.min(TIPS.length - 1, i + 1));
-      }
-      if (event.key === "ArrowLeft") {
-        setPaused(true);
-        setIndex((i) => Math.max(0, i - 1));
-      }
-    };
-    document.addEventListener("keydown", key);
-    return () => document.removeEventListener("keydown", key);
-  }, [onClose]);
-  useEffect(() => {
-    if (paused) return;
-    const timer = setTimeout(
-      () => setIndex((i) => (i + 1) % TIPS.length),
-      6500,
-    );
-    return () => clearTimeout(timer);
-  }, [index, paused]);
-  const tip = TIPS[index];
-  const last = index === TIPS.length - 1;
   return (
-    <div className="sg-tips-backdrop">
-      <section
-        className="sg-tips"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="sg-tips-title"
-      >
-        <span className="sg-tips-kicker">예쁜 폰트를 위한 쓰기 팁</span>
-        <div className="sg-tips-stage" key={index}>
-          <Art kind={tip.art} />
-          <h2 id="sg-tips-title">
-            <b>{index + 1}</b> {tip.title}
-          </h2>
-          <p>{tip.body}</p>
-        </div>
-        <div className="sg-tips-dots" role="tablist" aria-label="팁 고르기">
-          {TIPS.map((item, i) => (
-            <button
-              key={item.art}
-              role="tab"
-              aria-selected={i === index}
-              aria-label={`${i + 1}. ${item.title}`}
-              onClick={() => {
-                setPaused(true);
-                setIndex(i);
-              }}
-            />
-          ))}
-        </div>
-        <div className="sg-tips-actions">
-          <button
-            className="fw-secondary"
-            disabled={index === 0}
-            onClick={() => {
-              setPaused(true);
-              setIndex(index - 1);
-            }}
-          >
-            ← 이전
-          </button>
-          {last ? (
-            <button ref={start} className="fw-primary" onClick={onClose}>
-              이제 써 볼게요 ✎
-            </button>
-          ) : (
-            <button
-              ref={start}
-              className="fw-primary"
-              onClick={() => {
-                setPaused(true);
-                setIndex(index + 1);
-              }}
-            >
-              다음 팁 →
-            </button>
-          )}
-        </div>
-        <button className="sg-tips-skip" onClick={onClose}>
-          건너뛰고 바로 쓰기
-        </button>
-      </section>
-    </div>
+    <TipDeck
+      kicker="예쁜 폰트를 위한 쓰기 팁"
+      tips={TIPS.map((tip) => ({
+        id: tip.art,
+        title: tip.title,
+        body: tip.body,
+        art: <Art kind={tip.art} />,
+      }))}
+      doneLabel="이제 써 볼게요 ✎"
+      skipLabel="건너뛰고 바로 쓰기"
+      onClose={onClose}
+    />
   );
 }

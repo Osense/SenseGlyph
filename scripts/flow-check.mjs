@@ -150,9 +150,9 @@ check(
 );
 check(
   "처음 들어오면 사용법 애니메이션",
-  await page.locator(".sg-tutorial").isVisible(),
+  await page.locator(".sg-tips >> text=자모 나누기 안내").isVisible(),
 );
-await page.click("text=알겠어요");
+await page.click("text=건너뛰고 바로 시작");
 const fits = await page.evaluate(
   () =>
     document.querySelector(".sg-sep-main").getBoundingClientRect().bottom <=

@@ -163,7 +163,7 @@ export default function FontOutput({
 }) {
   const [korean, setKorean] = useState("");
   const [english, setEnglish] = useState("");
-  const [format, setFormat] = useState<ExportFormat>("zip");
+  const [format, setFormat] = useState<ExportFormat>("ttf");
   const [specimen, setSpecimen] = useState(SPECIMEN);
   const names = {
     korean: korean.trim().normalize("NFC"),

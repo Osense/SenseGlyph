@@ -237,9 +237,13 @@ const [first] = await Promise.all([
   page.click(".fw-download"),
 ]);
 check(
-  "코드 없이 바로 다운로드 (ZIP)",
+  "코드 없이 바로 다운로드 (기본 TTF)",
   (await size(first)) > 1000,
   first.suggestedFilename(),
+);
+check(
+  "기본 선택은 TTF",
+  /\.ttf 다운로드/.test(await page.locator(".fw-download").innerText()),
 );
 check(
   "다운로드 코드 창 없음",

@@ -2889,3 +2889,70 @@ button {
   font-weight: 400;
   color: var(--muted);
 }
+
+/* ---------- 내보내기: 형식 4칸 + 전체 묶음 ---------- */
+.fw-formats {
+  grid-template-columns: 1fr;
+}
+.fw-format-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.fw-format-all {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, calc(50% - 4px));
+  align-items: center;
+  gap: 8px;
+}
+.fw-format-all > span {
+  justify-self: end;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.fw-format-grid label,
+.fw-format-all label {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  cursor: pointer;
+}
+.fw-format-grid input,
+.fw-format-all input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.fw-format-grid label.is-selected,
+.fw-format-all label.is-selected {
+  border: 2px solid var(--accent);
+  background: var(--active-wash);
+}
+.fw-format-grid label:has(input:focus-visible),
+.fw-format-all label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.fw-format-grid strong,
+.fw-format-all strong {
+  font-size: 15px;
+}
+.fw-format-grid small,
+.fw-format-all small {
+  font-size: 12px;
+  color: var(--muted);
+  word-break: keep-all;
+}
+@media (max-width: 640px) {
+  .fw-format-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fw-format-all {
+    grid-template-columns: 1fr 1fr;
+  }
+}

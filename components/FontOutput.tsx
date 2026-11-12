@@ -45,11 +45,11 @@ const SPECIMEN = `"세상에 당신만의 모양으로 이야기를 건넬 수 �
 'Hello, world!' (2026) ~ #1 & 100%? @_@ [OK]
 여기에 직접 써 보세요.`;
 const FORMATS: { id: ExportFormat; label: string; note: string }[] = [
-  { id: "zip", label: "전체 묶음", note: "모든 형식 · 잘 모르겠다면" },
-  { id: "ttf", label: "TTF", note: "설치용 · 문서 프로그램" },
-  { id: "otf", label: "OTF", note: "설치용 · 디자인 프로그램" },
-  { id: "woff2", label: "WOFF2", note: "웹사이트용 · 설치 X" },
-  { id: "woff", label: "WOFF", note: "웹사이트용 · 예전 브라우저" },
+  { id: "zip", label: "전체 묶음 ZIP", note: "모든 형식" },
+  { id: "ttf", label: "TTF", note: "설치용 · 문서" },
+  { id: "otf", label: "OTF", note: "설치용 · 디자인" },
+  { id: "woff2", label: "WOFF2", note: "웹사이트용" },
+  { id: "woff", label: "WOFF", note: "웹 · 예전 브라우저" },
 ];
 
 /** 이 기기 브라우저가 해당 형식의 파일을 공유 창으로 보낼 수 있는지 */
@@ -356,21 +356,36 @@ export default function FontOutput({
               설치하세요. 둘 다 설치하면 같은 이름의 글꼴이 겹칠 수 있어요.
             </p>
           </details>
-          {FORMATS.map((item) => (
-            <label
-              key={item.id}
-              className={format === item.id ? "is-selected" : ""}
-            >
+          <div className="fw-format-grid">
+            {FORMATS.filter((item) => item.id !== "zip").map((item) => (
+              <label
+                key={item.id}
+                className={format === item.id ? "is-selected" : ""}
+              >
+                <input
+                  type="radio"
+                  name="format"
+                  checked={format === item.id}
+                  onChange={() => setFormat(item.id)}
+                />
+                <strong>{item.label}</strong>
+                <small>{item.note}</small>
+              </label>
+            ))}
+          </div>
+          <div className="fw-format-all">
+            <span>잘 모르겠다면 다 받기 →</span>
+            <label className={format === "zip" ? "is-selected" : ""}>
               <input
                 type="radio"
                 name="format"
-                checked={format === item.id}
-                onChange={() => setFormat(item.id)}
+                checked={format === "zip"}
+                onChange={() => setFormat("zip")}
               />
-              <strong>{item.label}</strong>
-              <small>{item.note}</small>
+              <strong>전체 묶음 ZIP</strong>
+              <small>TTF·OTF·WOFF2·WOFF 모두</small>
             </label>
-          ))}
+          </div>
           <p className="fw-android">
             ※ 안드로이드 휴대폰·태블릿에서는 폰트를 직접 설치할 수 없어요.
           </p>

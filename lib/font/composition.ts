@@ -5,7 +5,6 @@ import {
   correctionAmounts,
   hasCorrection,
   medianPressure,
-  NO_CORRECTION,
 } from "./beautify";
 import { decompose, slotKeys, vowelType } from "../hangul";
 import { activeSeparation, effectiveSample } from "./editing";
@@ -160,73 +159,101 @@ export function componentLibrary(project: FontProject, prep: FontPreparation) {
  * - applyCorrection이면 설정한 강도만큼 손글씨를 정돈합니다(lib/font/beautify.ts).
  *   정돈한 획은 직접 쓴 글자와 조합 글자에 똑같이 쓰이므로 둘의 모양이 어긋나지 않습니다.
  * - 원본 프로젝트는 바꾸지 않습니다. */
-export function prepareHandwriting(
-  project: FontProject,
-  prep: FontPreparation,
-  applyCorrection = false,
-) {
+export type Handwriting = ReturnType<typeof baseHandwriting>;
+
+function libraryFrom(pools: Map<string, ComponentSample[]>) {
   const library = new Map<string, ComponentSample>();
-  const pools = new Map<string, ComponentSample[]>();
-  const direct = new Map<string, Stroke[]>();
-  const amounts = applyCorrection
-    ? correctionAmounts(prep.settings)
-    : NO_CORRECTION;
-  const correcting = hasCorrection(amounts);
-  const chars = [
-    ...new Set([...HANGUL, ...Object.keys(project.samples).sort()]),
-  ];
-  const written = chars.flatMap((char) => {
-    const sample = project.samples[char];
-    return sample?.strokes.length && !RETIRED_SPECIAL_SYMBOLS.has(char)
-      ? [sample]
-      : [];
-  });
-  const pressureTarget = correcting
-    ? medianPressure(
-        written.flatMap(
-          (sample) =>
-            effectiveSample(sample, prep.separations[sample.char]).strokes,
-        ),
-      )
-    : NaN;
-  for (const sample of written) {
-    const char = sample.char;
-    const effective = effectiveSample(sample, prep.separations[char]).strokes;
-    const fitted = fitStrokesToSafety(effective, sample.category);
-    let parts = separateSample(
-      sample,
-      prep.separations[char],
-      project.settings,
-    );
-    let strokes = fitted;
-    if (correcting || fitted !== effective) {
-      const partOf = new Map<string, Part>();
-      for (const part of parts)
-        for (const stroke of part.strokes) partOf.set(stroke.id, part.part);
-      strokes = correcting
-        ? beautifyStrokes(fitted, {
-            amounts,
-            category: sample.category,
-            partOf,
-            boxes: referenceGuide(char, project.settings)?.boxes,
-            pressureTarget,
-          })
-        : fitted;
-      const byId = new Map(strokes.map((stroke) => [stroke.id, stroke]));
-      parts = parts.map((part) => ({
-        ...part,
-        strokes: part.strokes.map((stroke) => byId.get(stroke.id) ?? stroke),
-      }));
-    }
-    direct.set(char, strokes);
-    for (const part of parts)
-      pools.set(part.key, [...(pools.get(part.key) ?? []), part]);
-  }
   for (const [key, pool] of pools) {
     const confirmed = pool.filter((component) => component.confirmed);
     library.set(key, confirmed[0] ?? pool[0]);
   }
-  return { library, direct, pools };
+  return library;
+}
+
+/** 정돈 전 단계: 자모 분리 + 칸 밖 글자 맞춰 넣기. 설정 슬라이더와 무관하므로 한 번만 계산해 재사용합니다. */
+export function baseHandwriting(project: FontProject, prep: FontPreparation) {
+  const pools = new Map<string, ComponentSample[]>();
+  const direct = new Map<string, Stroke[]>();
+  const parts = new Map<string, ComponentSample[]>();
+  const chars = [
+    ...new Set([...HANGUL, ...Object.keys(project.samples).sort()]),
+  ];
+  for (const char of chars) {
+    const sample = project.samples[char];
+    if (!sample?.strokes.length || RETIRED_SPECIAL_SYMBOLS.has(char)) continue;
+    const effective = effectiveSample(sample, prep.separations[char]).strokes;
+    const fitted = fitStrokesToSafety(effective, sample.category);
+    let own = separateSample(sample, prep.separations[char], project.settings);
+    if (fitted !== effective) {
+      const byId = new Map(fitted.map((stroke) => [stroke.id, stroke]));
+      own = own.map((part) => ({
+        ...part,
+        strokes: part.strokes.map((stroke) => byId.get(stroke.id) ?? stroke),
+      }));
+    }
+    direct.set(char, fitted);
+    parts.set(char, own);
+    for (const part of own)
+      pools.set(part.key, [...(pools.get(part.key) ?? []), part]);
+  }
+  return { library: libraryFrom(pools), direct, pools, parts };
+}
+
+/** 정돈 단계: 이미 나눈 결과(base)에 정돈만 다시 적용합니다. 강도가 0이면 base를 그대로 돌려줍니다. */
+export function correctHandwriting(
+  base: Handwriting,
+  project: FontProject,
+  prep: FontPreparation,
+): Handwriting {
+  const amounts = correctionAmounts(prep.settings);
+  if (!hasCorrection(amounts)) return base;
+  const pressureTarget = medianPressure([...base.direct.values()].flat());
+  const direct = new Map<string, Stroke[]>();
+  const parts = new Map<string, ComponentSample[]>();
+  const pools = new Map<string, ComponentSample[]>();
+  for (const [char, fitted] of base.direct) {
+    const sample = project.samples[char];
+    const own = base.parts.get(char) ?? [];
+    const partOf = new Map<string, Part>();
+    for (const part of own)
+      for (const stroke of part.strokes) partOf.set(stroke.id, part.part);
+    const strokes = beautifyStrokes(fitted, {
+      amounts,
+      category: sample.category,
+      partOf,
+      boxes: referenceGuide(char, project.settings)?.boxes,
+      pressureTarget,
+    });
+    const byId = new Map(strokes.map((stroke) => [stroke.id, stroke]));
+    const corrected =
+      strokes === fitted
+        ? own
+        : own.map((part) => ({
+            ...part,
+            strokes: part.strokes.map(
+              (stroke) => byId.get(stroke.id) ?? stroke,
+            ),
+          }));
+    direct.set(char, strokes);
+    parts.set(char, corrected);
+    for (const part of corrected)
+      pools.set(part.key, [...(pools.get(part.key) ?? []), part]);
+  }
+  return { library: libraryFrom(pools), direct, pools, parts };
+}
+
+/** 쓴 글자 → 출력용 획과 자모 표본.
+ * - 칸 밖으로 나간 글자는 비율을 유지한 채 안전영역 안으로 줄여 넣습니다.
+ * - applyCorrection이면 설정한 강도만큼 손글씨를 정돈합니다(lib/font/beautify.ts).
+ *   정돈한 획은 직접 쓴 글자와 조합 글자에 똑같이 쓰이므로 둘의 모양이 어긋나지 않습니다.
+ * - 원본 프로젝트는 바꾸지 않습니다. */
+export function prepareHandwriting(
+  project: FontProject,
+  prep: FontPreparation,
+  applyCorrection = false,
+): Handwriting {
+  const base = baseHandwriting(project, prep);
+  return applyCorrection ? correctHandwriting(base, project, prep) : base;
 }
 
 const ALL_SLOTS = [...new Set(HANGUL.flatMap(slotKeys))];

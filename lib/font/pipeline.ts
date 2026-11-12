@@ -2,7 +2,11 @@
 import { isPremiumCategory, RETIRED_SPECIAL_SYMBOLS } from "../../data/charset";
 import type { FontProject, Stroke } from "../types";
 import { correctionAmounts } from "./beautify";
-import { composeGlyph, prepareHandwriting } from "./composition";
+import {
+  composeGlyph,
+  prepareHandwriting,
+  type Handwriting,
+} from "./composition";
 import {
   createLayoutPlan,
   createStrokeRenderer,
@@ -11,7 +15,7 @@ import {
   type Contours,
   type LaidOutGlyph,
 } from "./layout";
-import type { FontPreparation } from "./types";
+import type { FontBuildSettings, FontPreparation } from "./types";
 
 export interface PipelineOptions {
   /** 손글씨 정돈을 적용할지(미리보기의 '보정 전'은 false) */
@@ -20,13 +24,14 @@ export interface PipelineOptions {
   includePremium?: boolean;
 }
 
-export function fontPipeline(
+/** 출력 배치 단계: 정돈까지 끝난 손글씨(handwriting)에 크기·간격·굵기를 적용합니다.
+ * 획 외곽선은 획 객체별로 캐시되므로, 간격·크기 슬라이더는 이 단계만 다시 계산하면 됩니다. */
+export function fontLayout(
   project: FontProject,
-  preparation: FontPreparation,
-  { correct = true, includePremium = true }: PipelineOptions = {},
+  handwriting: Handwriting,
+  settings: FontBuildSettings,
+  { includePremium = true, sizeEvening = 0 } = {},
 ) {
-  const settings = preparation.settings;
-  const handwriting = prepareHandwriting(project, preparation, correct);
   const direct = new Map<string, Stroke[]>();
   for (const sample of Object.values(project.samples)) {
     if (
@@ -41,11 +46,7 @@ export function fontPipeline(
   const references = new Map<string, Contours>(
     [...direct].map(([char, strokes]) => [char, strokeContours(strokes)]),
   );
-  const plan = createLayoutPlan(
-    references,
-    settings,
-    correct ? correctionAmounts(settings).size : 0,
-  );
+  const plan = createLayoutPlan(references, settings, sizeEvening);
   const render = createStrokeRenderer(settings);
   const strokesFor = (char: string) =>
     direct.get(char) ??
@@ -66,4 +67,16 @@ export function fontPipeline(
     };
   };
   return { handwriting, direct, plan, glyph, strokesFor };
+}
+
+export function fontPipeline(
+  project: FontProject,
+  preparation: FontPreparation,
+  { correct = true, includePremium = true }: PipelineOptions = {},
+) {
+  const handwriting = prepareHandwriting(project, preparation, correct);
+  return fontLayout(project, handwriting, preparation.settings, {
+    includePremium,
+    sizeEvening: correct ? correctionAmounts(preparation.settings).size : 0,
+  });
 }

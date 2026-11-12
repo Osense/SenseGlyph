@@ -215,8 +215,45 @@ export default function FontWorkshop({
     [],
   );
 
-  const settings = (changes: Partial<FontPreparation["settings"]>) =>
-    onChange({ ...prep, settings: { ...prep.settings, ...changes } });
+  // 슬라이더를 끄는 동안의 값은 화면에만 먼저 보이고, 손을 멈추거나 떼면 한 번에 반영합니다.
+  // 정돈 강도처럼 계산이 큰 값이 슬라이더 칸마다 다시 계산되며 화면이 멈추는 것을 막습니다.
+  const [draft, setDraft] = useState<Partial<
+    FontPreparation["settings"]
+  > | null>(null);
+  const draftRef = useRef<Partial<FontPreparation["settings"]> | null>(null);
+  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestPrep = useRef(prep);
+  latestPrep.current = prep;
+  const settings = (changes: Partial<FontPreparation["settings"]>) => {
+    if (draftTimer.current) clearTimeout(draftTimer.current);
+    const pending = draftRef.current;
+    draftRef.current = null;
+    setDraft(null);
+    const current = latestPrep.current;
+    onChange({
+      ...current,
+      settings: { ...current.settings, ...pending, ...changes },
+    });
+  };
+  const flushDraft = () => {
+    if (draftRef.current) settings({});
+  };
+  const stageSetting = (
+    changes: Partial<FontPreparation["settings"]>,
+    delay = 220,
+  ) => {
+    draftRef.current = { ...draftRef.current, ...changes };
+    setDraft(draftRef.current);
+    if (draftTimer.current) clearTimeout(draftTimer.current);
+    draftTimer.current = setTimeout(flushDraft, delay);
+  };
+  useEffect(
+    () => () => {
+      if (draftTimer.current) clearTimeout(draftTimer.current);
+    },
+    [],
+  );
+  const view = draft ? { ...prep.settings, ...draft } : prep.settings;
   const build = () => {
     if (isCurrent || worker.current || !report.direct) return;
     resetResult();
@@ -404,9 +441,9 @@ export default function FontWorkshop({
     }
   };
   const syllables = report.available.filter((ch) => decompose(ch)).length;
-  const detail = correctionDetail(prep.settings);
-  const strength = prep.settings.correction ?? (detail.layout || 0);
-  const customDetail = !!prep.settings.correctionDetail;
+  const detail = correctionDetail(view);
+  const strength = view.correction ?? (detail.layout || 0);
+  const customDetail = !!view.correctionDetail;
 
   const missingSlots =
     report.missingSlots.length > 0 ? (
@@ -579,6 +616,9 @@ export default function FontWorkshop({
         step={step}
         value={value}
         onChange={(event) => onInput(+event.target.value)}
+        onPointerUp={flushDraft}
+        onKeyUp={flushDraft}
+        onBlur={flushDraft}
       />
       {note && <small>{note}</small>}
     </label>
@@ -674,7 +714,7 @@ export default function FontWorkshop({
                     0,
                     100,
                     (value) =>
-                      settings({
+                      stageSetting({
                         correction: value,
                         correctionDetail: undefined,
                         alignToReference: undefined,
@@ -696,7 +736,7 @@ export default function FontWorkshop({
                         0,
                         100,
                         (value) =>
-                          settings({
+                          stageSetting({
                             correctionDetail: { ...detail, [key]: value },
                             alignToReference: undefined,
                             averageStrokes: undefined,
@@ -726,31 +766,31 @@ export default function FontWorkshop({
                   <h3 id="fw-size">크기와 간격</h3>
                   {slider(
                     "글자 크기",
-                    bodySize(prep.settings),
+                    bodySize(view),
                     LIMITS.bodyMin,
                     LIMITS.bodyMax,
-                    (value) => settings({ bodySize: value }),
-                    bodySize(prep.settings) / 10 + "%",
+                    (value) => stageSetting({ bodySize: value }, 90),
+                    bodySize(view) / 10 + "%",
                     undefined,
                     10,
                   )}
                   {slider(
                     "글자 사이 간격",
-                    prep.settings.letterSpacing,
+                    view.letterSpacing,
                     LIMITS.spacingMin,
                     LIMITS.spacingMax,
-                    (value) => settings({ letterSpacing: value }),
-                    String(prep.settings.letterSpacing),
+                    (value) => stageSetting({ letterSpacing: value }, 90),
+                    String(view.letterSpacing),
                     "음수로 줄이면 획이 겹칠 수 있어요.",
                     10,
                   )}
                   {slider(
                     "기준선 높이",
-                    prep.settings.baseline,
+                    view.baseline,
                     650,
                     900,
-                    (value) => settings({ baseline: value }),
-                    String(prep.settings.baseline),
+                    (value) => stageSetting({ baseline: value }, 90),
+                    String(view.baseline),
                     "글자가 줄 위에 놓이는 높이예요.",
                     5,
                   )}
@@ -759,11 +799,11 @@ export default function FontWorkshop({
                   <h3 id="fw-stroke">획</h3>
                   {slider(
                     "획 굵기",
-                    prep.settings.strokeWeight ?? 100,
+                    view.strokeWeight ?? 100,
                     LIMITS.weightMin,
                     LIMITS.weightMax,
-                    (value) => settings({ strokeWeight: value }),
-                    (prep.settings.strokeWeight ?? 100) + "%",
+                    (value) => stageSetting({ strokeWeight: value }, 90),
+                    (view.strokeWeight ?? 100) + "%",
                     undefined,
                     5,
                   )}
@@ -815,7 +855,11 @@ export default function FontWorkshop({
                   </button>
                 </section>
               </div>
-              <MetricPreview project={project} preparation={prep} />
+              <MetricPreview
+                project={project}
+                preparation={prep}
+                pending={!!draft}
+              />
             </div>
             {missingSlots}
             <details className="fw-more">

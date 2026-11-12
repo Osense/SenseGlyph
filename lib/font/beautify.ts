@@ -129,13 +129,20 @@ function smoothPoints(points: StrokePoint[], amount: number, size: number) {
     let sx = 0,
       sy = 0,
       sw = 0;
-    for (let j = 0; j < points.length; j++) {
-      const d = lengths[j] - lengths[i];
-      if (Math.abs(d) > sigma * 3) continue;
-      const w = Math.exp(-(d * d) / (2 * sigma * sigma));
-      sx += points[j].x * w;
-      sy += points[j].y * w;
-      sw += w;
+    // 호 길이는 단조 증가하므로 3σ 창 안쪽만 양방향으로 훑습니다.
+    for (const step of [-1, 1]) {
+      for (
+        let j = step < 0 ? i : i + 1;
+        j >= 0 && j < points.length;
+        j += step
+      ) {
+        const d = lengths[j] - lengths[i];
+        if (Math.abs(d) > sigma * 3) break;
+        const w = Math.exp(-(d * d) / (2 * sigma * sigma));
+        sx += points[j].x * w;
+        sy += points[j].y * w;
+        sw += w;
+      }
     }
     return { ...p, x: mix(p.x, sx / sw, blend), y: mix(p.y, sy / sw, blend) };
   });

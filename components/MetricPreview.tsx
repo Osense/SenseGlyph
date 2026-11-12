@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { hasCorrection, correctionAmounts } from "../lib/font/beautify";
+import { baseHandwriting, correctHandwriting } from "../lib/font/composition";
 import { mergeInk } from "../lib/font/layout";
-import { fontPipeline } from "../lib/font/pipeline";
+import { fontLayout } from "../lib/font/pipeline";
 import { loadReferenceFont, referenceStack } from "../lib/reference-fonts";
 import type { FontProject } from "../lib/types";
 import type { FontPreparation } from "../lib/font/types";
@@ -25,27 +26,65 @@ type Glyph = {
 export default function MetricPreview({
   project,
   preparation,
+  pending = false,
 }: {
   project: FontProject;
   preparation: FontPreparation;
+  /** 슬라이더를 움직이는 중이라 아직 반영 전인 값이 있을 때 */
+  pending?: boolean;
 }) {
   const [text, setText] = useState(PREVIEW_SENTENCE);
   const [ready, setReady] = useState(0);
   const before = useRef<HTMLCanvasElement>(null),
     after = useRef<HTMLCanvasElement>(null);
   const { settings } = preparation;
-  const correcting = hasCorrection(correctionAmounts(settings));
+  const amounts = correctionAmounts(settings);
+  const amountsKey = JSON.stringify(amounts);
+  // 1단계(비쌈): 자모 분리 — 글씨나 자모 배정이 바뀔 때만 다시 계산합니다.
+  const base = useMemo(
+    () => baseHandwriting(project, preparation),
+    [project.samples, preparation.separations, project.settings.referenceFont],
+  );
+  // 2단계(중간): 정돈 — 정돈 강도가 바뀔 때만, 화면을 먼저 그린 뒤 계산합니다.
+  const [corrected, setCorrected] = useState(base);
+  const [correcting, setCorrecting] = useState(false);
+  const latest = useRef({ project, preparation });
+  latest.current = { project, preparation };
+  useEffect(() => {
+    if (!hasCorrection(amounts)) {
+      setCorrected(base);
+      setCorrecting(false);
+      return;
+    }
+    setCorrecting(true);
+    const timer = setTimeout(() => {
+      const { project: p, preparation: prep } = latest.current;
+      setCorrected(correctHandwriting(base, p, prep));
+      setCorrecting(false);
+    }, 40);
+    return () => clearTimeout(timer);
+  }, [base, amountsKey]);
+  // 3단계(가벼움): 크기·간격·굵기·기준선 — 슬라이더마다 바로 반영합니다.
+  const layoutKey = [
+    settings.bodySize,
+    settings.letterSpacing,
+    settings.strokeWeight,
+    settings.strokeFinish,
+  ].join(":");
   const original = useMemo(
-    () => fontPipeline(project, preparation, { correct: false }),
-    [project.samples, preparation, project.settings.referenceFont],
+    () => fontLayout(project, base, settings),
+    [base, layoutKey],
   );
-  const corrected = useMemo(
+  const shown = useMemo(
     () =>
-      correcting
-        ? fontPipeline(project, preparation, { correct: true })
-        : original,
-    [original, correcting, project.samples, preparation],
+      corrected === base
+        ? original
+        : fontLayout(project, corrected, settings, {
+            sizeEvening: amounts.size,
+          }),
+    [corrected, original, layoutKey, amounts.size],
   );
+  const busy = pending || correcting;
   useEffect(() => {
     let alive = true;
     loadReferenceFont(project.settings.referenceFont, text).then(() => {
@@ -74,7 +113,7 @@ export default function MetricPreview({
           ? { char, advance: glyph.advanceWidth, ink: mergeInk(glyph.contours) }
           : { char, advance: blank };
       });
-    const rows = [layout(original), layout(corrected)];
+    const rows = [layout(original), layout(shown)];
     const widest = Math.max(
       ...rows.map((row) => row.reduce((sum, g) => sum + g.advance, 0)),
     );
@@ -122,7 +161,7 @@ export default function MetricPreview({
         x += glyph.advance * scale;
       }
     });
-  }, [text, ready, original, corrected, settings.baseline]);
+  }, [text, ready, original, shown, settings.baseline]);
 
   return (
     <section className="fw-preview" aria-label="실시간 미리보기">
@@ -144,17 +183,31 @@ export default function MetricPreview({
           aria-label="쓴 그대로의 손글씨 미리보기"
         />
       </figure>
-      <figure className={correcting ? "is-corrected" : ""}>
+      <figure
+        className={
+          (hasCorrection(amounts) ? "is-corrected" : "") +
+          (busy ? " is-busy" : "")
+        }
+        aria-busy={busy}
+      >
         <figcaption>
-          {correcting ? "정돈 후 · 폰트에 들어갈 모습" : "폰트에 들어갈 모습"}
+          {hasCorrection(amounts)
+            ? "정돈 후 · 폰트에 들어갈 모습"
+            : "폰트에 들어갈 모습"}
+          {busy && (
+            <span className="fw-preview-busy" role="status">
+              <i aria-hidden="true" />
+              {correcting ? "정돈 결과 계산 중…" : "반영 중…"}
+            </span>
+          )}
         </figcaption>
         <canvas
           ref={after}
           width={WIDTH}
           height={HEIGHT}
           aria-label="폰트에 들어갈 손글씨 미리보기"
-          data-hangul-scale={corrected.plan.hangulScale}
-          data-body-size={corrected.plan.bodySize}
+          data-hangul-scale={shown.plan.hangulScale}
+          data-body-size={shown.plan.bodySize}
         />
       </figure>
       {missing.length > 0 && (

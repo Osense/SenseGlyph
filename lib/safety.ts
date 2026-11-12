@@ -26,11 +26,25 @@ export function categoryForChar(char: string): CharCategory {
   if (/^[0-9]$/.test(char)) return "digit";
   return /^[\x21-\x7e]$/.test(char) ? "ascii-symbol" : "korean-punct";
 }
+// 외곽선 계산이 비싸므로 획 객체별로 결과를 기억합니다(획은 바뀔 때 새 객체가 됩니다).
+const safeCache = new WeakMap<Stroke, Map<object, boolean>>();
 export function strokeIsSafe(
   stroke: Stroke,
   category: CharCategory = "hangul-syllable",
 ): boolean {
   const box = safetyBounds(category);
+  let known = safeCache.get(stroke);
+  if (!known) safeCache.set(stroke, (known = new Map()));
+  const cached = known.get(box);
+  if (cached !== undefined) return cached;
+  const safe = measureSafe(stroke, box);
+  known.set(box, safe);
+  return safe;
+}
+function measureSafe(
+  stroke: Stroke,
+  box: { left: number; top: number; right: number; bottom: number },
+) {
   return (
     stroke.points.length > 0 &&
     stroke.points.every(

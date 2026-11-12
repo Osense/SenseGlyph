@@ -1395,3 +1395,65 @@ main.studio.journey h1[tabindex="-1"]:focus {
   font-size: 12px;
   color: var(--muted);
 }
+
+/* 미리보기 계산 중 표시: 멈춘 것이 아니라 계산 중임을 알 수 있게 */
+.fw-preview figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.fw-preview-busy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.fw-preview-busy i {
+  position: relative;
+  width: 56px;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--active-wash);
+  overflow: hidden;
+}
+.fw-preview-busy i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  border-radius: inherit;
+  background: var(--accent);
+  animation: fw-busy 0.9s ease-in-out infinite;
+}
+@keyframes fw-busy {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+.fw-preview figure.is-busy canvas {
+  opacity: 0.55;
+  transition: opacity 0.15s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fw-preview-busy i::after {
+    animation: none;
+    width: 100%;
+    opacity: 0.6;
+  }
+}
+.fw-specimen-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.fw-specimen {
+  min-height: 240px;
+  font-size: clamp(22px, 2.6vw, 32px);
+  line-height: 1.5;
+}

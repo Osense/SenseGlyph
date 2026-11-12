@@ -48,7 +48,9 @@ export function FontDialog({
 
 export type OutputPlan = "basic" | "premium";
 
-const SPECIMEN = "다람쥐 헌 쳇바퀴에 타고파. Hello, world! 0123456789";
+const SPECIMEN = `"세상에 당신만의 모양으로 이야기를 건넬 수 있게 되었어요!"
+'Hello, world!' (2026) ~ #1 & 100%? @_@ [OK]
+여기에 직접 써 보세요.`;
 const FORMATS: { id: ExportFormat; label: string; note: string }[] = [
   { id: "zip", label: "전체 묶음", note: "ZIP · 모든 형식" },
   { id: "otf", label: "OTF", note: "컴퓨터 설치용" },
@@ -151,7 +153,7 @@ export default function FontOutput({
     <section className="fw-export" aria-label="폰트 내보내기">
       <div className="fw-specimen-card">
         <div className="fw-card-head">
-          <h3>완성된 폰트로 써 보기</h3>
+          <h3>내 손글씨 폰트로 써 보기</h3>
           {status === "ready" && (
             <span className="fw-badge is-ok">최신 설정으로 만든 폰트</span>
           )}
@@ -178,9 +180,13 @@ export default function FontOutput({
               aria-label="완성된 폰트 시험 문장"
               style={{ fontFamily: `"${family}"` }}
               value={specimen}
-              rows={3}
+              rows={4}
+              placeholder="여기에 직접 써 보세요."
               onChange={(event) => setSpecimen(event.target.value)}
             />
+            <p className="fw-specimen-hint">
+              위 문장을 지우고 하고 싶은 말을 직접 써 보세요.
+            </p>
             {(() => {
               const missing = [...new Set(specimen)].filter(
                 (char) => !/\s/.test(char) && !available.has(char),

@@ -2956,3 +2956,31 @@ button {
     grid-template-columns: 1fr 1fr;
   }
 }
+.fw-recommend {
+  position: absolute;
+  top: -9px;
+  right: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  font-style: normal;
+  box-shadow: 0 2px 6px #b4472f40;
+  animation: fw-recommend 2.4s ease-in-out infinite;
+}
+@keyframes fw-recommend {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fw-recommend {
+    animation: none;
+  }
+}

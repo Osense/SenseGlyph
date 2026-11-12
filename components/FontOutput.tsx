@@ -370,6 +370,11 @@ export default function FontOutput({
                 />
                 <strong>{item.label}</strong>
                 <small>{item.note}</small>
+                {item.id === "ttf" && (
+                  <em className="fw-recommend" aria-label="추천">
+                    추천!
+                  </em>
+                )}
               </label>
             ))}
           </div>

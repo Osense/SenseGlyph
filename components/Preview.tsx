@@ -77,20 +77,28 @@ export function BrushPreview({ brush }: { brush: BrushId }) {
 export function Thumbnail({
   strokes,
   tone = "normal",
+  colorOf,
+  size = 80,
 }: {
   strokes: Stroke[];
   tone?: "normal" | "error";
+  /** 획마다 다른 색(예: 초·중·종성)으로 칠할 때 */
+  colorOf?: (stroke: Stroke) => string;
+  size?: number;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const ctx = ref.current?.getContext("2d");
     if (!ctx) return;
-    ctx.clearRect(0, 0, 80, 80);
+    ctx.clearRect(0, 0, size, size);
     ctx.save();
-    ctx.scale(0.08, 0.08);
-    ctx.fillStyle = tone === "error" ? "#bd4b43" : "#456957";
-    for (const s of strokes) paintStroke(ctx, s);
+    ctx.scale(size / 1000, size / 1000);
+    for (const s of strokes) {
+      ctx.fillStyle =
+        colorOf?.(s) ?? (tone === "error" ? "#bd4b43" : "#456957");
+      paintStroke(ctx, s);
+    }
     ctx.restore();
-  }, [strokes, tone]);
-  return <canvas ref={ref} width={80} height={80} aria-hidden="true" />;
+  }, [strokes, tone, colorOf, size]);
+  return <canvas ref={ref} width={size} height={size} aria-hidden="true" />;
 }

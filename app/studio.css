@@ -2859,3 +2859,33 @@ button {
     display: none;
   }
 }
+
+/* ---------- 원본 손글씨 찾기: 초·중·종성 색 ---------- */
+.handwriting-result > button canvas {
+  width: 96px;
+  height: 96px;
+  border-radius: 8px;
+  background: var(--paper);
+}
+.handwriting-jamo {
+  display: flex;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.handwriting-jamo em {
+  font-style: normal;
+}
+.handwriting-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: 4px 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.handwriting-legend small {
+  font-weight: 400;
+  color: var(--muted);
+}

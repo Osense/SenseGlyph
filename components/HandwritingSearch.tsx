@@ -2,7 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { HANGUL } from "../data/charset";
-import { componentLibrary, PART_LABELS } from "../lib/font/composition";
+import {
+  assignStroke,
+  componentLibrary,
+  PART_COLORS,
+  PART_LABELS,
+} from "../lib/font/composition";
+import { activeSeparation, effectiveStrokes } from "../lib/font/editing";
 import type { FontPreparation, Part } from "../lib/font/types";
 import { decompose, JAMO, jamoFilterIndex } from "../lib/hangul";
 import type { FontProject } from "../lib/types";
@@ -102,6 +108,16 @@ export default function HandwritingSearch({
                 ? "모든 조건이 일치하는 원본은 없어요. 자모별로 일치하는 원본을 보여드려요."
                 : "조건에 맞는 손글씨가 없습니다."}
       </p>
+      {results.length > 0 && (
+        <p className="handwriting-legend" aria-label="색 구분">
+          {parts.map((part) => (
+            <span key={part} style={{ color: PART_COLORS[part] }}>
+              ● {PART_LABELS[part]}
+            </span>
+          ))}
+          <small>찾은 자모는 진하게, 나머지는 연하게 보여요.</small>
+        </p>
+      )}
       <div className="handwriting-results">
         {results.map(({ char, jamo, matched }) => {
           const open = selected === char;
@@ -112,13 +128,31 @@ export default function HandwritingSearch({
                 aria-expanded={open}
                 onClick={() => setSelected(open ? "" : char)}
               >
-                <Thumbnail strokes={project.samples[char].strokes} />
+                <PartThumbnail
+                  project={project}
+                  preparation={preparation}
+                  char={char}
+                  focus={
+                    new Set(
+                      (exact.length ? filters : matched)
+                        .filter(({ value }) => value !== null)
+                        .map(({ part }) => part),
+                    )
+                  }
+                />
                 <strong>{char}</strong>
-                <span>
+                <span className="handwriting-jamo">
                   {parts
-                    .map((part) => JAMO[part][jamo[part]].trim())
-                    .filter(Boolean)
-                    .join(" · ")}
+                    .filter((part) => JAMO[part][jamo[part]].trim())
+                    .map((part) => (
+                      <em
+                        key={part}
+                        style={{ color: PART_COLORS[part] }}
+                        title={PART_LABELS[part]}
+                      >
+                        {JAMO[part][jamo[part]].trim()}
+                      </em>
+                    ))}
                 </span>
                 {!exact.length && (
                   <small>
@@ -158,4 +192,37 @@ export default function HandwritingSearch({
       </div>
     </section>
   );
+}
+
+/** 쓴 글자를 초성·중성·종성 색으로 칠한 미리보기. 찾은 자모(focus)는 진하게, 나머지는 연하게. */
+function PartThumbnail({
+  project,
+  preparation,
+  char,
+  focus,
+}: {
+  project: FontProject;
+  preparation: FontPreparation;
+  char: string;
+  focus: Set<Part>;
+}) {
+  const sample = project.samples[char];
+  const separation = preparation.separations[char];
+  const strokes = effectiveStrokes(sample, separation);
+  const active = activeSeparation(sample, separation);
+  const key = [...focus].sort().join(",");
+  const colorOf = useMemo(() => {
+    const colors = new Map(
+      strokes.map((stroke) => {
+        const part = assignStroke(char, stroke, active, project.settings);
+        const color = PART_COLORS[part];
+        return [
+          stroke.id,
+          focus.size && !focus.has(part) ? color + "55" : color,
+        ];
+      }),
+    );
+    return (stroke: { id: string }) => colors.get(stroke.id) ?? "#456957";
+  }, [strokes, active, project.settings, key]);
+  return <Thumbnail strokes={strokes} colorOf={colorOf} size={120} />;
 }

@@ -1,5 +1,5 @@
 // 새 작업 흐름 브라우저 점검: 태블릿 가로·세로 쓰기 칸 크기, 실제 마우스 필기,
-// 점선 밖 획 보존, 자모 나누기·다듬기 화면, 폰트 생성, 다운로드 코드.
+// 점선 밖 획 보존, 자모 나누기·다듬기 화면, 폰트 생성, 다운로드·공유.
 // 사용: npm run build && npm start (다른 터미널) → npm run test:flow
 import { chromium } from "playwright";
 import { mkdirSync, statSync, writeFileSync } from "node:fs";
@@ -230,32 +230,27 @@ check("견본 글꼴 대체 경고", await page.locator(".fw-fallback").isVisibl
 check("출력 구성 구분 없음", !(await page.locator("text=프리미엄").count()));
 await page.fill('[aria-label="한글 폰트 이름"]', "시험글씨");
 await page.fill('[aria-label="영문 폰트 이름"]', "TestHand");
-await page.click(".fw-download");
-await page.fill('[aria-label="다운로드 코드"]', "아무거나");
-await page.click("text=확인하고 내려받기");
-check("틀린 코드 거절", await page.locator(".fw-code .fw-error").isVisible());
-await page.fill('[aria-label="다운로드 코드"]', " osns ");
-const [first] = await Promise.all([
-  page.waitForEvent("download", { timeout: 180000 }),
-  page.click("text=확인하고 내려받기"),
-]);
 // Headless Chromium reports "download" for non-ASCII names; check the bytes instead.
 const size = async (download) => statSync(await download.path()).size;
+const [first] = await Promise.all([
+  page.waitForEvent("download", { timeout: 180000 }),
+  page.click(".fw-download"),
+]);
 check(
-  "코드 확인 후 다운로드",
+  "코드 없이 바로 다운로드 (ZIP)",
   (await size(first)) > 1000,
   first.suggestedFilename(),
+);
+check(
+  "다운로드 코드 창 없음",
+  !(await page.locator("text=다운로드 코드").count()),
 );
 await page.click('.fw-formats label:has-text("OTF")');
 const [second] = await Promise.all([
   page.waitForEvent("download", { timeout: 180000 }),
   page.click(".fw-download"),
 ]);
-check(
-  "같은 탭에서는 코드를 다시 묻지 않음",
-  (await size(second)) > 1000,
-  second.suggestedFilename(),
-);
+check("OTF 다운로드", (await size(second)) > 1000, second.suggestedFilename());
 check(
   "안드로이드 설치 불가 안내",
   await page

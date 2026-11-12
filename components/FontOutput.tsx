@@ -8,11 +8,6 @@ import {
   OUTPUT_PREFIX,
   type OutputNames,
 } from "../lib/font/output-names";
-import {
-  isDownloadCode,
-  rememberDownloadCode,
-  rememberedDownloadCode,
-} from "../lib/download-codes";
 
 export function FontDialog({
   title,
@@ -170,9 +165,6 @@ export default function FontOutput({
   const [english, setEnglish] = useState("");
   const [format, setFormat] = useState<ExportFormat>("zip");
   const [specimen, setSpecimen] = useState(SPECIMEN);
-  const [asking, setAsking] = useState(false);
-  const [code, setCode] = useState("");
-  const [codeError, setCodeError] = useState("");
   const names = {
     korean: korean.trim().normalize("NFC"),
     english: english.trim(),
@@ -202,12 +194,7 @@ export default function FontOutput({
       return;
     }
     setMode(next);
-    if (rememberedDownloadCode()) onDownload(format, names, next);
-    else {
-      setCode("");
-      setCodeError("");
-      setAsking(true);
-    }
+    onDownload(format, names, next);
   };
   const share = async () => {
     if (!shareFile) return;
@@ -224,15 +211,6 @@ export default function FontOutput({
         "공유 창을 열지 못했어요. 다운로드한 뒤 메신저에서 파일을 첨부해 주세요.",
       );
     }
-  };
-  const submitCode = () => {
-    if (!isDownloadCode(code)) {
-      setCodeError("코드를 다시 확인해 주세요.");
-      return;
-    }
-    rememberDownloadCode();
-    setAsking(false);
-    onDownload(format, names, mode);
   };
 
   return (
@@ -565,57 +543,6 @@ export default function FontOutput({
               확인하고 고치기
             </button>
           </div>
-        </FontDialog>
-      )}
-      {asking && (
-        <FontDialog title="다운로드 코드" onClose={() => setAsking(false)}>
-          <form
-            className="fw-code"
-            onSubmit={(event) => {
-              event.preventDefault();
-              submitCode();
-            }}
-          >
-            <p>받은 다운로드 코드를 입력하면 바로 내려받아요.</p>
-            {fallback.total > 0 && (
-              <p className="fw-fallback-inline">
-                ⚠ 쓰지 않은 {fallback.total.toLocaleString()}자는 견본 글꼴(‘
-                {fallback.fontName}’)로 대체됩니다.
-              </p>
-            )}
-            <input
-              autoFocus
-              autoComplete="off"
-              aria-label="다운로드 코드"
-              value={code}
-              aria-invalid={!!codeError || undefined}
-              onChange={(event) => {
-                setCode(event.target.value);
-                setCodeError("");
-              }}
-            />
-            {codeError && (
-              <p className="fw-error" role="alert">
-                {codeError}
-              </p>
-            )}
-            <div className="font-dialog-actions">
-              <button
-                type="button"
-                className="fw-secondary"
-                onClick={() => setAsking(false)}
-              >
-                취소
-              </button>
-              <button
-                type="submit"
-                className="fw-primary"
-                disabled={!code.trim()}
-              >
-                확인하고 내려받기
-              </button>
-            </div>
-          </form>
         </FontDialog>
       )}
     </section>

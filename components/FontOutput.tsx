@@ -57,6 +57,22 @@ const FORMATS: { id: ExportFormat; label: string; note: string }[] = [
   { id: "woff", label: "WOFF", note: "웹사이트용 · 예전 브라우저" },
 ];
 
+/** 이 기기 브라우저가 해당 형식의 파일을 공유 창으로 보낼 수 있는지 */
+function canShareFormat(format: ExportFormat) {
+  try {
+    const type = format === "zip" ? "application/zip" : "font/" + format;
+    return (
+      typeof navigator !== "undefined" &&
+      typeof navigator.canShare === "function" &&
+      navigator.canShare({
+        files: [new File([new Uint8Array(4)], "font." + format, { type })],
+      })
+    );
+  } catch {
+    return false;
+  }
+}
+
 /** 내려받을 수 없는 이유를 사람이 바로 고칠 수 있는 말로 */
 function blockers(
   status: string,
@@ -124,6 +140,8 @@ export default function FontOutput({
   exporting,
   exportError,
   onDownload,
+  shareFile,
+  onShareDone,
   fallback,
   onWriteMissing,
 }: {
@@ -136,7 +154,14 @@ export default function FontOutput({
   onBuild: () => void;
   exporting: ExportFormat | null;
   exportError: string;
-  onDownload: (format: ExportFormat, names: OutputNames) => void;
+  onDownload: (
+    format: ExportFormat,
+    names: OutputNames,
+    mode?: "download" | "share",
+  ) => void;
+  /** 공유할 준비가 된 파일(변환 완료 후) */
+  shareFile?: File | null;
+  onShareDone?: () => void;
   /** 쓰지 않아서 견본 글꼴로 채울 글자 */
   fallback: { total: number; groups: string[]; fontName: string };
   onWriteMissing?: () => void;
@@ -163,16 +188,41 @@ export default function FontOutput({
     exporting === null;
   const reasons = blockers(status, korean.trim(), english.trim(), !!exporting);
   const [blocked, setBlocked] = useState(false);
-  const start = () => {
+  const [mode, setMode] = useState<"download" | "share">("download");
+  const [shareUnsupported, setShareUnsupported] = useState(false);
+  const [shareError, setShareError] = useState("");
+  const start = (next: "download" | "share" = "download") => {
     if (!canDownload) {
       setBlocked(true);
       return;
     }
-    if (rememberedDownloadCode()) onDownload(format, names);
+    // 안드로이드 크롬 등은 글꼴·압축 파일 공유를 막아 둡니다. 미리 확인하고 안내합니다.
+    if (next === "share" && !canShareFormat(format)) {
+      setShareUnsupported(true);
+      return;
+    }
+    setMode(next);
+    if (rememberedDownloadCode()) onDownload(format, names, next);
     else {
       setCode("");
       setCodeError("");
       setAsking(true);
+    }
+  };
+  const share = async () => {
+    if (!shareFile) return;
+    try {
+      await navigator.share({
+        files: [shareFile],
+        title: shareFile.name,
+        text: "내 손글씨로 만든 폰트예요.",
+      });
+      onShareDone?.();
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setShareError(
+        "공유 창을 열지 못했어요. 다운로드한 뒤 메신저에서 파일을 첨부해 주세요.",
+      );
     }
   };
   const submitCode = () => {
@@ -182,7 +232,7 @@ export default function FontOutput({
     }
     rememberDownloadCode();
     setAsking(false);
-    onDownload(format, names);
+    onDownload(format, names, mode);
   };
 
   return (
@@ -253,7 +303,7 @@ export default function FontOutput({
         className="fw-export-form"
         onSubmit={(event) => {
           event.preventDefault();
-          start();
+          start("download");
         }}
       >
         <div className="fw-names">
@@ -318,6 +368,9 @@ export default function FontOutput({
                 <b>웹사이트에 쓸 때 → WOFF2</b> 컴퓨터에 설치하는 파일이
                 아니에요. 웹페이지에 연결해서 쓰는 가벼운 형식이에요.
               </li>
+              <li>
+                <b>안드로이드 휴대폰·태블릿</b> 폰트를 직접 설치할 수 없어요.
+              </li>
             </ul>
             <p>
               TTF와 OTF는 글자 모양이 같고 곡선을 저장하는 방식만 달라요. 어느
@@ -340,6 +393,9 @@ export default function FontOutput({
               <small>{item.note}</small>
             </label>
           ))}
+          <p className="fw-android">
+            ※ 안드로이드 휴대폰·태블릿에서는 폰트를 직접 설치할 수 없어요.
+          </p>
         </fieldset>
 
         {fallback.total > 0 && (
@@ -361,17 +417,27 @@ export default function FontOutput({
             )}
           </div>
         )}
-        <button
-          className="fw-primary fw-download"
-          type="submit"
-          data-blocked={!canDownload || undefined}
-        >
-          {exporting
-            ? "파일 준비 중…"
-            : names.korean
-              ? `${OUTPUT_PREFIX}${names.korean}.${format} 다운로드 ↓`
-              : "다운로드 ↓"}
-        </button>
+        <div className="fw-download-row">
+          <button
+            className="fw-primary fw-download"
+            type="submit"
+            data-blocked={!canDownload || undefined}
+          >
+            {exporting && mode === "download"
+              ? "파일 준비 중…"
+              : names.korean
+                ? `${OUTPUT_PREFIX}${names.korean}.${format} 다운로드 ↓`
+                : "다운로드 ↓"}
+          </button>
+          <button
+            type="button"
+            className="fw-secondary fw-share"
+            data-blocked={!canDownload || undefined}
+            onClick={() => start("share")}
+          >
+            {exporting && mode === "share" ? "준비 중…" : "공유하기 ↗"}
+          </button>
+        </div>
         {status !== "ready" ? (
           <p className="fw-note">폰트를 만든 뒤에 내려받을 수 있어요.</p>
         ) : (
@@ -388,6 +454,81 @@ export default function FontOutput({
         )}
       </form>
 
+      {shareFile && (
+        <FontDialog title="보낼 준비가 됐어요" onClose={onShareDone}>
+          <p className="output-filename">{shareFile.name}</p>
+          <p>
+            아래 버튼을 누르면 카카오톡, 네이버 웍스, 메일 등 이 기기의 앱으로
+            바로 보낼 수 있어요.
+          </p>
+          {shareError && (
+            <p className="fw-error" role="alert">
+              {shareError}
+            </p>
+          )}
+          <div className="font-dialog-actions">
+            <button
+              type="button"
+              className="fw-secondary"
+              onClick={() => {
+                setShareError("");
+                onShareDone?.();
+              }}
+            >
+              닫기
+            </button>
+            <button
+              type="button"
+              className="fw-primary"
+              autoFocus
+              onClick={share}
+            >
+              공유하기 ↗
+            </button>
+          </div>
+        </FontDialog>
+      )}
+      {shareUnsupported && (
+        <FontDialog
+          title="이 기기에서는 폰트 파일을 바로 공유할 수 없어요"
+          onClose={() => setShareUnsupported(false)}
+        >
+          <p>
+            안드로이드의 크롬·삼성 인터넷 같은 브라우저는 보안을 위해
+            사진·동영상·PDF 같은 파일만 공유 창으로 보낼 수 있게 막아 두었어요.
+            폰트(
+            {format.toUpperCase()}) 파일은 이렇게 보내 주세요.
+          </p>
+          <ol className="fw-steps">
+            <li>‘다운로드’로 파일을 기기에 저장해요.</li>
+            <li>카카오톡·네이버 웍스 채팅방에서 ＋(첨부) → 파일을 눌러요.</li>
+            <li>
+              ‘다운로드’ 폴더에서 {OUTPUT_PREFIX.trim()} 폰트 파일을 골라
+              보내요.
+            </li>
+          </ol>
+          <div className="font-dialog-actions">
+            <button
+              type="button"
+              className="fw-secondary"
+              onClick={() => setShareUnsupported(false)}
+            >
+              닫기
+            </button>
+            <button
+              type="button"
+              className="fw-primary"
+              autoFocus
+              onClick={() => {
+                setShareUnsupported(false);
+                start("download");
+              }}
+            >
+              다운로드하기 ↓
+            </button>
+          </div>
+        </FontDialog>
+      )}
       {blocked && (
         <FontDialog
           title="⚠ 아직 내려받을 수 없어요"

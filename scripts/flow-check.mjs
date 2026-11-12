@@ -256,6 +256,46 @@ check(
   (await size(second)) > 1000,
   second.suggestedFilename(),
 );
+check(
+  "안드로이드 설치 불가 안내",
+  await page
+    .locator("text=안드로이드 휴대폰·태블릿에서는 폰트를 직접 설치할 수 없어요")
+    .isVisible(),
+);
+// 공유를 지원하지 않는 브라우저: 대신 보내는 방법을 안내
+await page.evaluate(() => {
+  Object.defineProperty(navigator, "canShare", {
+    value: () => false,
+    configurable: true,
+  });
+});
+await page.click(".fw-share");
+check(
+  "공유 미지원 기기 안내",
+  await page
+    .locator("text=이 기기에서는 폰트 파일을 바로 공유할 수 없어요")
+    .isVisible(),
+);
+await page.click('.font-flow-dialog button:has-text("닫기")');
+// 공유를 지원하는 브라우저: 변환 후 공유 창으로 파일 전달
+await page.evaluate(() => {
+  Object.defineProperty(navigator, "canShare", {
+    value: () => true,
+    configurable: true,
+  });
+  Object.defineProperty(navigator, "share", {
+    value: async (data) => {
+      window.__shared = data.files[0].name + ":" + data.files[0].size;
+    },
+    configurable: true,
+  });
+});
+await page.click(".fw-share");
+await page.waitForSelector("text=보낼 준비가 됐어요", { timeout: 120000 });
+await page.click('.font-flow-dialog button:has-text("공유하기")');
+await page.waitForTimeout(300);
+const shared = await page.evaluate(() => window.__shared ?? "");
+check("공유 창으로 폰트 파일 전달", /\.otf:\d{4,}/.test(shared), shared);
 await page.screenshot({ path: "artifacts/flow-export.png", fullPage: true });
 check("브라우저 오류 없음", !errors.length, errors.join(" | "));
 await browser.close();

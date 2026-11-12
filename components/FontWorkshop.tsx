@@ -406,11 +406,21 @@ export default function FontWorkshop({
       fontName: referenceFont(project.settings.referenceFont).name,
     };
   }, [report, project.settings.referenceFont]);
-  const download = (format: ExportFormat, names: OutputNames) => {
+  const [shareFile, setShareFile] = useState<File | null>(null);
+  const download = (
+    format: ExportFormat,
+    names: OutputNames,
+    mode: "download" | "share" = "download",
+  ) => {
     if (!result || !isCurrent || exportWorker.current) return;
     const filename = OUTPUT_PREFIX + names.korean;
+    const type = format === "zip" ? "application/zip" : "font/" + format;
     const save = (buffer: ArrayBuffer) => {
-      const type = format === "zip" ? "application/zip" : "font/" + format;
+      // 공유는 파일 변환이 끝난 뒤 다시 한 번 누르게 합니다(브라우저는 터치 직후에만 공유 창을 열어 줌).
+      if (mode === "share") {
+        setShareFile(new File([buffer], filename + "." + format, { type }));
+        return;
+      }
       const url = URL.createObjectURL(new Blob([buffer], { type }));
       const link = document.createElement("a");
       link.href = url;
@@ -913,6 +923,8 @@ export default function FontWorkshop({
               exporting={exporting}
               exportError={exportError}
               onDownload={download}
+              shareFile={shareFile}
+              onShareDone={() => setShareFile(null)}
               fallback={fallback}
               onWriteMissing={onWritePremium}
             />

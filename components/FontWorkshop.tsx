@@ -1,16 +1,15 @@
 "use client";
 
-import FontOutput, { type OutputPlan } from "./FontOutput";
+import FontOutput from "./FontOutput";
 import { OUTPUT_PREFIX, type OutputNames } from "../lib/font/output-names";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  BASIC_CHARSET,
-  HANGUL,
-  PREMIUM_CHARSET,
-  isPremiumCategory,
-} from "../data/charset";
+import { CHARSET, HANGUL, isPremiumCategory } from "../data/charset";
+import { fallbackTargets } from "../lib/font/fallback";
+import { BASE_PATH } from "../lib/base-path";
+import { referenceFont } from "../lib/reference-fonts";
 import HandwritingSearch from "./HandwritingSearch";
 import SeparationEditor from "./SeparationEditor";
+import RewriteDialog from "./RewriteDialog";
 import MetricPreview from "./MetricPreview";
 import type {
   ConversionReply,
@@ -31,7 +30,6 @@ import {
 } from "../lib/font/types";
 import { correctionDetail, detailFromStrength } from "../lib/font/beautify";
 import {
-  confirmSeparation,
   separationStatus,
   type SeparationStatus,
 } from "../lib/font/separation-status";
@@ -47,13 +45,24 @@ import type {
 type GeneratedFont = {
   request: BuildRequest;
   preparation: FontPreparation;
-  basicBuffer?: ArrayBuffer;
   buffer: ArrayBuffer;
   stats: FontStats;
   face: FontFace;
 };
 
 let lastGeneratedFont: GeneratedFont | null = null;
+
+/** 쓰지 않은 글자를 채울 견본: 고른 견본 → 특수기호 보조 글꼴 → Noto Sans KR */
+function fallbackFontUrls(referenceId?: string) {
+  const url = (file: string) =>
+    new URL(BASE_PATH + "/fonts/" + file, window.location.href).href;
+  const chosen = referenceFont(referenceId);
+  return [
+    { name: chosen.name, url: url(chosen.file) },
+    { name: "특수기호 보조", url: url("SpecialSymbolsFallback.ttf") },
+    { name: "Noto Sans KR", url: url("NotoSansKR.ttf") },
+  ];
+}
 
 const PRESETS = [
   { value: 0, label: "쓴 그대로" },
@@ -134,20 +143,12 @@ export default function FontWorkshop({
   const checkCount = writtenHangul.filter(
     (char) => statuses[char] === "check",
   ).length;
-  const confirmedCount = writtenHangul.filter(
-    (char) => statuses[char] === "confirmed",
-  ).length;
-  const [listMode, setListMode] = useState<"check" | "all">(() =>
-    checkCount ? "check" : "all",
-  );
+  const [listMode, setListMode] = useState<"check" | "all">("all");
+  const [rewriting, setRewriting] = useState<string | null>(null);
   const [finishStep, setFinishStep] = useState<"refine" | "export">("refine");
   const [selected, setSelected] = useState(() => {
     if (initialChar && writtenHangul.includes(initialChar)) return initialChar;
-    return (
-      writtenHangul.find((char) => statuses[char] === "check") ??
-      writtenHangul[0] ??
-      ""
-    );
+    return writtenHangul[0] ?? "";
   });
   useEffect(() => {
     if (initialChar && writtenHangul.includes(initialChar)) {
@@ -155,6 +156,34 @@ export default function FontWorkshop({
       setListMode("all");
     }
   }, [initialChar]);
+  // 살펴본 글자: 글자를 다시 쓰면(updatedAt 변경) 다시 살펴볼 대상이 됩니다.
+  const visitedKey = "senseglyph-reviewed-" + project.id;
+  const [visitedMap, setVisitedMap] = useState<Record<string, number>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(visitedKey) ?? "{}");
+    } catch {
+      return {};
+    }
+  });
+  useEffect(() => {
+    const sample = project.samples[selected];
+    if (stage !== "separation" || !sample) return;
+    if (visitedMap[selected] === sample.updatedAt) return;
+    const next = { ...visitedMap, [selected]: sample.updatedAt };
+    setVisitedMap(next);
+    try {
+      localStorage.setItem(visitedKey, JSON.stringify(next));
+    } catch {}
+  }, [selected, stage, project.samples]);
+  const visited = useMemo(
+    () =>
+      new Set(
+        writtenHangul.filter(
+          (char) => visitedMap[char] === project.samples[char]?.updatedAt,
+        ),
+      ),
+    [visitedMap, project.samples],
+  );
   const visibleChars =
     listMode === "check"
       ? writtenHangul.filter(
@@ -270,6 +299,7 @@ export default function FontWorkshop({
           englishFamilyName: "OSNS Preview",
         },
       },
+      fallbackFonts: fallbackFontUrls(project.settings.referenceFont),
     };
     const token = generation.current;
     try {
@@ -348,15 +378,35 @@ export default function FontWorkshop({
       build();
   }, [stage, finishStep, isCurrent, building]);
 
-  const written = (list: { char: string }[]) =>
-    list.filter(({ char }) => project.samples[char]?.strokes.length).length;
-  const basicWritten = written(BASIC_CHARSET);
-  const premiumWritten = written(PREMIUM_CHARSET);
-  const download = (
-    format: ExportFormat,
-    names: OutputNames,
-    plan: OutputPlan,
-  ) => {
+  const fallback = useMemo(() => {
+    const covered = new Set(report.available);
+    const missing = fallbackTargets().filter((char) => !covered.has(char));
+    const count = (test: (char: string) => boolean) =>
+      missing.filter(test).length;
+    const category = new Map(CHARSET.map((e) => [e.char, e.category]));
+    const groups = [
+      ["한글", count((c) => /^[가-힣]$/.test(c))],
+      [
+        "영문·숫자",
+        count((c) =>
+          ["latin-upper", "latin-lower", "digit"].includes(category.get(c)!),
+        ),
+      ],
+      ["기호", count((c) => category.get(c) === "ascii-symbol")],
+      [
+        "특수문자",
+        count((c) => !!category.get(c) && isPremiumCategory(category.get(c)!)),
+      ],
+    ] as const;
+    return {
+      total: missing.length,
+      groups: groups
+        .filter(([, n]) => n > 0)
+        .map(([label, n]) => `${label} ${n.toLocaleString()}자`),
+      fontName: referenceFont(project.settings.referenceFont).name,
+    };
+  }, [report, project.settings.referenceFont]);
+  const download = (format: ExportFormat, names: OutputNames) => {
     if (!result || !isCurrent || exportWorker.current) return;
     const filename = OUTPUT_PREFIX + names.korean;
     const save = (buffer: ArrayBuffer) => {
@@ -404,41 +454,7 @@ export default function FontWorkshop({
         fail("파일 변환을 시작하지 못했어요. 다시 시도해 주세요.");
       }
     };
-    const hasPremium = Object.values(project.samples).some(
-      (sample) => sample.strokes.length && isPremiumCategory(sample.category),
-    );
-    if (plan === "premium" || !hasPremium) {
-      convert(result.buffer);
-      return;
-    }
-    if (result.basicBuffer) {
-      convert(result.basicBuffer);
-      return;
-    }
-    try {
-      const basicWorker = new Worker(FONT_WORKER_URL);
-      exportWorker.current = basicWorker;
-      basicWorker.onmessage = (event: MessageEvent<WorkerReply>) => {
-        if (exportWorker.current !== basicWorker) return;
-        const reply = event.data;
-        if (reply.type === "error") fail(reply.message);
-        if (reply.type === "result") {
-          basicWorker.terminate();
-          result.basicBuffer = reply.buffer;
-          convert(reply.buffer);
-        }
-      };
-      basicWorker.onerror = () => {
-        if (exportWorker.current === basicWorker)
-          fail("기본형 폰트를 만들지 못했어요.");
-      };
-      basicWorker.postMessage({
-        ...result.request,
-        includePremium: false,
-      } satisfies BuildRequest);
-    } catch {
-      fail("기본형 폰트 생성을 시작하지 못했어요.");
-    }
+    convert(result.buffer);
   };
   const syllables = report.available.filter((ch) => decompose(ch)).length;
   const detail = correctionDetail(view);
@@ -495,22 +511,22 @@ export default function FontWorkshop({
               <div className="fw-segment" role="group" aria-label="보여줄 글자">
                 <button
                   type="button"
-                  aria-pressed={listMode === "check"}
-                  onClick={() => setListMode("check")}
-                >
-                  확인 필요 <b>{checkCount}</b>
-                </button>
-                <button
-                  type="button"
                   aria-pressed={listMode === "all"}
                   onClick={() => setListMode("all")}
                 >
                   전체 <b>{writtenHangul.length}</b>
                 </button>
+                <button
+                  type="button"
+                  aria-pressed={listMode === "check"}
+                  onClick={() => setListMode("check")}
+                >
+                  주의 <b>{checkCount}</b>
+                </button>
               </div>
             )}
             <span className="fw-sep-stats" role="status">
-              확인 완료 <b>{confirmedCount}</b>/{writtenHangul.length} · 만들 수
+              살펴본 글자 <b>{visited.size}</b>/{writtenHangul.length} · 만들 수
               있는 한글 <b>{syllables.toLocaleString()}</b>
             </span>
             <button
@@ -525,9 +541,17 @@ export default function FontWorkshop({
               폰트 다듬기 →
             </button>
           </div>
-          {listMode === "check" && !checkCount && writtenHangul.length > 0 && (
-            <p className="fw-done-note" role="status">
-              확인이 필요한 글자가 없어요. 바로 폰트를 다듬어도 좋아요.
+          {writtenHangul.length > 0 && (
+            <p className="fw-sep-notice" role="note">
+              자동으로 나눈 결과예요. 한 글자가 잘못 나뉘면 그 자모를 쓰는 다른
+              글자들까지 함께 어긋나요. <b>전체를 한 번씩 넘겨 보며</b> 확인해
+              주세요.{" "}
+              {checkCount > 0 ? (
+                <>
+                  <i className="fw-warn-dot">!</i> 표시는 특히 잘못 나뉜 것 같은
+                  글자예요.
+                </>
+              ) : null}
             </p>
           )}
           {writtenHangul.length ? (
@@ -538,22 +562,9 @@ export default function FontWorkshop({
               chars={visibleChars}
               statuses={statuses}
               onSelect={setSelected}
-              onWrite={() => onWrite(selected)}
+              onWrite={() => setRewriting(selected)}
               onChange={onChange}
-              onConfirm={() => {
-                onChange(confirmSeparation(project, prep, selected));
-                const order = writtenHangul;
-                const start = order.indexOf(selected);
-                const next = [
-                  ...order.slice(start + 1),
-                  ...order.slice(0, start),
-                ].find((char) =>
-                  listMode === "check"
-                    ? statuses[char] === "check"
-                    : statuses[char] !== "confirmed",
-                );
-                if (next) setSelected(next);
-              }}
+              visited={visited}
             />
           ) : (
             <div className="fw-empty">
@@ -569,6 +580,9 @@ export default function FontWorkshop({
           )}
           {missingSlots}
         </section>
+        {rewriting && (
+          <RewriteDialog char={rewriting} onClose={() => setRewriting(null)} />
+        )}
       </div>
     );
 
@@ -878,7 +892,6 @@ export default function FontWorkshop({
         ) : (
           <>
             <FontOutput
-              projectName={project.name}
               family={result?.face.family}
               characters={result?.stats.characters ?? []}
               status={
@@ -900,10 +913,8 @@ export default function FontWorkshop({
               exporting={exporting}
               exportError={exportError}
               onDownload={download}
-              basicWritten={basicWritten}
-              premiumWritten={premiumWritten}
-              premiumTotal={PREMIUM_CHARSET.length}
-              onWritePremium={onWritePremium}
+              fallback={fallback}
+              onWriteMissing={onWritePremium}
             />
             <footer className="fw-actions">
               <button

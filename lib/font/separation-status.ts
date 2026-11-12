@@ -8,8 +8,9 @@ import type { FontPreparation, Part } from "./types";
 /** confirmed: 사용자가 확인함 · check: 확인이 필요해 보임 · auto: 자동 결과가 무난함 */
 export type SeparationStatus = "confirmed" | "check" | "auto";
 
-/** 자동 판정이 애매한(견본 자모 영역과 겹침이 고르게 갈리는) 획의 기준 */
-const AMBIGUOUS_SHARE = 0.68;
+/** 누가 봐도 잘못 나뉜 것 같은 획의 기준: 획이 어느 자모 영역에도 절반 넘게 들어가지 않음.
+ * 주의 표시는 일부러 아껴서 보이고, 나머지 글자도 전체 검토하도록 안내합니다. */
+const AMBIGUOUS_SHARE = 0.5;
 
 export function separationStatus(
   project: FontProject,

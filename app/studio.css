@@ -2111,3 +2111,231 @@ main.studio.journey h1[tabindex="-1"]:focus {
 .sg-sep-main > .character-slider {
   grid-row: 4;
 }
+
+/* ---------- 쓰기 칸 크기 단계 ---------- */
+.sg-stage {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.sg-pad-area > .pad {
+  --pad-fit: min(100cqw - 104px, 100cqh);
+  width: calc(var(--pad-fit) * var(--pad-scale, 1) + 104px);
+  height: calc(var(--pad-fit) * var(--pad-scale, 1));
+}
+.sg-pad-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 14px;
+  min-height: 36px;
+}
+.sg-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--active-wash);
+  font-size: 12px;
+}
+.sg-size > span {
+  padding: 0 6px 0 10px;
+  color: var(--muted);
+}
+.sg-size button {
+  min-height: 32px;
+  min-width: 0;
+  padding: 0 11px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.sg-size button[aria-pressed="true"] {
+  background: var(--sheet);
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: 0 1px 3px #20302414;
+}
+.sg-pad-foot .sg-hint {
+  font-size: 12px;
+}
+.sg-px-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+.sg-px-row label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+}
+.sg-px-row input[type="number"] {
+  width: 84px;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+}
+@media (max-width: 640px) {
+  .sg-pad-area > .pad {
+    width: calc((100cqw - 104px) * var(--pad-scale, 1) + 104px);
+    height: calc((100cqw - 104px) * var(--pad-scale, 1));
+    margin-inline: auto;
+  }
+}
+
+/* ---------- 자모 나누기: 검토 안내·버튼 ---------- */
+.fw-sep-notice {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--active-wash);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink);
+  word-break: keep-all;
+}
+.fw-warn-dot,
+.character-slider i[data-status="check"] {
+  font-style: normal;
+}
+.fw-warn-dot {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  vertical-align: 1px;
+}
+.character-slider i[data-status="visited"] {
+  background: transparent;
+  color: var(--ok);
+  font-size: 12px;
+}
+.sg-sep-tools > .sg-sep-text {
+  width: auto;
+  padding: 0 12px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.sg-sep-tools > .sg-sep-rewrite {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+.sg-sep-tools {
+  margin-left: auto;
+}
+.sg-sep-main {
+  height: max(440px, calc(100cqh - 132px));
+}
+
+/* ---------- 한 글자 다시 쓰기 창 ---------- */
+.sg-rewrite {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #1c241f59;
+}
+.sg-rewrite-card {
+  width: min(760px, 100%);
+  height: min(860px, 100%);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 10px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 24px 70px #1c241f40;
+}
+.sg-rewrite-card header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+.sg-rewrite-card header p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  word-break: keep-all;
+}
+.sg-rewrite-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sg-rewrite-tools button {
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--sheet);
+  font-size: 14px;
+}
+.sg-rewrite-tools button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--active-wash);
+  color: var(--accent);
+  font-weight: 700;
+}
+.sg-rewrite-pad > .pad {
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
+}
+@media (max-width: 640px) {
+  .sg-rewrite-card header {
+    grid-template-columns: auto 1fr;
+  }
+  .sg-rewrite-card header .sg-primary {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------- 내보내기: 이름 안내·대체 경고 ---------- */
+.fw-prefixed input::placeholder {
+  color: var(--muted);
+  opacity: 0.55;
+  font-size: 14px;
+}
+.fw-fallback {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid #e0b25b;
+  border-radius: 12px;
+  background: #fff6e2;
+  color: #6b4a12;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.dark .fw-fallback {
+  background: #3d321c;
+  color: #f2d9a6;
+  border-color: #8c6a2c;
+}
+.fw-fallback p {
+  margin: 0;
+  word-break: keep-all;
+}
+.fw-fallback .fw-link {
+  justify-self: start;
+  color: inherit;
+}
+.fw-fallback-inline {
+  color: #8a5a10;
+  font-size: 13px;
+}

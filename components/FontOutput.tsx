@@ -46,8 +46,6 @@ export function FontDialog({
   );
 }
 
-export type OutputPlan = "basic" | "premium";
-
 const SPECIMEN = `"세상에 당신만의 모양으로 이야기를 건넬 수 있게 되었어요!"
 'Hello, world!' (2026) ~ #1 & 100%? @_@ [OK]
 여기에 직접 써 보세요.`;
@@ -59,16 +57,7 @@ const FORMATS: { id: ExportFormat; label: string; note: string }[] = [
   { id: "woff", label: "WOFF", note: "웹(예전 형식)" },
 ];
 
-/** 한글 이름: 프로젝트 이름에서 공백·금지 문자를 뺍니다. 한글이 없으면 기본값. */
-export function defaultKoreanName(projectName: string) {
-  const name = projectName
-    .normalize("NFC")
-    .replace(/[\s<>:"/\\|?*\x00-\x1f.]/g, "");
-  return isKoreanOutputName(name) ? name.slice(0, 40) : "나의손글씨";
-}
-
 export default function FontOutput({
-  projectName,
   family,
   characters,
   status,
@@ -79,12 +68,9 @@ export default function FontOutput({
   exporting,
   exportError,
   onDownload,
-  basicWritten,
-  premiumWritten,
-  premiumTotal,
-  onWritePremium,
+  fallback,
+  onWriteMissing,
 }: {
-  projectName: string;
   family?: string;
   characters: string[];
   status: "empty" | "building" | "stale" | "ready";
@@ -94,23 +80,14 @@ export default function FontOutput({
   onBuild: () => void;
   exporting: ExportFormat | null;
   exportError: string;
-  onDownload: (
-    format: ExportFormat,
-    names: OutputNames,
-    plan: OutputPlan,
-  ) => void;
-  basicWritten: number;
-  premiumWritten: number;
-  premiumTotal: number;
-  onWritePremium?: () => void;
+  onDownload: (format: ExportFormat, names: OutputNames) => void;
+  /** 쓰지 않아서 견본 글꼴로 채울 글자 */
+  fallback: { total: number; groups: string[]; fontName: string };
+  onWriteMissing?: () => void;
 }) {
-  const [korean, setKorean] = useState(() => defaultKoreanName(projectName));
-  const [english, setEnglish] = useState(() => {
-    const ascii = projectName.replace(/\s/g, "");
-    return isEnglishOutputName(ascii) ? ascii.slice(0, 40) : "MyHandwriting";
-  });
+  const [korean, setKorean] = useState("");
+  const [english, setEnglish] = useState("");
   const [format, setFormat] = useState<ExportFormat>("zip");
-  const [plan, setPlan] = useState<OutputPlan>("basic");
   const [specimen, setSpecimen] = useState(SPECIMEN);
   const [asking, setAsking] = useState(false);
   const [code, setCode] = useState("");
@@ -122,17 +99,15 @@ export default function FontOutput({
   const koreanValid = isKoreanOutputName(names.korean);
   const englishValid = isEnglishOutputName(names.english);
   const available = new Set(characters);
-  const premiumBlocked = plan === "premium" && premiumWritten === 0;
   const canDownload =
     status === "ready" &&
     !!family &&
     koreanValid &&
     englishValid &&
-    !premiumBlocked &&
     exporting === null;
   const start = () => {
     if (!canDownload) return;
-    if (rememberedDownloadCode()) onDownload(format, names, plan);
+    if (rememberedDownloadCode()) onDownload(format, names);
     else {
       setCode("");
       setCodeError("");
@@ -146,7 +121,7 @@ export default function FontOutput({
     }
     rememberDownloadCode();
     setAsking(false);
-    onDownload(format, names, plan);
+    onDownload(format, names);
   };
 
   return (
@@ -220,50 +195,6 @@ export default function FontOutput({
           start();
         }}
       >
-        <fieldset className="fw-plans">
-          <legend>출력 구성</legend>
-          <label className={plan === "basic" ? "is-selected" : ""}>
-            <input
-              type="radio"
-              name="plan"
-              checked={plan === "basic"}
-              onChange={() => setPlan("basic")}
-            />
-            <strong>기본형</strong>
-            <span>한글 · 영문 · 숫자 · 기호</span>
-            <small>쓴 글자 {basicWritten}자 + 조합 한글</small>
-          </label>
-          <label className={plan === "premium" ? "is-selected" : ""}>
-            <input
-              type="radio"
-              name="plan"
-              checked={plan === "premium"}
-              onChange={() => setPlan("premium")}
-            />
-            <strong>프리미엄</strong>
-            <span>기본형 + 특수문자</span>
-            <small>
-              특수문자 {premiumWritten} / {premiumTotal}자 작성
-            </small>
-          </label>
-        </fieldset>
-        {plan === "premium" && premiumWritten < premiumTotal && (
-          <p className="fw-note">
-            {premiumWritten === 0
-              ? "아직 쓴 특수문자가 없어요. 특수문자를 쓰면 프리미엄으로 내보낼 수 있어요."
-              : "쓴 특수문자만 폰트에 들어가요."}{" "}
-            {onWritePremium && (
-              <button
-                type="button"
-                className="fw-link"
-                onClick={onWritePremium}
-              >
-                특수문자 쓰러 가기 →
-              </button>
-            )}
-          </p>
-        )}
-
         <div className="fw-names">
           <label className="fw-field">
             <span>한글 폰트 이름</span>
@@ -274,13 +205,14 @@ export default function FontOutput({
                 aria-label="한글 폰트 이름"
                 maxLength={60}
                 value={korean}
-                aria-invalid={!koreanValid || undefined}
+                placeholder="여기에 이름을 넣어주세요!"
+                aria-invalid={(!!korean && !koreanValid) || undefined}
                 onChange={(event) =>
                   setKorean(event.target.value.replace(/\s/g, ""))
                 }
               />
             </span>
-            {!koreanValid && (
+            {!!korean && !koreanValid && (
               <small className="fw-error">
                 공백 없이, 한글을 한 글자 이상 넣어 주세요.
               </small>
@@ -295,13 +227,14 @@ export default function FontOutput({
                 aria-label="영문 폰트 이름"
                 maxLength={60}
                 value={english}
-                aria-invalid={!englishValid || undefined}
+                placeholder="Type a name here!"
+                aria-invalid={(!!english && !englishValid) || undefined}
                 onChange={(event) =>
                   setEnglish(event.target.value.replace(/\s/g, ""))
                 }
               />
             </span>
-            {!englishValid && (
+            {!!english && !englishValid && (
               <small className="fw-error">
                 공백 없이 영문자·숫자로 입력해 주세요.
               </small>
@@ -328,6 +261,25 @@ export default function FontOutput({
           ))}
         </fieldset>
 
+        {fallback.total > 0 && (
+          <div className="fw-fallback" role="note">
+            <strong>⚠ 쓰지 않은 글자는 견본 글꼴로 대체됩니다</strong>
+            <p>
+              손글씨로 쓰지 않은 {fallback.total.toLocaleString()}자(
+              {fallback.groups.join(" · ")})는 ‘{fallback.fontName}’ 모양으로
+              들어가요. 쓴 글자는 모두 내 손글씨로 나와요.
+            </p>
+            {onWriteMissing && (
+              <button
+                type="button"
+                className="fw-link"
+                onClick={onWriteMissing}
+              >
+                쓰지 않은 글자 쓰러 가기 →
+              </button>
+            )}
+          </div>
+        )}
         <button
           className="fw-primary fw-download"
           type="submit"
@@ -335,10 +287,18 @@ export default function FontOutput({
         >
           {exporting
             ? "파일 준비 중…"
-            : `${OUTPUT_PREFIX}${names.korean || "…"}.${format} 다운로드 ↓`}
+            : names.korean
+              ? `${OUTPUT_PREFIX}${names.korean}.${format} 다운로드 ↓`
+              : "다운로드 ↓"}
         </button>
-        {status !== "ready" && (
+        {status !== "ready" ? (
           <p className="fw-note">폰트를 만든 뒤에 내려받을 수 있어요.</p>
+        ) : (
+          (!names.korean || !names.english) && (
+            <p className="fw-note">
+              한글·영문 폰트 이름을 넣으면 내려받을 수 있어요.
+            </p>
+          )
         )}
         {exportError && (
           <p className="fw-error" role="alert">
@@ -357,6 +317,12 @@ export default function FontOutput({
             }}
           >
             <p>받은 다운로드 코드를 입력하면 바로 내려받아요.</p>
+            {fallback.total > 0 && (
+              <p className="fw-fallback-inline">
+                ⚠ 쓰지 않은 {fallback.total.toLocaleString()}자는 견본 글꼴(‘
+                {fallback.fontName}’)로 대체됩니다.
+              </p>
+            )}
             <input
               autoFocus
               autoComplete="off"

@@ -70,7 +70,8 @@ interface Props {
   onWrite: () => void;
   onChange: (prep: FontPreparation) => void;
   statuses?: Record<string, SeparationStatus>;
-  onConfirm?: () => void;
+  /** 이미 살펴본 글자 */
+  visited?: ReadonlySet<string>;
 }
 type Gesture = {
   id: number;
@@ -93,7 +94,7 @@ export default function SeparationEditor({
   onWrite,
   onChange,
   statuses = {},
-  onConfirm,
+  visited = new Set<string>(),
 }: Props) {
   const sample = project.samples[char];
   const separation = activeSeparation(sample, prep.separations[char]) ?? {
@@ -124,7 +125,6 @@ export default function SeparationEditor({
     );
   const currentIndex = chars.indexOf(char);
   const [showTutorial, setShowTutorial] = useState(false);
-  const [showBoxes, setShowBoxes] = useState(false);
   useEffect(() => {
     try {
       if (!localStorage.getItem(TUTORIAL_KEY)) setShowTutorial(true);
@@ -487,27 +487,16 @@ export default function SeparationEditor({
             >
               ↷
             </button>
-            <details className="sg-sep-more">
-              <summary aria-label="이 글자 더보기">⋯</summary>
-              <div>
-                <button
-                  onClick={() =>
-                    setSelection(strokes.map((stroke) => stroke.id))
-                  }
-                >
-                  모든 획 선택
-                </button>
-                <button onClick={() => update({ assignments: {} })}>
-                  자동 결과로 되돌리기
-                </button>
-                <button onClick={onWrite}>이 글자 다시 쓰기</button>
-                <button onClick={() => setShowBoxes((value) => !value)}>
-                  {showBoxes
-                    ? "판정 상자 조절 닫기"
-                    : "판정 상자 직접 조절 (고급)"}
-                </button>
-              </div>
-            </details>
+            <button
+              className="sg-sep-text"
+              onClick={() => update({ assignments: {} })}
+              title="이 글자의 자모 배정을 처음 자동 결과로 되돌려요"
+            >
+              ↺ 되돌리기
+            </button>
+            <button className="sg-sep-text sg-sep-rewrite" onClick={onWrite}>
+              ✎ 이 글자 다시 쓰기
+            </button>
             <button
               className="sg-sep-help"
               aria-label="사용법 보기"
@@ -516,17 +505,6 @@ export default function SeparationEditor({
               ?
             </button>
           </div>
-          {onConfirm && (
-            <button
-              className="sg-confirm"
-              data-confirmed={statuses[char] === "confirmed" || undefined}
-              onClick={onConfirm}
-            >
-              {statuses[char] === "confirmed"
-                ? "확인 완료 ✓ 다음"
-                : "이대로 좋아요 ✓"}
-            </button>
-          )}
         </div>
         {(mode === "point" || error) && (
           <div className="sg-sep-sub">
@@ -788,57 +766,21 @@ export default function SeparationEditor({
                 )}
               />
               <span>{item}</span>
-              {statuses[item] && statuses[item] !== "auto" && (
-                <i
-                  data-status={statuses[item]}
-                  aria-label={STATUS_LABEL[statuses[item]]}
-                >
-                  {statuses[item] === "check" ? "!" : "✓"}
+              {statuses[item] === "check" ? (
+                <i data-status="check" aria-label="확인 필요">
+                  !
                 </i>
+              ) : (
+                visited.has(item) && (
+                  <i data-status="visited" aria-label="살펴봄">
+                    ✓
+                  </i>
+                )
               )}
             </button>
           ))}
         </div>
       </div>
-      {showBoxes && (
-        <details className="box-settings" open>
-          <summary>판정 상자 직접 조절 (고급)</summary>
-          {parts.map((part) => (
-            <fieldset key={part}>
-              <legend>{PART_LABELS[part]}</legend>
-              {(["x", "y", "width", "height"] as const).map((key) => (
-                <label key={key}>
-                  {{ x: "왼쪽", y: "위쪽", width: "너비", height: "높이" }[key]}
-                  <input
-                    aria-label={PART_LABELS[part] + " 상자 " + key}
-                    type="number"
-                    min={key === "width" || key === "height" ? 50 : 0}
-                    max="1000"
-                    value={Math.round(boxes[part]![key])}
-                    onChange={(event) => {
-                      const value = +event.target.value;
-                      if (
-                        !Number.isFinite(value) ||
-                        value <
-                          (key === "width" || key === "height" ? 50 : 0) ||
-                        value > 1000
-                      )
-                        return;
-                      update({
-                        ...separation,
-                        boxes: {
-                          ...separation.boxes,
-                          [part]: { ...boxes[part]!, [key]: value },
-                        },
-                      });
-                    }}
-                  />
-                </label>
-              ))}
-            </fieldset>
-          ))}
-        </details>
-      )}
     </div>
   );
 }

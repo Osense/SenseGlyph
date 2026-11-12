@@ -90,6 +90,8 @@ export interface Coverage {
   available: string[];
 }
 export interface BuildRequest {
+  /** 쓰지 않은 글자를 채울 견본 글꼴 파일 주소(앞에서부터 우선) */
+  fallbackFonts?: { name: string; url: string }[];
   /** false면 기본형 글자(한글·숫자·기호·영문)만 넣습니다. */
   includePremium?: boolean;
   project: FontProject;
@@ -98,6 +100,8 @@ export interface BuildRequest {
 export interface FontStats {
   direct: number;
   composed: number;
+  /** 견본 글꼴로 채운 글자 수 */
+  fallback?: number;
   glyphs: number;
   characters: string[];
 }

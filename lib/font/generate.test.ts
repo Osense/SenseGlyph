@@ -5,7 +5,7 @@ import { defaultPreparation } from "./types";
 import { completeFixture } from "./fixtures";
 import { newProject } from "../defaults";
 import { parseProject } from "../storage";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { checksum } from "./cmap";
 
 it("creates a parseable OTF with all 11,172 nonempty Hangul glyphs, space and valid metrics", () => {
@@ -175,3 +175,36 @@ it("maps written premium characters in the full font and excludes them from the 
     "special-symbol",
   );
 });
+
+it("fills unwritten characters from the reference fonts without touching written ones", () => {
+  const project = newProject();
+  project.samples["겨"] = completeFixture().samples["겨"];
+  const preparation = defaultPreparation("Fallback");
+  const load = (file: string) => () =>
+    opentype.parse(
+      Uint8Array.from(readFileSync("public/fonts/" + file)).buffer,
+    );
+  const sources = [
+    { name: "검은고딕", load: load("BlackHanSans-Regular.ttf") },
+    { name: "특수기호 보조", load: load("SpecialSymbolsFallback.ttf") },
+    { name: "Noto Sans KR", load: load("NotoSansKR.ttf") },
+  ];
+  const plain = generateFont({ project, preparation });
+  const filled = generateFont({ project, preparation }, () => {}, sources);
+  const a = opentype.parse(plain.buffer),
+    b = opentype.parse(filled.buffer);
+  expect(a.charToGlyphIndex("A")).toBe(0);
+  for (const char of ["A", "가", "!", "①"])
+    expect(b.charToGlyphIndex(char)).toBeGreaterThan(0);
+  expect(filled.stats.fallback).toBeGreaterThan(2000);
+  expect(filled.stats.direct).toBe(1);
+  expect(b.charToGlyph("겨").path.toPathData(0)).toBe(
+    a.charToGlyph("겨").path.toPathData(0),
+  );
+  // Filled Hangul sits on the same body as the handwriting.
+  const written = a.charToGlyph("겨").getBoundingBox();
+  const borrowed = b.charToGlyph("가").getBoundingBox();
+  expect(
+    Math.abs((borrowed.y1 + borrowed.y2) / 2 - (written.y1 + written.y2) / 2),
+  ).toBeLessThan(60);
+}, 120000);

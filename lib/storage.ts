@@ -115,6 +115,11 @@ export function parseProject(text: string): FontProject {
   )
     throw new Error("쓰기 칸 크기 설정 오류");
   if (
+    s.writingPreset !== undefined &&
+    !["xs", "s", "m", "fill"].includes(String(s.writingPreset))
+  )
+    throw new Error("쓰기 칸 크기 설정 오류");
+  if (
     s.referenceFont !== undefined &&
     !REFERENCE_FONTS.some((font) => font.id === s.referenceFont)
   )

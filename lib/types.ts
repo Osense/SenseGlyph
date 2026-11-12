@@ -39,8 +39,12 @@ export interface GlyphSample {
   updatedAt: number;
   status: "empty" | "done" | "skipped";
 }
+export type WritingPreset = "xs" | "s" | "m" | "fill";
 export interface ProjectSettings {
+  /** 고급: 쓰기 칸 크기를 px로 직접 지정. 있으면 writingPreset보다 우선합니다. */
   writingSize?: number;
+  /** 쓰기 칸 크기 단계: 더 작게 · 작게 · 보통 · 채우기(기본) */
+  writingPreset?: WritingPreset;
   referenceFont?: import("./reference-fonts").ReferenceFontId;
   grid: {
     halfVertical: boolean;

@@ -38,6 +38,15 @@ for (const [label, viewport] of [
   );
   check(`${label}: 페이지가 화면 밖으로 넘치지 않음`, !pad.overflow);
   await page.screenshot({ path: `artifacts/flow-${label}.png` });
+  await page.click('.sg-size button:has-text("더 작게")');
+  await page.waitForTimeout(300);
+  const small = await page.evaluate(() =>
+    Math.round(
+      document.querySelector(".pad-sheet").getBoundingClientRect().width,
+    ),
+  );
+  check(`${label}: 칸 크기 '더 작게'`, small < pad.size * 0.7, small + "px");
+  await page.click('.sg-size button:has-text("채우기")');
   await context.close();
 }
 
@@ -148,6 +157,27 @@ check(
   "획을 누르면 초·중·종성 버튼",
   await page.locator(".quick-assign").isVisible(),
 );
+check(
+  "이대로 좋아요 버튼 없음",
+  !(await page.locator("text=이대로 좋아요").count()),
+);
+await page.click("text=이 글자 다시 쓰기");
+await page.waitForSelector(".sg-rewrite .input-canvas");
+{
+  const box = await page.locator(".sg-rewrite .input-canvas").boundingBox();
+  await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.5);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.7, box.y + box.height * 0.52, {
+    steps: 8,
+  });
+  await page.mouse.up();
+}
+await page.click("text=다 썼어요 · 자모 나누기로");
+check(
+  "다시 쓰고 자모 나누기로 바로 돌아옴",
+  !(await page.locator(".sg-rewrite").count()) &&
+    (await page.locator(".separation-editor").isVisible()),
+);
 await page.click('.sg-steps button:has-text("폰트 완성")');
 await page.waitForSelector(".fw-preview canvas");
 await page.fill('[aria-label="미리 볼 문장"]', "겨구귀");
@@ -165,6 +195,22 @@ check(
   "결제·가격 문구 없음",
   !(await page.content()).match(/원\s*·|프로모션|19,900|29,900/),
 );
+check(
+  "이름 칸은 비어 있고 안내 문구만",
+  (await page.inputValue('[aria-label="한글 폰트 이름"]')) === "" &&
+    (await page.getAttribute(
+      '[aria-label="한글 폰트 이름"]',
+      "placeholder",
+    )) === "여기에 이름을 넣어주세요!",
+);
+check(
+  "이름 없이는 다운로드 비활성",
+  await page.locator(".fw-download").isDisabled(),
+);
+check("견본 글꼴 대체 경고", await page.locator(".fw-fallback").isVisible());
+check("출력 구성 구분 없음", !(await page.locator("text=프리미엄").count()));
+await page.fill('[aria-label="한글 폰트 이름"]', "시험글씨");
+await page.fill('[aria-label="영문 폰트 이름"]', "TestHand");
 await page.click(".fw-download");
 await page.fill('[aria-label="다운로드 코드"]', "아무거나");
 await page.click("text=확인하고 내려받기");

@@ -24,7 +24,7 @@ import { REFERENCE_FONTS, referenceFont } from "../lib/reference-fonts";
 import { referenceUsesFallback } from "../lib/font/reference";
 import { projectIssues } from "../lib/review";
 import { BrushPreview, Thumbnail } from "../components/Preview";
-import type { BrushId, CharCategory } from "../lib/types";
+import type { BrushId, CharCategory, WritingPreset } from "../lib/types";
 import JourneySetup from "../components/JourneySetup";
 import { characterGuide } from "../lib/character-guide";
 import { gsap } from "gsap";
@@ -70,6 +70,12 @@ const BRUSHES: { id: BrushId; label: string }[] = [
   { id: "pixel", label: "픽셀펜" },
 ];
 const STEP_KEY = "hanhoek-journey";
+const PAD_PRESETS: { id: WritingPreset; label: string; scale: number }[] = [
+  { id: "xs", label: "더 작게", scale: 0.55 },
+  { id: "s", label: "작게", scale: 0.7 },
+  { id: "m", label: "보통", scale: 0.85 },
+  { id: "fill", label: "채우기", scale: 1 },
+];
 
 export default function Page() {
   const {
@@ -667,11 +673,14 @@ export default function Page() {
               <div
                 className="sg-pad-area"
                 style={
-                  s.writingSize
-                    ? ({
-                        "--writing-size": `${s.writingSize}px`,
-                      } as React.CSSProperties)
-                    : undefined
+                  (s.writingSize
+                    ? { "--writing-size": `${s.writingSize}px` }
+                    : {
+                        "--pad-scale":
+                          PAD_PRESETS.find(
+                            (p) => p.id === (s.writingPreset ?? "fill"),
+                          )?.scale ?? 1,
+                      }) as unknown as React.CSSProperties
                 }
                 data-fixed-size={s.writingSize ? true : undefined}
               >
@@ -696,12 +705,45 @@ export default function Page() {
                   }}
                 />
               </div>
-              {mixedBrush && (
-                <p className="sg-hint" role="note">
-                  앞에서 쓴 글자와 다른 도구({brushLabel})예요. 한 폰트는 한
-                  가지 도구로 쓰면 더 고르게 나와요.
-                </p>
-              )}
+              <div className="sg-pad-foot">
+                <div className="sg-size" role="group" aria-label="쓰기 칸 크기">
+                  <span aria-hidden="true">칸</span>
+                  {PAD_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      aria-pressed={
+                        !s.writingSize &&
+                        (s.writingPreset ?? "fill") === preset.id
+                      }
+                      data-ink-locked={busy || undefined}
+                      disabled={busy}
+                      onClick={() =>
+                        update({
+                          writingPreset: preset.id,
+                          writingSize: undefined,
+                        })
+                      }
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                  {s.writingSize && (
+                    <button
+                      aria-pressed="true"
+                      onClick={() => setToolSheet(true)}
+                      title="도구 설정에서 바꿀 수 있어요"
+                    >
+                      {s.writingSize}px
+                    </button>
+                  )}
+                </div>
+                {mixedBrush && (
+                  <p className="sg-hint" role="note">
+                    앞에서 쓴 글자와 다른 도구({brushLabel})예요. 한 가지 도구로
+                    쓰면 더 고르게 나와요.
+                  </p>
+                )}
+              </div>
             </div>
 
             <aside className="sg-side" aria-label="이동과 글자 확인">
@@ -1072,42 +1114,50 @@ export default function Page() {
                     onChange={(e) => update({ eraserSize: +e.target.value })}
                   />
                 </label>
-                <h3>쓰기 칸</h3>
-                <div
-                  className="sg-segment"
-                  role="group"
-                  aria-label="쓰기 칸 크기"
-                >
-                  <button
-                    aria-pressed={!s.writingSize}
-                    onClick={() => update({ writingSize: undefined })}
-                  >
-                    화면에 맞춤
-                  </button>
-                  <button
-                    aria-pressed={!!s.writingSize}
-                    onClick={() =>
-                      update({ writingSize: s.writingSize ?? 480 })
-                    }
-                  >
-                    직접 정하기
-                  </button>
+                <h3>쓰기 칸 크기 (고급)</h3>
+                <p className="sg-help">
+                  보통은 쓰기 칸 아래의 더 작게 · 작게 · 보통 · 채우기 버튼이면
+                  충분해요. 여기서는 픽셀 단위로 직접 정할 수 있어요.
+                </p>
+                <div className="sg-px-row">
+                  <input
+                    aria-label="쓰기 칸 크기 슬라이더"
+                    type="range"
+                    min="180"
+                    max="900"
+                    step="10"
+                    value={s.writingSize ?? 480}
+                    onChange={(e) => update({ writingSize: +e.target.value })}
+                  />
+                  <label>
+                    <input
+                      aria-label="쓰기 칸 크기 픽셀"
+                      type="number"
+                      min="180"
+                      max="900"
+                      step="10"
+                      value={s.writingSize ?? ""}
+                      placeholder="자동"
+                      onChange={(e) => {
+                        const value = +e.target.value;
+                        if (
+                          Number.isFinite(value) &&
+                          value >= 180 &&
+                          value <= 900
+                        )
+                          update({ writingSize: value });
+                      }}
+                    />
+                    px
+                  </label>
                 </div>
                 {s.writingSize && (
-                  <label className="sg-slider">
-                    <span>
-                      칸 크기 <b>{s.writingSize}px</b>
-                    </span>
-                    <input
-                      aria-label="쓰기 칸 크기"
-                      type="range"
-                      min="240"
-                      max="900"
-                      step="20"
-                      value={s.writingSize}
-                      onChange={(e) => update({ writingSize: +e.target.value })}
-                    />
-                  </label>
+                  <button
+                    className="sg-link"
+                    onClick={() => update({ writingSize: undefined })}
+                  >
+                    단계 버튼으로 되돌리기
+                  </button>
                 )}
                 <p className="sg-help">
                   칸 크기를 바꿔도 폰트의 글자 크기는 바뀌지 않아요.
@@ -1128,11 +1178,14 @@ export default function Page() {
           initialChar={fontReviewChar}
           onWritePremium={() => {
             changeStep(2);
-            setList("premium");
-            const next =
-              PREMIUM_CHARSET.find(
+            const unwritten = (entries: readonly CharEntry[]) =>
+              entries.find(
                 ({ char: c }) => !project.samples[c]?.strokes.length,
-              ) ?? PREMIUM_CHARSET[0];
+              );
+            const basic = unwritten(BASIC_CHARSET);
+            const next =
+              basic ?? unwritten(PREMIUM_CHARSET) ?? BASIC_CHARSET[0];
+            setList(basic ? "basic" : "premium");
             goTo(next.char);
           }}
           onClose={() => changeStep(2)}

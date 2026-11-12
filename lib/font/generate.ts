@@ -1,6 +1,11 @@
 import { isPremiumCategory, RETIRED_SPECIAL_SYMBOLS } from "../../data/charset";
 import opentype from "opentype.js";
 import { fontPipeline } from "./pipeline";
+import {
+  fallbackGlyph,
+  fallbackTargets,
+  type FallbackSource,
+} from "./fallback";
 import type { BuildRequest, FontStats } from "./types";
 import { FONT_SETTING_LIMITS as LIMITS } from "./types";
 import { defaultEnglishFontName, isEnglishFontName } from "./names";
@@ -27,6 +32,7 @@ export function appendContour(
 export function generateFont(
   { project, preparation, includePremium = true }: BuildRequest,
   progress: (value: number, message: string) => void = () => {},
+  fallbacks: FallbackSource[] = [],
 ): { buffer: ArrayBuffer; stats: FontStats } {
   const options = { ...preparation.settings, includeComposed: true };
   if (!options.familyName.trim()) throw new Error("폰트 이름을 입력하세요.");
@@ -142,6 +148,36 @@ export function generateFont(
       }),
     );
   }
+  // 쓰지 않은 글자(특수문자, 자모 자리가 비어 만들 수 없는 한글 등)는 견본 글꼴 모양으로 채웁니다.
+  let filled = 0;
+  if (fallbacks.length) {
+    progress(78, "쓰지 않은 글자를 견본 글꼴로 채우고 있어요");
+    const have = new Set(characters);
+    const loaded = new Map<FallbackSource, opentype.Font | null>();
+    for (const char of fallbackTargets()) {
+      if (have.has(char)) continue;
+      const glyph = fallbackGlyph(
+        char,
+        fallbacks,
+        layout,
+        options.baseline,
+        loaded,
+      );
+      if (!glyph) continue;
+      highest = Math.max(highest, glyph.top);
+      lowest = Math.min(lowest, glyph.bottom);
+      glyphs.push(
+        new opentype.Glyph({
+          name: "uni" + char.codePointAt(0)!.toString(16).toUpperCase(),
+          unicode: char.codePointAt(0),
+          advanceWidth: glyph.advanceWidth,
+          path: glyph.path,
+        }),
+      );
+      characters.push(char);
+      filled++;
+    }
+  }
   progress(80, "설치 가능한 OTF 파일로 묶고 있어요");
   // opentype.js 1.x ignores leftSideBearing in Glyph constructor options.
   // Assign it explicitly so hmtx agrees with the actual CFF outline origin.
@@ -184,6 +220,7 @@ export function generateFont(
     stats: {
       direct: pipeline.direct.size,
       composed,
+      fallback: filled,
       glyphs: glyphs.length,
       characters,
     },

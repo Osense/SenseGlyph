@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { gsap } from "gsap";
+import { useEffect, useMemo, useRef, useState } from "react";
 import CanvasStepButtons from "./CanvasStepButtons";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { outlines } from "../lib/brushes";
-import { pixelToEm } from "../lib/geometry";
+import { hitsStroke, pixelToEm } from "../lib/geometry";
 import {
   assignStroke,
   boxesFor,
@@ -25,6 +24,7 @@ import { SAFE_INSET, strokesAreSafe } from "../lib/safety";
 import type { FontProject, Stroke } from "../lib/types";
 import type { FontPreparation, Part, Separation } from "../lib/font/types";
 import { Thumbnail } from "./Preview";
+import SeparationTutorial, { TUTORIAL_KEY } from "./SeparationTutorial";
 import { referenceFont } from "../lib/reference-fonts";
 import { referenceGuide, referenceUsesFallback } from "../lib/font/reference";
 import type { SeparationStatus } from "../lib/font/separation-status";
@@ -116,8 +116,6 @@ export default function SeparationEditor({
     [future, setFuture] = useState<Separation[]>([]);
   const svg = useRef<SVGSVGElement>(null),
     strip = useRef<HTMLDivElement>(null),
-    assignments = useRef<HTMLDivElement>(null),
-    rowPositions = useRef(new Map<string, number>()),
     gesture = useRef<Gesture | null>(null);
   const displayed = draft ?? strokes,
     bounds = useMemo(
@@ -125,54 +123,13 @@ export default function SeparationEditor({
       [displayed, selection],
     );
   const currentIndex = chars.indexOf(char);
-  const rankedStrokes = useMemo(
-    () =>
-      [...strokes].sort(
-        (a, b) =>
-          Number(selection.includes(b.id)) - Number(selection.includes(a.id)),
-      ),
-    [strokes, selection],
-  );
-  useLayoutEffect(() => {
-    const container = assignments.current;
-    if (!container) return;
-    const rows = Array.from(
-      container.querySelectorAll<HTMLElement>("[data-assignment-id]"),
-    );
-    const next = new Map(
-      rows.map((row) => [row.dataset.assignmentId!, row.offsetTop]),
-    );
-    const reduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    const context = gsap.context(() => {
-      rows.forEach((row) => {
-        const previous = rowPositions.current.get(row.dataset.assignmentId!);
-        if (previous !== undefined && !reduced)
-          gsap.fromTo(
-            row,
-            { y: previous - row.offsetTop },
-            {
-              y: 0,
-              duration: 0.32,
-              ease: "power2.out",
-              clearProps: "transform",
-            },
-          );
-      });
-      if (selection.length && container.scrollTop > 0) {
-        if (reduced) container.scrollTop = 0;
-        else
-          gsap.to(container, {
-            scrollTop: 0,
-            duration: 0.3,
-            ease: "power2.out",
-          });
-      }
-    }, container);
-    rowPositions.current = next;
-    return () => context.revert();
-  }, [selection, rankedStrokes]);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [showBoxes, setShowBoxes] = useState(false);
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem(TUTORIAL_KEY)) setShowTutorial(true);
+    } catch {}
+  }, []);
   const update = (next: Separation, remember = true) => {
     if (remember) {
       setPast((history) => [...history.slice(-79), separation]);
@@ -369,11 +326,25 @@ export default function SeparationEditor({
     else setSelection(g.ids);
     if (!cancel && g.kind === "lasso") {
       g.path.push(g.current);
-      const hits =
-        g.path.length < 4 && g.hit
-          ? [g.hit]
+      const tapped =
+        Math.hypot(g.current.x - g.start.x, g.current.y - g.start.y) < 12;
+      // 획을 톡 누르면 선택에 더하거나 빼고, 빈 곳을 누르면 선택을 풀고,
+      // 둘러싸면(올가미) 그 획들로 새로 선택합니다.
+      // 손가락은 가는 획을 빗맞히기 쉬워서, 획 바로 옆을 눌러도 그 획을 고릅니다.
+      const touched =
+        g.hit ??
+        g.base.find((stroke) =>
+          hitsStroke(g.start, stroke.points, 28, stroke.params.size),
+        )?.id;
+      const next = tapped
+        ? touched
+          ? g.ids.includes(touched)
+            ? g.ids.filter((id) => id !== touched)
+            : [...g.ids, touched]
+          : []
+        : g.additive
+          ? [...new Set([...g.ids, ...selectStrokesLasso(g.base, g.path)])]
           : selectStrokesLasso(g.base, g.path);
-      const next = g.additive ? [...new Set([...g.ids, ...hits])] : hits;
       setSelection((previous) =>
         previous.length === next.length &&
         previous.every((id, i) => id === next[i])
@@ -382,6 +353,15 @@ export default function SeparationEditor({
       );
     }
     if (
+      !cancel &&
+      g.kind === "move" &&
+      mode === "lasso" &&
+      g.hit &&
+      Math.hypot(g.current.x - g.start.x, g.current.y - g.start.y) < 8
+    )
+      // 선택된 획을 다시 톡 누르면 그 획만 선택에서 뺍니다.
+      setSelection(g.ids.filter((id) => id !== g.hit));
+    else if (
       !cancel &&
       g.kind !== "lasso" &&
       Math.hypot(g.current.x - g.start.x, g.current.y - g.start.y) > 0.5
@@ -433,129 +413,151 @@ export default function SeparationEditor({
       ]
     : [];
 
+  const tutorial = (
+    <SeparationTutorial
+      onClose={() => {
+        setShowTutorial(false);
+        try {
+          localStorage.setItem(TUTORIAL_KEY, "1");
+        } catch {}
+      }}
+    />
+  );
   return (
-    <div className="separation-editor">
-      <div className="character-navigation sg-sep-nav">
-        <button
-          aria-label="이전 보정 글자"
-          disabled={currentIndex <= 0}
-          onClick={() => changeChar(-1)}
-        >
-          ← 이전
-        </button>
-        <div>
-          <strong>{char}</strong>
-          <span>
-            {currentIndex + 1} / {chars.length}
-            {statuses[char] && (
-              <em data-status={statuses[char]}>
-                {STATUS_LABEL[statuses[char]]}
-              </em>
+    <div className="separation-editor sg-sep">
+      <div className="sg-sep-main">
+        <div className="sg-sep-bar">
+          <div className="sg-sep-char">
+            <button
+              className="sg-sep-step"
+              aria-label="이전 보정 글자"
+              disabled={currentIndex <= 0}
+              onClick={() => changeChar(-1)}
+            >
+              ‹
+            </button>
+            <strong>{char}</strong>
+            <span>
+              {currentIndex + 1}/{chars.length}
+              {statuses[char] && statuses[char] !== "auto" && (
+                <em data-status={statuses[char]}>
+                  {STATUS_LABEL[statuses[char]]}
+                </em>
+              )}
+            </span>
+            <button
+              className="sg-sep-step"
+              aria-label="다음 보정 글자"
+              disabled={currentIndex >= chars.length - 1}
+              onClick={() => changeChar(1)}
+            >
+              ›
+            </button>
+          </div>
+          <div className="editor-modes" role="group" aria-label="편집 방식">
+            <button
+              className={mode === "lasso" ? "active" : ""}
+              aria-pressed={mode === "lasso"}
+              onClick={() => setMode("lasso")}
+            >
+              선택·이동
+            </button>
+            <button
+              className={mode === "point" ? "active" : ""}
+              aria-pressed={mode === "point"}
+              onClick={() => setMode("point")}
+            >
+              부분 수정
+            </button>
+          </div>
+          <div className="sg-sep-tools">
+            <button
+              disabled={!past.length}
+              onClick={undo}
+              aria-label="보정 실행 취소"
+              title="실행 취소"
+            >
+              ↶
+            </button>
+            <button
+              disabled={!future.length}
+              onClick={redo}
+              aria-label="보정 다시 실행"
+              title="다시 실행"
+            >
+              ↷
+            </button>
+            <details className="sg-sep-more">
+              <summary aria-label="이 글자 더보기">⋯</summary>
+              <div>
+                <button
+                  onClick={() =>
+                    setSelection(strokes.map((stroke) => stroke.id))
+                  }
+                >
+                  모든 획 선택
+                </button>
+                <button onClick={() => update({ assignments: {} })}>
+                  자동 결과로 되돌리기
+                </button>
+                <button onClick={onWrite}>이 글자 다시 쓰기</button>
+                <button onClick={() => setShowBoxes((value) => !value)}>
+                  {showBoxes
+                    ? "판정 상자 조절 닫기"
+                    : "판정 상자 직접 조절 (고급)"}
+                </button>
+              </div>
+            </details>
+            <button
+              className="sg-sep-help"
+              aria-label="사용법 보기"
+              onClick={() => setShowTutorial(true)}
+            >
+              ?
+            </button>
+          </div>
+          {onConfirm && (
+            <button
+              className="sg-confirm"
+              data-confirmed={statuses[char] === "confirmed" || undefined}
+              onClick={onConfirm}
+            >
+              {statuses[char] === "confirmed"
+                ? "확인 완료 ✓ 다음"
+                : "이대로 좋아요 ✓"}
+            </button>
+          )}
+        </div>
+        {(mode === "point" || error) && (
+          <div className="sg-sep-sub">
+            {mode === "point" && (
+              <label className="point-radius">
+                부분 수정 범위 {radius} em
+                <input
+                  aria-label="부분 수정 범위"
+                  type="range"
+                  min="25"
+                  max="250"
+                  value={radius}
+                  onChange={(e) => setRadius(+e.target.value)}
+                />
+              </label>
             )}
-          </span>
-        </div>
-        <button
-          aria-label="다음 보정 글자"
-          disabled={currentIndex >= chars.length - 1}
-          onClick={() => changeChar(1)}
-        >
-          다음 →
-        </button>
-        {onConfirm && (
-          <button
-            className="sg-confirm"
-            data-confirmed={statuses[char] === "confirmed" || undefined}
-            onClick={onConfirm}
-          >
-            {statuses[char] === "confirmed"
-              ? "확인 완료 ✓ · 다음"
-              : "이대로 좋아요 ✓"}
-          </button>
+            {error && (
+              <p className="font-error" role="alert">
+                {error}
+              </p>
+            )}
+          </div>
         )}
-      </div>
-      <div className="editor-toolbar sg-sep-tools">
-        <div className="editor-modes" role="group" aria-label="편집 방식">
-          <button
-            className={mode === "lasso" ? "active" : ""}
-            aria-pressed={mode === "lasso"}
-            onClick={() => setMode("lasso")}
-          >
-            선택·이동
-          </button>
-          <button
-            className={mode === "point" ? "active" : ""}
-            aria-pressed={mode === "point"}
-            onClick={() => setMode("point")}
-          >
-            부분 수정
-          </button>
-        </div>
-        <button
-          disabled={!past.length}
-          onClick={undo}
-          aria-label="보정 실행 취소"
-        >
-          ↶
-        </button>
-        <button
-          disabled={!future.length}
-          onClick={redo}
-          aria-label="보정 다시 실행"
-        >
-          ↷
-        </button>
-        {selection.length ? (
-          <button onClick={() => setSelection([])}>선택 해제</button>
-        ) : (
-          <button
-            onClick={() => setSelection(strokes.map((stroke) => stroke.id))}
-          >
-            전체 선택
-          </button>
-        )}
-        <details className="sg-help">
-          <summary aria-label="자모 나누기 사용법">?</summary>
-          <p>
-            획을 누르거나 빈 곳에서 둘러싸 선택한 뒤, 선택 상자 위의
-            초성·중성·종성 버튼을 누르면 한 번에 바뀌어요. 선택한 획을 끌면
-            위치를 옮길 수 있어요.{" "}
-            {mode === "point"
-              ? "부분 수정에서는 점을 끌면 그 주변 획 모양만 부드럽게 바뀌어요."
-              : "오른쪽 목록의 체크로 선택을 더하거나 뺄 수 있어요."}
-          </p>
-        </details>
-      </div>
-      {mode === "point" && (
-        <label className="point-radius">
-          부분 수정 범위 {radius} em
-          <input
-            aria-label="부분 수정 범위"
-            type="range"
-            min="25"
-            max="250"
-            value={radius}
-            onChange={(e) => setRadius(+e.target.value)}
-          />
-        </label>
-      )}
-      {error && (
-        <p className="font-error" role="alert">
-          {error}
-        </p>
-      )}
-      <p
-        className="reference-region-note"
-        data-reference-font={project.settings.referenceFont ?? "sans"}
-      >
-        {separation.boxes
-          ? "직접 조절한 자모 영역"
-          : guide
-            ? `${referenceUsesFallback(char, project.settings.referenceFont) ? "대체 견본(Noto Sans KR)" : referenceFont(project.settings.referenceFont).name}의 ‘${char}’ 자모 판정 범위. 진한 색은 견본의 획, 옅은 색은 판정되는 영역입니다.`
-            : `‘${char}’의 자모 배치를 기준으로 나눈 판정 범위입니다.`}
-      </p>
-      <div className="separation-layout">
-        <div>
+        <div className="sg-sep-canvas">
           <div className="separation-canvas-frame">
+            {showTutorial && tutorial}
+            {!selection.length && !showTutorial && (
+              <p className="sg-sep-hint" aria-hidden="true">
+                획을 둘러싸거나 눌러서 고른 뒤 초성·중성·종성을 눌러요
+              </p>
+            )}
             <CanvasStepButtons
               context="자모"
               navigation={{
@@ -763,165 +765,80 @@ export default function SeparationEditor({
               </div>
             )}
           </div>
-          <div className="part-legend">
-            {parts.map((part) => (
-              <span key={part} style={{ color: PART_COLORS[part] }}>
-                ● {PART_LABELS[part]}
-              </span>
-            ))}
-          </div>
         </div>
-        <div className="stroke-assignments" ref={assignments}>
-          <div className="assignment-heading">
-            <h3>획별 자모 배정</h3>
-            <span role="status">{selection.length}개 선택</span>
-          </div>
-          {rankedStrokes.map((stroke) => {
-            const i = strokes.findIndex((item) => item.id === stroke.id);
-            return (
-              <div
-                className={
-                  "assignment-row " +
-                  (selection.includes(stroke.id) ? "chosen" : "")
-                }
-                key={stroke.id}
-                data-assignment-id={stroke.id}
-              >
-                <label className="stroke-check">
-                  <input
-                    type="checkbox"
-                    aria-label={i + 1 + "번 획 선택"}
-                    checked={selection.includes(stroke.id)}
-                    onChange={() => toggle(stroke.id)}
-                  />
-                  {i + 1}번
-                </label>
-                <div
-                  className="part-buttons"
-                  role="group"
-                  aria-label={i + 1 + "번 획 자모"}
-                >
-                  {(["cho", "jung", "jong"] as Part[]).map((part) => (
-                    <button
-                      key={part}
-                      disabled={!parts.includes(part)}
-                      aria-label={
-                        i + 1 + "번 획 " + PART_LABELS[part] + " 지정"
-                      }
-                      aria-pressed={
-                        assignStroke(
-                          char,
-                          stroke,
-                          separation,
-                          project.settings,
-                        ) === part
-                      }
-                      className={
-                        assignStroke(
-                          char,
-                          stroke,
-                          separation,
-                          project.settings,
-                        ) === part
-                          ? "active"
-                          : ""
-                      }
-                      style={
-                        {
-                          "--part-color": PART_COLORS[part],
-                        } as React.CSSProperties
-                      }
-                      onClick={() => assign(stroke.id, part)}
-                    >
-                      {PART_LABELS[part]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-          <div className="sg-row-actions">
+        <div
+          className="character-slider"
+          ref={strip}
+          role="listbox"
+          aria-label="보정할 글자 슬라이드"
+        >
+          {chars.map((item) => (
             <button
-              className="font-secondary"
-              onClick={() => update({ assignments: {} })}
+              key={item}
+              role="option"
+              aria-label={item + " 보정"}
+              aria-selected={item === char}
+              aria-current={item === char ? "true" : undefined}
+              onClick={() => onSelect(item)}
             >
-              자동 결과로 되돌리기
+              <Thumbnail
+                strokes={effectiveStrokes(
+                  project.samples[item],
+                  prep.separations[item],
+                )}
+              />
+              <span>{item}</span>
+              {statuses[item] && statuses[item] !== "auto" && (
+                <i
+                  data-status={statuses[item]}
+                  aria-label={STATUS_LABEL[statuses[item]]}
+                >
+                  {statuses[item] === "check" ? "!" : "✓"}
+                </i>
+              )}
             </button>
-            <button className="font-secondary" type="button" onClick={onWrite}>
-              이 글자 다시 쓰기
-            </button>
-          </div>
+          ))}
         </div>
       </div>
-      <details className="box-settings">
-        <summary>고급 · 자모 판정 상자 직접 조절</summary>
-        {parts.map((part) => (
-          <fieldset key={part}>
-            <legend>{PART_LABELS[part]}</legend>
-            {(["x", "y", "width", "height"] as const).map((key) => (
-              <label key={key}>
-                {{ x: "왼쪽", y: "위쪽", width: "너비", height: "높이" }[key]}
-                <input
-                  aria-label={PART_LABELS[part] + " 상자 " + key}
-                  type="number"
-                  min={key === "width" || key === "height" ? 50 : 0}
-                  max="1000"
-                  value={Math.round(boxes[part]![key])}
-                  onChange={(event) => {
-                    const value = +event.target.value;
-                    if (
-                      !Number.isFinite(value) ||
-                      value < (key === "width" || key === "height" ? 50 : 0) ||
-                      value > 1000
-                    )
-                      return;
-                    update({
-                      ...separation,
-                      boxes: {
-                        ...separation.boxes,
-                        [part]: { ...boxes[part]!, [key]: value },
-                      },
-                    });
-                  }}
-                />
-              </label>
-            ))}
-          </fieldset>
-        ))}
-      </details>
-      <div
-        className="character-slider"
-        ref={strip}
-        role="listbox"
-        aria-label="보정할 글자 슬라이드"
-      >
-        {chars.map((item) => (
-          <button
-            key={item}
-            role="option"
-            aria-label={item + " 보정"}
-            aria-selected={item === char}
-            aria-current={item === char ? "true" : undefined}
-            onClick={() => onSelect(item)}
-          >
-            <Thumbnail
-              strokes={effectiveStrokes(
-                project.samples[item],
-                prep.separations[item],
-              )}
-            />
-            <span>{item}</span>
-            {statuses[item] && statuses[item] !== "auto" && (
-              <i
-                data-status={statuses[item]}
-                aria-label={STATUS_LABEL[statuses[item]]}
-              >
-                {statuses[item] === "check" ? "!" : "✓"}
-              </i>
-            )}
-          </button>
-        ))}
-      </div>
+      {showBoxes && (
+        <details className="box-settings" open>
+          <summary>판정 상자 직접 조절 (고급)</summary>
+          {parts.map((part) => (
+            <fieldset key={part}>
+              <legend>{PART_LABELS[part]}</legend>
+              {(["x", "y", "width", "height"] as const).map((key) => (
+                <label key={key}>
+                  {{ x: "왼쪽", y: "위쪽", width: "너비", height: "높이" }[key]}
+                  <input
+                    aria-label={PART_LABELS[part] + " 상자 " + key}
+                    type="number"
+                    min={key === "width" || key === "height" ? 50 : 0}
+                    max="1000"
+                    value={Math.round(boxes[part]![key])}
+                    onChange={(event) => {
+                      const value = +event.target.value;
+                      if (
+                        !Number.isFinite(value) ||
+                        value <
+                          (key === "width" || key === "height" ? 50 : 0) ||
+                        value > 1000
+                      )
+                        return;
+                      update({
+                        ...separation,
+                        boxes: {
+                          ...separation.boxes,
+                          [part]: { ...boxes[part]!, [key]: value },
+                        },
+                      });
+                    }}
+                  />
+                </label>
+              ))}
+            </fieldset>
+          ))}
+        </details>
+      )}
     </div>
   );
 }

@@ -128,7 +128,26 @@ await page.waitForTimeout(900);
 
 await page.click('.sg-steps button:has-text("자모 나누기")');
 await page.waitForSelector(".separation-editor");
-check("자모 나누기 화면", await page.locator(".sg-sep-nav strong").isVisible());
+check(
+  "자모 나누기 화면",
+  await page.locator(".sg-sep-char strong").isVisible(),
+);
+check(
+  "처음 들어오면 사용법 애니메이션",
+  await page.locator(".sg-tutorial").isVisible(),
+);
+await page.click("text=알겠어요");
+const fits = await page.evaluate(
+  () =>
+    document.querySelector(".sg-sep-main").getBoundingClientRect().bottom <=
+    innerHeight,
+);
+check("자모 나누기 작업 영역이 한 화면에 들어옴", fits);
+await page.locator(".separation-svg path[data-stroke-id]").nth(1).click();
+check(
+  "획을 누르면 초·중·종성 버튼",
+  await page.locator(".quick-assign").isVisible(),
+);
 await page.click('.sg-steps button:has-text("폰트 완성")');
 await page.waitForSelector(".fw-preview canvas");
 await page.fill('[aria-label="미리 볼 문장"]', "겨구귀");

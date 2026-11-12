@@ -478,89 +478,83 @@ export default function FontWorkshop({
 
   if (stage === "separation")
     return (
-      <div className="guided-workshop journey-panel">
+      <div className="guided-workshop journey-panel sg-sep-page">
         <section
-          className="font-workshop fw"
+          className="font-workshop fw fw-sep"
           ref={root}
           aria-labelledby="fw-title"
         >
-          <header className="fw-head">
-            <div>
-              <span className="step-kicker">04 / 자모 나누기</span>
-              <h1 id="fw-title" tabIndex={-1}>
-                자음과 모음이 잘 나뉘었는지 확인해요
-              </h1>
-              <p>
-                <b>한 = ㅎ + ㅏ + ㄴ</b>처럼 글자를 나눠 두면, 쓰지 않은 한글
-                11,172자를 내 글씨로 만들 수 있어요. 자동으로 나눈 결과 중{" "}
-                <b>확인이 필요한 글자</b>만 보면 돼요.
-              </p>
-            </div>
-            <div className="fw-head-side">
-              <div className="fw-stats" role="status">
-                <span>
-                  <b>{confirmedCount}</b> / {writtenHangul.length} 확인 완료
-                </span>
-                <span>
-                  <b>{syllables.toLocaleString()}</b> / 11,172 만들 수 있음
-                </span>
-              </div>
-              {writtenHangul.length > 0 && (
-                <div
-                  className="fw-segment"
-                  role="group"
-                  aria-label="보여줄 글자"
+          <h1 id="fw-title" className="sg-visually-hidden" tabIndex={-1}>
+            자모 나누기
+          </h1>
+          <div className="fw-sep-top">
+            <button type="button" className="fw-secondary" onClick={onClose}>
+              ← 글자 쓰기
+            </button>
+            {writtenHangul.length > 0 && (
+              <div className="fw-segment" role="group" aria-label="보여줄 글자">
+                <button
+                  type="button"
+                  aria-pressed={listMode === "check"}
+                  onClick={() => setListMode("check")}
                 >
-                  <button
-                    type="button"
-                    aria-pressed={listMode === "check"}
-                    onClick={() => setListMode("check")}
-                  >
-                    확인 필요 <b>{checkCount}</b>
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={listMode === "all"}
-                    onClick={() => setListMode("all")}
-                  >
-                    쓴 한글 전체 <b>{writtenHangul.length}</b>
-                  </button>
-                </div>
-              )}
-            </div>
-          </header>
+                  확인 필요 <b>{checkCount}</b>
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={listMode === "all"}
+                  onClick={() => setListMode("all")}
+                >
+                  전체 <b>{writtenHangul.length}</b>
+                </button>
+              </div>
+            )}
+            <span className="fw-sep-stats" role="status">
+              확인 완료 <b>{confirmedCount}</b>/{writtenHangul.length} · 만들 수
+              있는 한글 <b>{syllables.toLocaleString()}</b>
+            </span>
+            <button
+              type="button"
+              className="fw-primary"
+              disabled={!report.direct}
+              onClick={() => {
+                setFinishStep("refine");
+                setStage("build");
+              }}
+            >
+              폰트 다듬기 →
+            </button>
+          </div>
+          {listMode === "check" && !checkCount && writtenHangul.length > 0 && (
+            <p className="fw-done-note" role="status">
+              확인이 필요한 글자가 없어요. 바로 폰트를 다듬어도 좋아요.
+            </p>
+          )}
           {writtenHangul.length ? (
-            <>
-              {listMode === "check" && !checkCount && (
-                <p className="fw-done-note" role="status">
-                  확인이 필요한 글자가 없어요. 바로 폰트를 다듬어도 좋아요.
-                </p>
-              )}
-              <SeparationEditor
-                project={project}
-                preparation={prep}
-                char={selected}
-                chars={visibleChars}
-                statuses={statuses}
-                onSelect={setSelected}
-                onWrite={() => onWrite(selected)}
-                onChange={onChange}
-                onConfirm={() => {
-                  onChange(confirmSeparation(project, prep, selected));
-                  const order = writtenHangul;
-                  const start = order.indexOf(selected);
-                  const next = [
-                    ...order.slice(start + 1),
-                    ...order.slice(0, start),
-                  ].find((char) =>
-                    listMode === "check"
-                      ? statuses[char] === "check"
-                      : statuses[char] !== "confirmed",
-                  );
-                  if (next) setSelected(next);
-                }}
-              />
-            </>
+            <SeparationEditor
+              project={project}
+              preparation={prep}
+              char={selected}
+              chars={visibleChars}
+              statuses={statuses}
+              onSelect={setSelected}
+              onWrite={() => onWrite(selected)}
+              onChange={onChange}
+              onConfirm={() => {
+                onChange(confirmSeparation(project, prep, selected));
+                const order = writtenHangul;
+                const start = order.indexOf(selected);
+                const next = [
+                  ...order.slice(start + 1),
+                  ...order.slice(0, start),
+                ].find((char) =>
+                  listMode === "check"
+                    ? statuses[char] === "check"
+                    : statuses[char] !== "confirmed",
+                );
+                if (next) setSelected(next);
+              }}
+            />
           ) : (
             <div className="fw-empty">
               아직 쓴 한글이 없어요.
@@ -574,22 +568,6 @@ export default function FontWorkshop({
             </div>
           )}
           {missingSlots}
-          <footer className="fw-actions">
-            <button type="button" className="fw-secondary" onClick={onClose}>
-              ← 글자 쓰기
-            </button>
-            <button
-              type="button"
-              className="fw-primary"
-              disabled={!report.direct}
-              onClick={() => {
-                setFinishStep("refine");
-                setStage("build");
-              }}
-            >
-              폰트 다듬기 →
-            </button>
-          </footer>
         </section>
       </div>
     );

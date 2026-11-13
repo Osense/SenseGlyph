@@ -1,4 +1,5 @@
 "use client";
+import { inkOf, useStudioDark } from "../lib/theme-ink";
 import { useEffect, useRef } from "react";
 import { drawGrid, drawSample } from "../lib/drawing";
 import { paintStroke } from "../lib/brushes";
@@ -50,13 +51,14 @@ export function Reference({
 }
 export function BrushPreview({ brush }: { brush: BrushId }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const dark = useStudioDark();
   useEffect(() => {
     const ctx = ref.current?.getContext("2d");
     if (!ctx) return;
     ctx.clearRect(0, 0, 240, 60);
     ctx.save();
     ctx.scale(0.24, 0.24);
-    ctx.fillStyle = "#456957";
+    ctx.fillStyle = inkOf(ref.current);
     paintStroke(ctx, {
       id: "preview",
       brush,
@@ -71,7 +73,7 @@ export function BrushPreview({ brush }: { brush: BrushId }) {
       })),
     });
     ctx.restore();
-  }, [brush]);
+  }, [brush, dark]);
   return <canvas ref={ref} width={240} height={60} aria-hidden="true" />;
 }
 export function Thumbnail({
@@ -87,18 +89,21 @@ export function Thumbnail({
   size?: number;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const dark = useStudioDark();
   useEffect(() => {
     const ctx = ref.current?.getContext("2d");
     if (!ctx) return;
+    const ink = inkOf(ref.current);
+    const error = dark ? "#ff8f80" : "#c0392b";
     ctx.clearRect(0, 0, size, size);
     ctx.save();
     ctx.scale(size / 1000, size / 1000);
     for (const s of strokes) {
       ctx.fillStyle =
-        colorOf?.(s) ?? (tone === "error" ? "#bd4b43" : "#456957");
+        colorOf?.(s) ?? (tone === "error" ? error : ink);
       paintStroke(ctx, s);
     }
     ctx.restore();
-  }, [strokes, tone, colorOf, size]);
+  }, [strokes, tone, colorOf, size, dark]);
   return <canvas ref={ref} width={size} height={size} aria-hidden="true" />;
 }

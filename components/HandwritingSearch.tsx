@@ -222,7 +222,7 @@ function PartThumbnail({
         ];
       }),
     );
-    return (stroke: { id: string }) => colors.get(stroke.id) ?? "#456957";
+    return (stroke: { id: string }) => colors.get(stroke.id) ?? "#a68488";
   }, [strokes, active, project.settings, key]);
   return <Thumbnail strokes={strokes} colorOf={colorOf} size={120} />;
 }

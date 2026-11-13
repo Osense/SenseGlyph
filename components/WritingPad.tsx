@@ -155,13 +155,13 @@ export default function WritingPad({
     const ctx = context(ink.current);
     if (!ctx) return;
     ctx.clearRect(0, 0, 1000, 1000);
-    ctx.fillStyle = dark ? "#f1eadb" : "#263c33";
+    ctx.fillStyle = dark ? "#f4ecea" : "#1f1515";
     for (const s of active.current?.working ?? committed.current)
       paintStroke(ctx, s);
     const l = context(live.current);
     if (!l) return;
     l.clearRect(0, 0, 1000, 1000);
-    l.fillStyle = dark ? "#f1eadb" : "#263c33";
+    l.fillStyle = dark ? "#f4ecea" : "#1f1515";
     const a = active.current;
     if (a && !a.erase)
       paintStroke(l, {

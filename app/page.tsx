@@ -99,7 +99,7 @@ export default function Page() {
     [tipsOpen, setTipsOpen] = useState(false),
     [projectsOpen, setProjectsOpen] = useState(false),
     [fontReviewChar, setFontReviewChar] = useState<string | undefined>(),
-    [dark, setDark] = useState(false),
+    [dark, setDark] = useState(true),
     [busy, setBusy] = useState(false),
     [toast, setToast] = useState(""),
     [toastUndo, setToastUndo] = useState(false),
@@ -221,7 +221,8 @@ export default function Page() {
       });
     try {
       const pref = JSON.parse(localStorage.getItem("hanhoek-ui") ?? "{}");
-      setDark(!!pref.dark);
+      // OSNS 테마부터는 어두운 화면이 기본. 그 뒤에 고른 값만 따른다.
+      setDark(pref.theme === "osns" ? pref.dark !== false : true);
     } catch {}
     return () => {
       alive = false;
@@ -233,7 +234,7 @@ export default function Page() {
       const pref = JSON.parse(localStorage.getItem("hanhoek-ui") ?? "{}");
       localStorage.setItem(
         "hanhoek-ui",
-        JSON.stringify({ ...pref, dark, journeyVersion: 2 }),
+        JSON.stringify({ ...pref, dark, theme: "osns", journeyVersion: 2 }),
       );
     } catch {
       /* UI 선호 저장이 차단돼도 벡터 입력은 계속 허용한다. */
@@ -523,12 +524,14 @@ export default function Page() {
     >
       <header className="sg-topbar">
         <a className="sg-brand" href="./" aria-label="쎈스 글리프 처음 화면">
-          <span className="brand-mark" aria-hidden="true">
-            ㅆ
+          <span className="sg-osns" aria-hidden="true">
+            <img src={BASE_PATH + "/logo/osns-crayon.svg"} alt="" />
+            <i>studio</i>
           </span>
-          <span className="sg-brand-name">
-            쎈스 글리프<small>OSNS.studio</small>
+          <span className="sg-brand-slash" aria-hidden="true">
+            /
           </span>
+          <span className="sg-brand-name">쎈스 글리프</span>
         </a>
         <nav className="sg-steps" aria-label="폰트 만드는 순서">
           {STEPS.map((label, position) => (
@@ -546,8 +549,10 @@ export default function Page() {
               disabled={busy}
               onClick={() => changeStep(position)}
             >
-              <span className="step-number">{position + 1}</span>
               <span>{label}</span>
+              <span className="step-number">
+                {String(position + 1).padStart(2, "0")}
+              </span>
             </button>
           ))}
         </nav>
@@ -582,6 +587,7 @@ export default function Page() {
           update={update}
           next={() => changeStep(step + 1)}
           hasWriting={usedBrushes.size > 0}
+          dark={dark}
         />
       )}
 

@@ -130,7 +130,7 @@ export default function MetricPreview({
       const top =
         baseline +
         (500 - original.plan.bodySize / 2 - settings.baseline) * scale;
-      ctx.strokeStyle = dark ? "#505d51" : "#e6e2d4";
+      ctx.strokeStyle = dark ? "#3a2628" : "#ecdedc";
       ctx.setLineDash([4, 4]);
       ctx.strokeRect(12, top, WIDTH - 24, body);
       ctx.setLineDash([]);
@@ -141,7 +141,7 @@ export default function MetricPreview({
       let x = Math.max(16, (WIDTH - total * scale) / 2);
       for (const glyph of glyphs) {
         if (glyph.ink) {
-          ctx.fillStyle = dark ? "#ecebe1" : "#232c29";
+          ctx.fillStyle = dark ? "#f4ecea" : "#1f1515";
           ctx.beginPath();
           for (const ring of glyph.ink) {
             ring.forEach(([px, py], i) => {
@@ -154,7 +154,7 @@ export default function MetricPreview({
           }
           ctx.fill("nonzero");
         } else if (!/\s/.test(glyph.char)) {
-          ctx.fillStyle = dark ? "#6f7a6c" : "#c3c6b8";
+          ctx.fillStyle = dark ? "#a68488" : "#c9b3b5";
           ctx.font = `${original.plan.bodySize * scale * 0.86}px ${referenceStack(project.settings.referenceFont)}`;
           ctx.fillText(glyph.char, x + 4, baseline - 6);
         }

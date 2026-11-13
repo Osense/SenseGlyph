@@ -19,8 +19,10 @@ export default function JourneySetup({
   update,
   next,
   hasWriting = false,
+  dark = false,
 }: {
   hasWriting?: boolean;
+  dark?: boolean;
   step: number;
   settings: ProjectSettings;
   update: (settings: Partial<ProjectSettings>) => void;
@@ -195,7 +197,7 @@ export default function JourneySetup({
                 },
               }}
               tool="pen"
-              dark={false}
+              dark={dark}
               onBusy={() => {}}
               practice
             />

@@ -1,6 +1,9 @@
 import { METRICS } from "../../config/metrics";
 import { categoryForChar, DIAMOND_RADIUS } from "../safety";
-import polygonClipping, { type Ring } from "polygon-clipping";
+import polygonClipping, {
+  type MultiPolygon,
+  type Ring,
+} from "polygon-clipping";
 import { hitsStroke } from "../geometry";
 import type { FontBuildSettings, StrokeFinish } from "./types";
 import type { Stroke } from "../types";
@@ -84,12 +87,82 @@ export function createStrokeRenderer(settings?: FontBuildSettings) {
 
 export const strokeContours = createStrokeRenderer();
 
+function ringArea(ring: number[][]) {
+  let area = 0;
+  for (let i = 0; i < ring.length; i++) {
+    const [x1, y1] = ring[i],
+      [x2, y2] = ring[(i + 1) % ring.length];
+    area += x1 * y2 - x2 * y1;
+  }
+  return area / 2;
+}
+
+/**
+ * 합치기 전에 좌표를 격자에 맞추고, 붙어 있는 같은 점과 넓이가 없는 고리를 지운다.
+ * polygon-clipping 은 1e-13 만큼 떨어진 점이나 길이가 거의 0인 선분을 만나면
+ * "Unable to find segment … in SweepLine tree" 오류로 멈추기 때문이다.
+ * 글리프 좌표는 결국 정수 폰트 단위로 저장되므로 1/8 단위 반올림은 모양에 영향이 없다.
+ */
+export function cleanRings(contours: Contours, grid = 8): Contours {
+  const out: Contours = [];
+  for (const ring of contours) {
+    const cleaned: number[][] = [];
+    for (const point of ring) {
+      const x = Math.round(point[0] * grid) / grid,
+        y = Math.round(point[1] * grid) / grid;
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      const last = cleaned.at(-1);
+      if (last && last[0] === x && last[1] === y) continue;
+      cleaned.push([x, y]);
+    }
+    while (
+      cleaned.length > 1 &&
+      cleaned[0][0] === cleaned.at(-1)![0] &&
+      cleaned[0][1] === cleaned.at(-1)![1]
+    )
+      cleaned.pop();
+    if (cleaned.length >= 3 && Math.abs(ringArea(cleaned)) > 0.5 / grid)
+      out.push(cleaned);
+  }
+  return out;
+}
+
+function union(contours: Contours): Contours {
+  return polygonClipping
+    .union(contours.map((ring) => [ring as Ring]))
+    .flatMap((polygon) => polygon.map((ring) => ring.slice(0, -1)));
+}
+
+/** 획 윤곽을 하나로 합친다. 계산이 실패해도 폰트 만들기가 멈추지 않도록 단계적으로 물러난다. */
 export function mergeInk(contours: Contours): Contours {
-  return contours.length
-    ? polygonClipping
-        .union(contours.map((ring) => [ring as Ring]))
-        .flatMap((polygon) => polygon.map((ring) => ring.slice(0, -1)))
-    : [];
+  if (!contours.length) return [];
+  // 1) 1/8 격자, 2) 정수 격자에서 한 번에 합치기
+  for (const grid of [8, 1]) {
+    const rings = cleanRings(contours, grid);
+    if (!rings.length) return [];
+    try {
+      return cleanRings(union(rings), grid);
+    } catch {
+      /* 다음 방법으로 */
+    }
+  }
+  // 3) 하나씩 더해 가며, 합쳐지지 않는 고리는 따로 둔다(겹쳐도 같은 방향이면 채워진다).
+  let merged: MultiPolygon = [];
+  const separate: Contours = [];
+  for (const ring of cleanRings(contours, 1)) {
+    try {
+      merged = polygonClipping.union(merged, [ring as Ring]);
+    } catch {
+      separate.push(ringArea(ring) < 0 ? [...ring].reverse() : ring);
+    }
+  }
+  return [
+    ...cleanRings(
+      merged.flatMap((polygon) => polygon.map((ring) => ring.slice(0, -1))),
+      1,
+    ),
+    ...separate,
+  ];
 }
 
 export function inkBounds(contours: Contours): InkBounds | null {

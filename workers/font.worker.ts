@@ -45,10 +45,12 @@ self.onmessage = async (event: MessageEvent<BuildRequest>) => {
     );
     send({ type: "result", ...result }, [result.buffer]);
   } catch (error) {
-    send({
-      type: "error",
-      message:
-        error instanceof Error ? error.message : "폰트 생성에 실패했습니다.",
-    });
+    const detail = error instanceof Error ? error.message : "";
+    // 한글 안내(검증 오류)는 그대로, 라이브러리 내부 오류는 알아듣기 쉬운 말로 바꾼다.
+    const message = /[가-힣]/.test(detail)
+      ? detail
+      : "폰트를 만드는 중 문제가 생겼어요. 다시 시도해 주세요." +
+        (detail ? ` (오류 내용: ${detail.slice(0, 120)})` : "");
+    send({ type: "error", message });
   }
 };

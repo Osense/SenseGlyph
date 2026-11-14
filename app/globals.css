@@ -32,7 +32,7 @@ button {
     border-color 0.15s;
 }
 button:hover:not(:disabled) {
-  background: #e4e9e0;
+  background: var(--active-wash, #e4e9e0);
 }
 button:disabled {
   opacity: 0.35;
@@ -662,7 +662,7 @@ kbd {
   background: #33452f;
 }
 .dark button:hover:not(:disabled) {
-  background: #41503c;
+  background: var(--active-wash, #41503c);
 }
 .dark .slider-label b,
 .dark .check {

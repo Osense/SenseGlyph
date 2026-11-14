@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { hasCorrection, correctionAmounts } from "../lib/font/beautify";
 import { baseHandwriting, correctHandwriting } from "../lib/font/composition";
 import { mergeInk } from "../lib/font/layout";
+import { outlines } from "../lib/brushes";
+import { METRICS, UPM } from "../config/metrics";
 import { fontLayout } from "../lib/font/pipeline";
 import { loadReferenceFont, referenceStack } from "../lib/reference-fonts";
 import type { FontProject } from "../lib/types";
@@ -19,6 +21,10 @@ type Glyph = {
   char: string;
   advance: number;
   ink?: number[][][];
+  /** 이 글자의 기준선(폰트 단위). 쓴 그대로 줄은 쓰기 칸의 기준선 800 */
+  baseline?: number;
+  /** 직접 쓰지 않고 자모를 모아 만든 글자(쓴 그대로 줄에서 연하게) */
+  faint?: boolean;
 };
 
 /** 실제 폰트 생성과 같은 계산(lib/font/pipeline)으로 그린 실시간 미리보기입니다.
@@ -75,6 +81,19 @@ export default function MetricPreview({
     () => fontLayout(project, base, settings),
     [base, layoutKey],
   );
+  // 쓴 그대로 줄: 크기·간격·기준선·굵기 설정을 하나도 적용하지 않은 기본 배치
+  const neutral = useMemo(
+    () =>
+      fontLayout(project, base, {
+        ...settings,
+        bodySize: 840,
+        letterSpacing: 0,
+        baseline: METRICS.baseline,
+        strokeWeight: undefined,
+        strokeFinish: "original",
+      }),
+    [base],
+  );
   const shown = useMemo(
     () =>
       corrected === base
@@ -113,7 +132,35 @@ export default function MetricPreview({
           ? { char, advance: glyph.advanceWidth, ink: mergeInk(glyph.contours) }
           : { char, advance: blank };
       });
-    const rows = [layout(original), layout(shown)];
+    // 쓴 그대로: 쓴 글자는 쓰기 칸(1000) 그대로, 칸 기준선 800에 맞춰 나란히 놓는다.
+    const raw: Glyph[] = letters.map((char) => {
+      const strokes = project.samples[char]?.strokes;
+      if (strokes?.length)
+        return {
+          char,
+          advance: UPM,
+          baseline: METRICS.baseline,
+          ink: strokes.flatMap((stroke) =>
+            outlines(stroke.points, stroke.brush, stroke.params),
+          ),
+        };
+      const glyph = neutral.glyph(char);
+      if (glyph)
+        return {
+          char,
+          advance: glyph.advanceWidth,
+          baseline: METRICS.baseline,
+          ink: mergeInk(glyph.contours),
+          faint: true,
+        };
+      return {
+        char,
+        advance:
+          /\s/.test(char) && char !== "　" ? neutral.plan.spaceWidth : UPM,
+        baseline: METRICS.baseline,
+      };
+    });
+    const rows = [raw, layout(shown)];
     const widest = Math.max(
       ...rows.map((row) => row.reduce((sum, g) => sum + g.advance, 0)),
     );
@@ -132,7 +179,7 @@ export default function MetricPreview({
         (500 - original.plan.bodySize / 2 - settings.baseline) * scale;
       ctx.strokeStyle = dark ? "#3a2628" : "#ecdedc";
       ctx.setLineDash([4, 4]);
-      ctx.strokeRect(12, top, WIDTH - 24, body);
+      if (view === 1) ctx.strokeRect(12, top, WIDTH - 24, body);
       ctx.setLineDash([]);
       ctx.beginPath();
       ctx.moveTo(12, baseline);
@@ -141,12 +188,19 @@ export default function MetricPreview({
       let x = Math.max(16, (WIDTH - total * scale) / 2);
       for (const glyph of glyphs) {
         if (glyph.ink) {
-          ctx.fillStyle = dark ? "#f4ecea" : "#1f1515";
+          ctx.fillStyle = glyph.faint
+            ? dark
+              ? "#a68488"
+              : "#b59a9c"
+            : dark
+              ? "#f4ecea"
+              : "#1f1515";
           ctx.beginPath();
+          const glyphBaseline = glyph.baseline ?? settings.baseline;
           for (const ring of glyph.ink) {
             ring.forEach(([px, py], i) => {
               const dx = x + px * scale,
-                dy = baseline + (py - settings.baseline) * scale;
+                dy = baseline + (py - glyphBaseline) * scale;
               if (i === 0) ctx.moveTo(dx, dy);
               else ctx.lineTo(dx, dy);
             });
@@ -161,7 +215,7 @@ export default function MetricPreview({
         x += glyph.advance * scale;
       }
     });
-  }, [text, ready, original, shown, settings.baseline]);
+  }, [text, ready, original, shown, neutral, settings.baseline]);
 
   return (
     <section className="fw-preview" aria-label="실시간 미리보기">
@@ -175,7 +229,10 @@ export default function MetricPreview({
         />
       </label>
       <figure>
-        <figcaption>쓴 그대로</figcaption>
+        <figcaption>
+          쓴 그대로
+          <small> · 고치지 않은 원본 (연한 글자는 자모를 모아 만든 글자)</small>
+        </figcaption>
         <canvas
           ref={before}
           width={WIDTH}

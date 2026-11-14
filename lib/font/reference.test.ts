@@ -78,3 +78,39 @@ it("keeps the fallback outline, dimensions and 판정 범위 in sync when a font
     referenceGuide(char, defaultSettings())?.boxes,
   );
 });
+
+it("judges strokes against the sample's jamo proportions even when written bigger and shifted", () => {
+  const settings = { referenceFont: "sans", grid: { diamond: true } } as never;
+  const guide = referenceGuide("겨", settings)!;
+  const box = guide.boxes.cho!;
+  const at = (x: number, y: number) => ({ x, y, p: 1, t: 0 });
+  const cho = {
+    id: "a",
+    order: 0,
+    createdAt: 0,
+    brush: "pen" as const,
+    params: { size: 20, usePressure: false },
+    points: [
+      at(box.x + 5, box.y + 5),
+      at(box.x + box.width / 2, box.y + box.height / 2),
+    ],
+  };
+  const jung = {
+    ...cho,
+    id: "b",
+    points: [
+      at(guide.x + guide.width * 0.92, guide.y + 4),
+      at(guide.x + guide.width * 0.92, guide.y + guide.height - 4),
+    ],
+  };
+  // 전체를 1.3배 키우고 오른쪽 아래로 옮긴 글씨
+  const move = (s: typeof cho) => ({
+    ...s,
+    points: s.points.map((p) =>
+      at(200 + p.x * 1.3 - 150, 120 + p.y * 1.3 - 150),
+    ),
+  });
+  const strokes = [move(cho), move(jung)];
+  expect(referencePart("겨", strokes[0], settings, strokes)).toBe("cho");
+  expect(referencePart("겨", strokes[1], settings, strokes)).toBe("jung");
+});

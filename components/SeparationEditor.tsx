@@ -26,7 +26,11 @@ import type { FontPreparation, Part, Separation } from "../lib/font/types";
 import { Thumbnail } from "./Preview";
 import SeparationTutorial, { TUTORIAL_KEY } from "./SeparationTutorial";
 import { referenceFont } from "../lib/reference-fonts";
-import { referenceGuide, referenceUsesFallback } from "../lib/font/reference";
+import {
+  guideTransform,
+  referenceGuide,
+  referenceUsesFallback,
+} from "../lib/font/reference";
 import type { SeparationStatus } from "../lib/font/separation-status";
 
 const STATUS_LABEL: Record<SeparationStatus, string> = {
@@ -118,11 +122,21 @@ export default function SeparationEditor({
   const svg = useRef<SVGSVGElement>(null),
     strip = useRef<HTMLDivElement>(null),
     gesture = useRef<Gesture | null>(null);
-  const displayed = draft ?? strokes,
-    bounds = useMemo(
-      () => strokeBounds(displayed, selection),
-      [displayed, selection],
-    );
+  const displayed = draft ?? strokes;
+  // 판정 범위는 견본 글자 모양 그대로, 쓴 글씨의 크기·위치에 맞춰 보여 준다.
+  const placement = guide ? guideTransform(guide, displayed) : null;
+  const regionRect = guide
+    ? placement!.toWriting({
+        x: guide.x - guide.width / (guide.resolution - 3),
+        y: guide.y - guide.height / (guide.resolution - 3),
+        width: (guide.width * guide.resolution) / (guide.resolution - 3),
+        height: (guide.height * guide.resolution) / (guide.resolution - 3),
+      })
+    : null;
+  const bounds = useMemo(
+    () => strokeBounds(displayed, selection),
+    [displayed, selection],
+  );
   const currentIndex = chars.indexOf(char);
   const [showTutorial, setShowTutorial] = useState(false);
   useEffect(() => {
@@ -384,7 +398,13 @@ export default function SeparationEditor({
             ...Object.fromEntries(
               strokes.map((stroke) => [
                 stroke.id,
-                assignStroke(char, stroke, separation, project.settings),
+                assignStroke(
+                  char,
+                  stroke,
+                  separation,
+                  project.settings,
+                  strokes,
+                ),
               ]),
             ),
             ...separation.assignments,
@@ -561,14 +581,10 @@ export default function SeparationEditor({
                 <image
                   data-reference-regions="true"
                   href={regionImage}
-                  x={guide.x - guide.width / (guide.resolution - 3)}
-                  y={guide.y - guide.height / (guide.resolution - 3)}
-                  width={
-                    (guide.width * guide.resolution) / (guide.resolution - 3)
-                  }
-                  height={
-                    (guide.height * guide.resolution) / (guide.resolution - 3)
-                  }
+                  x={regionRect!.x}
+                  y={regionRect!.y}
+                  width={regionRect!.width}
+                  height={regionRect!.height}
                   preserveAspectRatio="none"
                   style={{ imageRendering: "pixelated" }}
                   pointerEvents="none"
@@ -579,7 +595,9 @@ export default function SeparationEditor({
                 d="M500 0V1000 M0 500H1000 M500 0L1000 500 500 1000 0 500Z"
               />
               {parts.map((part) => {
-                const box = boxes[part]!;
+                const box = placement
+                  ? placement.toWriting(boxes[part]!)
+                  : boxes[part]!;
                 if (guide)
                   return (
                     <text
@@ -635,6 +653,7 @@ export default function SeparationEditor({
                     stroke,
                     separation,
                     project.settings,
+                    displayed,
                   ),
                   polygons = outlines(
                     stroke.points,

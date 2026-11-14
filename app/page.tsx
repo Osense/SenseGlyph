@@ -71,11 +71,16 @@ const BRUSHES: { id: BrushId; label: string }[] = [
   { id: "pixel", label: "픽셀펜" },
 ];
 const STEP_KEY = "hanhoek-journey";
-const PAD_PRESETS: { id: WritingPreset; label: string; scale: number }[] = [
-  { id: "xs", label: "더 작게", scale: 0.55 },
-  { id: "s", label: "작게", scale: 0.7 },
-  { id: "m", label: "보통", scale: 0.85 },
-  { id: "fill", label: "채우기", scale: 1 },
+/** 예전 단계(화면 대비 비율) — 저장된 설정을 읽을 때만 쓴다. */
+const PAD_PRESETS: { id: WritingPreset; scale: number }[] = [
+  { id: "xs", scale: 0.55 },
+  { id: "s", scale: 0.7 },
+  { id: "m", scale: 0.85 },
+  { id: "fill", scale: 1 },
+];
+/** 쓰기 칸 한 변 길이(px). 화면 크기와 상관없이 같은 크기라 기기가 달라도 숫자로 맞출 수 있다. */
+const PAD_SIZES = [
+  140, 170, 200, 230, 260, 290, 320, 360, 400, 450, 500, 560, 620, 700, 800,
 ];
 
 export default function Page() {
@@ -99,7 +104,7 @@ export default function Page() {
     [tipsOpen, setTipsOpen] = useState(false),
     [projectsOpen, setProjectsOpen] = useState(false),
     [fontReviewChar, setFontReviewChar] = useState<string | undefined>(),
-    [dark, setDark] = useState(true),
+    [dark, setDark] = useState(false),
     [busy, setBusy] = useState(false),
     [toast, setToast] = useState(""),
     [toastUndo, setToastUndo] = useState(false),
@@ -109,7 +114,24 @@ export default function Page() {
     timer = useRef<ReturnType<typeof setTimeout> | null>(null),
     saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null),
     switching = useRef(false),
-    saveChain = useRef(Promise.resolve());
+    saveChain = useRef(Promise.resolve()),
+    padArea = useRef<HTMLDivElement>(null);
+  // 지금 화면에서 쓰기 칸이 커질 수 있는 최대 크기(양옆 이동 버튼 104px 제외)
+  const [padFit, setPadFit] = useState(600);
+  useEffect(() => {
+    const area = padArea.current;
+    if (!area || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      const box = area.getBoundingClientRect();
+      setPadFit(
+        Math.max(120, Math.floor(Math.min(box.width - 104, box.height))),
+      );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(area);
+    return () => observer.disconnect();
+  }, [step, project?.id]);
   const changeStep = (next: number) => {
     if (busy) return;
     setStep(next);
@@ -172,6 +194,24 @@ export default function Page() {
   const strokes = project?.samples[char]?.strokes ?? [],
     s = project?.settings;
   const cat = CATEGORIES.find((c) => c.id === category)!;
+  // 칸 크기는 언제나 숫자(px)로 보여 준다. '가득'이나 예전 단계일 때는 지금 실제 크기.
+  const legacyScale =
+    PAD_PRESETS.find((p) => p.id === (s?.writingPreset ?? "fill"))?.scale ?? 1;
+  const shownPad = s?.writingSize
+    ? Math.min(s.writingSize, padFit)
+    : Math.round(padFit * legacyScale);
+  const stepPad = (direction: 1 | -1) => {
+    const current = shownPad;
+    const next =
+      direction < 0
+        ? ([...PAD_SIZES].reverse().find((v) => v < current) ?? PAD_SIZES[0])
+        : PAD_SIZES.find((v) => v > current);
+    if (!next || next > padFit) {
+      update({ writingPreset: "fill", writingSize: undefined });
+      return;
+    }
+    update({ writingSize: next });
+  };
   const notify = (message: string, canUndo = false) => {
     setToast(message);
     setToastUndo(canUndo);
@@ -221,8 +261,8 @@ export default function Page() {
       });
     try {
       const pref = JSON.parse(localStorage.getItem("hanhoek-ui") ?? "{}");
-      // OSNS 테마부터는 어두운 화면이 기본. 그 뒤에 고른 값만 따른다.
-      setDark(pref.theme === "osns" ? pref.dark !== false : true);
+      // 밝은 화면이 기본. 이 버전 이후에 직접 고른 값만 따른다.
+      setDark(pref.theme === "osns-light" ? !!pref.dark : false);
     } catch {}
     return () => {
       alive = false;
@@ -234,7 +274,12 @@ export default function Page() {
       const pref = JSON.parse(localStorage.getItem("hanhoek-ui") ?? "{}");
       localStorage.setItem(
         "hanhoek-ui",
-        JSON.stringify({ ...pref, dark, theme: "osns", journeyVersion: 2 }),
+        JSON.stringify({
+          ...pref,
+          dark,
+          theme: "osns-light",
+          journeyVersion: 2,
+        }),
       );
     } catch {
       /* UI 선호 저장이 차단돼도 벡터 입력은 계속 허용한다. */
@@ -713,6 +758,7 @@ export default function Page() {
               </div>
               <div
                 className="sg-pad-area"
+                ref={padArea}
                 style={
                   (s.writingSize
                     ? { "--writing-size": `${s.writingSize}px` }
@@ -749,34 +795,42 @@ export default function Page() {
               <div className="sg-pad-foot">
                 <div className="sg-size" role="group" aria-label="쓰기 칸 크기">
                   <span aria-hidden="true">칸</span>
-                  {PAD_PRESETS.map((preset) => (
-                    <button
-                      key={preset.id}
-                      aria-pressed={
-                        !s.writingSize &&
-                        (s.writingPreset ?? "fill") === preset.id
-                      }
-                      data-ink-locked={busy || undefined}
-                      disabled={busy}
-                      onClick={() =>
-                        update({
-                          writingPreset: preset.id,
-                          writingSize: undefined,
-                        })
-                      }
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                  {s.writingSize && (
-                    <button
-                      aria-pressed="true"
-                      onClick={() => setToolSheet(true)}
-                      title="도구 설정에서 바꿀 수 있어요"
-                    >
-                      {s.writingSize}px
-                    </button>
-                  )}
+                  <button
+                    aria-label="쓰기 칸 더 작게"
+                    data-ink-locked={busy || undefined}
+                    disabled={busy || shownPad <= PAD_SIZES[0]}
+                    onClick={() => stepPad(-1)}
+                  >
+                    −
+                  </button>
+                  <button
+                    className="sg-size-value"
+                    aria-label="쓰기 칸 크기 자세히"
+                    onClick={() => setToolSheet(true)}
+                  >
+                    <b>{shownPad}</b>
+                    <small>px</small>
+                  </button>
+                  <button
+                    aria-label="쓰기 칸 더 크게"
+                    data-ink-locked={busy || undefined}
+                    disabled={busy || (!s.writingSize && legacyScale === 1)}
+                    onClick={() => stepPad(1)}
+                  >
+                    +
+                  </button>
+                  <button
+                    aria-pressed={
+                      !s.writingSize && (s.writingPreset ?? "fill") === "fill"
+                    }
+                    data-ink-locked={busy || undefined}
+                    disabled={busy}
+                    onClick={() =>
+                      update({ writingPreset: "fill", writingSize: undefined })
+                    }
+                  >
+                    가득
+                  </button>
                 </div>
                 {mixedBrush && (
                   <p className="sg-hint" role="note">
@@ -1158,24 +1212,25 @@ export default function Page() {
                 </label>
                 <h3>쓰기 칸 크기 (고급)</h3>
                 <p className="sg-help">
-                  보통은 쓰기 칸 아래의 더 작게 · 작게 · 보통 · 채우기 버튼이면
-                  충분해요. 여기서는 픽셀 단위로 직접 정할 수 있어요.
+                  쓰기 칸 아래의 − · + 버튼은 정해진 단계로 바꾸고, 여기서는
+                  10px 단위로 정할 수 있어요. 같은 숫자면 어느 기기에서나 비슷한
+                  크기예요. 지금 화면에서는 {padFit}px까지 커질 수 있어요.
                 </p>
                 <div className="sg-px-row">
                   <input
                     aria-label="쓰기 칸 크기 슬라이더"
                     type="range"
-                    min="180"
+                    min="140"
                     max="900"
                     step="10"
-                    value={s.writingSize ?? 480}
+                    value={s.writingSize ?? shownPad}
                     onChange={(e) => update({ writingSize: +e.target.value })}
                   />
                   <label>
                     <input
                       aria-label="쓰기 칸 크기 픽셀"
                       type="number"
-                      min="180"
+                      min="140"
                       max="900"
                       step="10"
                       value={s.writingSize ?? ""}
@@ -1184,7 +1239,7 @@ export default function Page() {
                         const value = +e.target.value;
                         if (
                           Number.isFinite(value) &&
-                          value >= 180 &&
+                          value >= 140 &&
                           value <= 900
                         )
                           update({ writingSize: value });
@@ -1198,7 +1253,7 @@ export default function Page() {
                     className="sg-link"
                     onClick={() => update({ writingSize: undefined })}
                   >
-                    단계 버튼으로 되돌리기
+                    화면 가득으로 되돌리기
                   </button>
                 )}
                 <p className="sg-help">

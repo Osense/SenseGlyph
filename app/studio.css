@@ -2984,3 +2984,70 @@ button {
     animation: none;
   }
 }
+
+/* 쓰기 칸을 px 로 정했을 때: 화면보다 크면 화면에 맞춰 줄인다. */
+.sg-pad-area[data-fixed-size] > .pad {
+  --pad-fit: min(var(--writing-size), 100cqw - 104px, 100cqh);
+  width: calc(var(--pad-fit) + 104px);
+  height: var(--pad-fit);
+}
+.sg-size button[aria-label^="쓰기 칸 더"] {
+  width: 34px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+}
+.sg-size .sg-size-value {
+  min-width: 64px;
+  padding: 0 8px;
+  background: var(--sheet);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.sg-size .sg-size-value b {
+  font-size: 13px;
+}
+.sg-size .sg-size-value small {
+  margin-left: 1px;
+  color: var(--muted);
+  font-size: 10px;
+}
+@media (max-width: 640px) {
+  .sg-pad-area[data-fixed-size] > .pad {
+    --pad-fit: min(var(--writing-size), 100cqw - 104px);
+    width: calc(var(--pad-fit) + 104px);
+    height: var(--pad-fit);
+    margin-inline: auto;
+  }
+}
+
+/* 부분 수정 범위 조절은 편집 칸 위에 떠 있게 해서, 모드를 바꿔도 편집 칸 크기가 그대로이게 한다. */
+.sg-sep-main {
+  grid-template-rows: auto 0 minmax(0, 1fr) auto;
+}
+.sg-sep-main > .sg-sep-sub {
+  grid-row: 3;
+  align-self: start;
+  justify-self: center;
+  z-index: 4;
+  margin-top: 6px;
+  padding: 4px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sheet) 92%, transparent);
+  box-shadow: 0 4px 14px #1f151518;
+}
+.sg-sep-sub .point-radius {
+  min-width: 260px;
+  font-size: 12px;
+}
+.sg-sep-sub .point-radius input {
+  flex: 1;
+}
+.sg-pad-area[data-fixed-size] {
+  place-items: center;
+  place-content: center;
+}
+.sg-sep-main > * {
+  grid-column: 1;
+}

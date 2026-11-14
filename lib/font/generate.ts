@@ -20,7 +20,10 @@ import { bodySize, mergeInk } from "./layout";
 type Polygon = number[][];
 
 /** 폴리곤(y 아래로 +, 기준선 기준)을 폰트 좌표(y 위로 +) 윤곽으로. */
-export function polygonContour(polygon: Polygon, baseline: number): Contour | null {
+export function polygonContour(
+  polygon: Polygon,
+  baseline: number,
+): Contour | null {
   if (polygon.length < 3) return null;
   const points = polygon.map((p) => [
     Math.round(p[0]),
@@ -41,18 +44,35 @@ function pathContours(path: opentype.Path): Contour[] {
       current = { x: Math.round(c.x), y: Math.round(c.y), segments: [] };
       contours.push(current);
     } else if (!current) continue;
-    else if (c.type === "L") current.segments.push([0, Math.round(c.x), Math.round(c.y)]);
+    else if (c.type === "L")
+      current.segments.push([0, Math.round(c.x), Math.round(c.y)]);
     else if (c.type === "Q")
-      current.segments.push([1, Math.round(c.x1), Math.round(c.y1), Math.round(c.x), Math.round(c.y)]);
+      current.segments.push([
+        1,
+        Math.round(c.x1),
+        Math.round(c.y1),
+        Math.round(c.x),
+        Math.round(c.y),
+      ]);
     else if (c.type === "C")
       current.segments.push([
-        2, Math.round(c.x1), Math.round(c.y1), Math.round(c.x2), Math.round(c.y2), Math.round(c.x), Math.round(c.y),
+        2,
+        Math.round(c.x1),
+        Math.round(c.y1),
+        Math.round(c.x2),
+        Math.round(c.y2),
+        Math.round(c.x),
+        Math.round(c.y),
       ]);
   }
   return contours.filter((c) => c.segments.length >= 2);
 }
 
-function validate({ project, preparation, includePremium = true }: BuildRequest) {
+function validate({
+  project,
+  preparation,
+  includePremium = true,
+}: BuildRequest) {
   const options = { ...preparation.settings, includeComposed: true };
   if (!options.familyName.trim()) throw new Error("폰트 이름을 입력하세요.");
   const explicitEnglish = options.englishFamilyName?.trim();
@@ -128,7 +148,12 @@ export function buildGlyphChunk(
     const shaped = pipeline.glyph(char);
     if (!shaped || !shaped.contours.length) continue;
     const rings = mergeInk(shaped.contours);
-    out.push(char.codePointAt(0)!, shaped.advanceWidth, shaped.direct ? 0 : 1, rings.length);
+    out.push(
+      char.codePointAt(0)!,
+      shaped.advanceWidth,
+      shaped.direct ? 0 : 1,
+      rings.length,
+    );
     for (const ring of rings) {
       out.push(ring.length);
       for (const p of ring)
@@ -170,18 +195,40 @@ export function assembleFont(
       name: ".notdef",
       advanceWidth: square,
       contours: [
-        { x: 160, y: 0, segments: [[0, 160, 650], [0, 700, 650], [0, 700, 0]] },
-        { x: 210, y: 50, segments: [[0, 650, 50], [0, 650, 600], [0, 210, 600]] },
+        {
+          x: 160,
+          y: 0,
+          segments: [
+            [0, 160, 650],
+            [0, 700, 650],
+            [0, 700, 0],
+          ],
+        },
+        {
+          x: 210,
+          y: 50,
+          segments: [
+            [0, 650, 50],
+            [0, 650, 600],
+            [0, 210, 600],
+          ],
+        },
       ],
     },
-    { name: "space", unicode: 32, advanceWidth: layout.spaceWidth, contours: [] },
+    {
+      name: "space",
+      unicode: 32,
+      advanceWidth: layout.spaceWidth,
+      contours: [],
+    },
     { name: "uni3000", unicode: 0x3000, advanceWidth: square, contours: [] },
   ];
   let highest = options.baseline,
     lowest = options.baseline - 1000,
     composed = 0;
   const characters: string[] = [];
-  const name = (code: number) => "uni" + code.toString(16).toUpperCase().padStart(4, "0");
+  const name = (code: number) =>
+    "uni" + code.toString(16).toUpperCase().padStart(4, "0");
   const handwritten: OutlineGlyph[] = [];
   for (const { data } of chunks) {
     let i = 1;
@@ -196,7 +243,8 @@ export function assembleFont(
         const x0 = data[i],
           y0 = data[i + 1];
         const segments: Segment[] = [];
-        for (let k = 1; k < n; k++) segments.push([0, data[i + k * 2], data[i + k * 2 + 1]]);
+        for (let k = 1; k < n; k++)
+          segments.push([0, data[i + k * 2], data[i + k * 2 + 1]]);
         for (let k = 0; k < n; k++) {
           const y = data[i + k * 2 + 1];
           if (y > highest) highest = y;
@@ -208,7 +256,12 @@ export function assembleFont(
       if (!contours.length) continue;
       composed += isComposed;
       characters.push(String.fromCodePoint(code));
-      handwritten.push({ name: name(code), unicode: code, advanceWidth, contours });
+      handwritten.push({
+        name: name(code),
+        unicode: code,
+        advanceWidth,
+        contours,
+      });
     }
   }
   // 1번 그룹이 먼저 끝나도 글리프 순서는 코드 순서로
@@ -222,7 +275,13 @@ export function assembleFont(
     const loaded = new Map<FallbackSource, opentype.Font | null>();
     for (const char of fallbackTargets()) {
       if (have.has(char)) continue;
-      const glyph = fallbackGlyph(char, fallbacks, layout, options.baseline, loaded);
+      const glyph = fallbackGlyph(
+        char,
+        fallbacks,
+        layout,
+        options.baseline,
+        loaded,
+      );
       if (!glyph) continue;
       highest = Math.max(highest, glyph.top);
       lowest = Math.min(lowest, glyph.bottom);

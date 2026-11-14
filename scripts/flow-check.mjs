@@ -43,15 +43,31 @@ for (const [label, viewport] of [
   );
   check(`${label}: 페이지가 화면 밖으로 넘치지 않음`, !pad.overflow);
   await page.screenshot({ path: `artifacts/flow-${label}.png` });
-  await page.click('.sg-size button:has-text("더 작게")');
+  const padWidth = () =>
+    page.evaluate(() =>
+      Math.round(
+        document.querySelector(".pad-sheet").getBoundingClientRect().height,
+      ),
+    );
+  for (let i = 0; i < 4; i++)
+    await page.click('button[aria-label="쓰기 칸 더 작게"]');
   await page.waitForTimeout(300);
-  const small = await page.evaluate(() =>
-    Math.round(
-      document.querySelector(".pad-sheet").getBoundingClientRect().width,
-    ),
+  const small = await padWidth();
+  const label2 = await page.locator(".sg-size-value b").innerText();
+  check(
+    `${label}: 칸 크기 −로 줄이기 (숫자 표시)`,
+    small < pad.size * 0.8 && Math.abs(+label2 - small) <= 4,
+    small + "px / 표시 " + label2,
   );
-  check(`${label}: 칸 크기 '더 작게'`, small < pad.size * 0.7, small + "px");
-  await page.click('.sg-size button:has-text("채우기")');
+  const smaller = page.locator('button[aria-label="쓰기 칸 더 작게"]');
+  for (let i = 0; i < 20 && (await smaller.isEnabled()); i++)
+    await smaller.click();
+  await page.waitForTimeout(300);
+  const smallest = await padWidth();
+  check(`${label}: 가장 작은 칸 140px`, smallest <= 142, smallest + "px");
+  await page.click('.sg-size button:has-text("가득")');
+  await page.waitForTimeout(200);
+  check(`${label}: '가득'으로 되돌리기`, (await padWidth()) >= pad.size - 2);
   await context.close();
 }
 

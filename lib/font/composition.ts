@@ -89,12 +89,14 @@ export function assignStroke(
   stroke: Stroke,
   separation?: Separation,
   reference?: ReferenceSettings,
+  /** 이 글자의 모든 획: 견본 크기에 맞춰 판정할 때 씁니다. */
+  context?: Stroke[],
 ): Part {
   const boxes = boxesFor(char, separation, reference);
   const manual = separation?.assignments[stroke.id];
   if (manual && boxes[manual]) return manual;
   if (!separation?.boxes) {
-    const matched = referencePart(char, stroke, reference);
+    const matched = referencePart(char, stroke, reference, context);
     if (matched) return matched;
   }
   const p = strokeCenter(stroke),
@@ -130,7 +132,13 @@ export function separateSample(
     const part = key.split(":")[0] as Part;
     const strokes = sample.strokes.filter(
       (stroke) =>
-        assignStroke(sample.char, stroke, separation, reference) === part,
+        assignStroke(
+          sample.char,
+          stroke,
+          separation,
+          reference,
+          sample.strokes,
+        ) === part,
     );
     const confirmed = strokes.every(
       (stroke) => separation?.assignments[stroke.id] === part,
@@ -292,6 +300,126 @@ export function coverage(
   };
 }
 
+type Frame = { x: number; y: number; width: number; height: number };
+function frameOf(strokes: Stroke[]): Frame | null {
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  for (const stroke of strokes)
+    for (const p of stroke.points) {
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    }
+  return minX === Infinity
+    ? null
+    : { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+}
+
+/** 원본 글자(쓴 글자)마다 전체 범위를 한 번만 구해 둔다. */
+const sourceFrames = new WeakMap<
+  Map<string, ComponentSample[]>,
+  Map<string, Frame | null>
+>();
+function sourceFrame(pools: Map<string, ComponentSample[]>, char: string) {
+  let frames = sourceFrames.get(pools);
+  if (!frames) {
+    const byChar = new Map<string, Stroke[]>();
+    for (const pool of pools.values())
+      for (const component of pool)
+        byChar.set(component.char, [
+          ...(byChar.get(component.char) ?? []),
+          ...component.strokes,
+        ]);
+    frames = new Map(
+      [...byChar].map(([source, strokes]) => [source, frameOf(strokes)]),
+    );
+    sourceFrames.set(pools, frames);
+  }
+  return frames.get(char) ?? null;
+}
+
+/** 같은 짜임(세로·가로·섞임 모음, 받침 유무)으로 쓴 글자들의 보통 범위(중앙값). */
+const typicalFrames = new WeakMap<
+  Map<string, ComponentSample[]>,
+  Map<string, Frame>
+>();
+function layoutKey(char: string) {
+  const d = decompose(char)!;
+  return vowelType(d.jung) + ":" + (d.jong > 0);
+}
+function typicalFrame(pools: Map<string, ComponentSample[]>, char: string) {
+  let typical = typicalFrames.get(pools);
+  if (!typical) {
+    const groups = new Map<string, Frame[]>();
+    const seen = new Set<string>();
+    for (const pool of pools.values())
+      for (const component of pool) {
+        if (seen.has(component.char)) continue;
+        seen.add(component.char);
+        const frame = sourceFrame(pools, component.char);
+        if (!frame) continue;
+        const key = layoutKey(component.char);
+        groups.set(key, [...(groups.get(key) ?? []), frame]);
+      }
+    const median = (values: number[]) =>
+      [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
+    typical = new Map(
+      [...groups].map(([key, frames]) => [
+        key,
+        {
+          x: median(frames.map((f) => f.x)),
+          y: median(frames.map((f) => f.y)),
+          width: median(frames.map((f) => f.width)),
+          height: median(frames.map((f) => f.height)),
+        },
+      ]),
+    );
+    typicalFrames.set(pools, typical);
+  }
+  return typical.get(layoutKey(char)) ?? null;
+}
+
+/**
+ * 다른 글자에서 가져온 자모를, 그 글자 안에서 차지하던 자리 비율대로 새 글자 범위에 옮긴다.
+ * 손글씨는 글자마다 크기·위치가 조금씩 달라서 절대 좌표 그대로 모으면 자모가 겹치거나
+ * 벌어진다(예: 크게 쓴 '각'의 ㄱ + 작게 쓴 '난'의 ㄴ 받침). 위치는 비율로 맞추고,
+ * 자모 모양 자체는 크게 바꾸지 않도록 크기 변화는 0.8~1.25배로 묶는다.
+ */
+function placeComponent(
+  strokes: Stroke[],
+  from: Frame | null,
+  to: Frame | null,
+): Stroke[] {
+  if (!from || !to || from.width < 40 || from.height < 40) return strokes;
+  const own = frameOf(strokes);
+  if (!own) return strokes;
+  const clamp = (v: number) => Math.min(1.25, Math.max(0.8, v));
+  const sx = clamp(to.width / from.width),
+    sy = clamp(to.height / from.height);
+  const cx = own.x + own.width / 2,
+    cy = own.y + own.height / 2;
+  const nx = to.x + ((cx - from.x) / from.width) * to.width,
+    ny = to.y + ((cy - from.y) / from.height) * to.height;
+  if (
+    Math.abs(nx - cx) < 1 &&
+    Math.abs(ny - cy) < 1 &&
+    Math.abs(sx - 1) < 0.01 &&
+    Math.abs(sy - 1) < 0.01
+  )
+    return strokes;
+  return strokes.map((stroke) => ({
+    ...stroke,
+    points: stroke.points.map((p) => ({
+      ...p,
+      x: nx + (p.x - cx) * sx,
+      y: ny + (p.y - cy) * sy,
+    })),
+  }));
+}
+
 /** Exact contextual slots already share the same writing layout and em coordinates. */
 export function composeGlyph(
   char: string,
@@ -302,7 +430,7 @@ export function composeGlyph(
   if (!keys.length || !keys.every((key) => library.has(key))) return null;
   if (!pools) return keys.flatMap((key) => library.get(key)!.strokes);
 
-  const target = decompose(char)!;
+  const wanted = decompose(char)!;
   const [initialKey, medialKey] = keys;
   const matches = new Map<string, Map<string, ComponentSample>>();
   for (const key of keys) {
@@ -335,10 +463,15 @@ export function composeGlyph(
     const source = decompose(component.char)!;
     return (
       Number(!!component.confirmed) * 4 +
-      Number(source.jung === target.jung) * 2 +
-      Number(source.cho === target.cho)
+      Number(source.jung === wanted.jung) * 2 +
+      Number(source.cho === wanted.cho)
     );
   };
+  // 자모를 모아 놓을 글자 범위: 짝이 맞는 글자(anchor)가 있으면 그 글자, 없으면 같은 짜임의 보통 범위
+  const anchorChar = anchor && [...anchor.values()][0].char;
+  const target = anchorChar
+    ? sourceFrame(pools, anchorChar)
+    : typicalFrame(pools, char);
   return keys.flatMap((key) => {
     const original = anchor?.get(key);
     if (original) return original.strokes;
@@ -347,6 +480,10 @@ export function composeGlyph(
         sourceRank(candidate) > sourceRank(best) ? candidate : best,
       library.get(key)!,
     );
-    return source.strokes;
+    return placeComponent(
+      source.strokes,
+      sourceFrame(pools, source.char),
+      target,
+    );
   });
 }

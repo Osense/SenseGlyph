@@ -1,4 +1,9 @@
-import type { BuildRequest, FontStats, WorkerReply, WorkerRequest } from "./types";
+import type {
+  BuildRequest,
+  FontStats,
+  WorkerReply,
+  WorkerRequest,
+} from "./types";
 
 export interface BuildResult {
   ttf: ArrayBuffer;
@@ -61,7 +66,9 @@ export function buildFontParallel(
       }
       workers.push(worker);
       worker.onerror = () =>
-        fail(new Error("폰트를 만드는 중 문제가 생겼어요. 다시 시도해 주세요."));
+        fail(
+          new Error("폰트를 만드는 중 문제가 생겼어요. 다시 시도해 주세요."),
+        );
       worker.onmessage = (event: MessageEvent<WorkerReply>) => {
         if (cancelled) return;
         const reply = event.data;

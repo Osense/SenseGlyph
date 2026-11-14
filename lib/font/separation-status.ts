@@ -35,7 +35,7 @@ export function separationStatus(
   if (separation?.boxes) return "auto";
   for (const stroke of strokes) {
     if (separation?.assignments[stroke.id]) continue;
-    const vote = referenceVote(char, stroke, project.settings);
+    const vote = referenceVote(char, stroke, project.settings, strokes);
     if (vote && vote.share < AMBIGUOUS_SHARE) return "check";
   }
   return "auto";
@@ -59,6 +59,7 @@ export function confirmSeparation(
       stroke,
       separation,
       project.settings,
+      strokes,
     );
   return {
     ...prep,

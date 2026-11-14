@@ -111,7 +111,7 @@ export function parseProject(text: string): FontProject {
   const s = p.settings;
   if (
     s.writingSize !== undefined &&
-    (!finite(s.writingSize) || s.writingSize < 180 || s.writingSize > 900)
+    (!finite(s.writingSize) || s.writingSize < 140 || s.writingSize > 900)
   )
     throw new Error("쓰기 칸 크기 설정 오류");
   if (

@@ -152,7 +152,9 @@ it("prefers the same vowel layout when borrowing a final with equal confirmation
     assignments: { "흖-cho": "cho", "흖-jung": "jung", "흖-jong": "jong" },
   };
   const { library, pools } = prepareHandwriting(project, prep);
-  expect(composeGlyph("좋", library, pools)?.at(-1)).toBe(source.strokes[2]);
+  expect(composeGlyph("좋", library, pools)?.at(-1)?.id).toBe(
+    source.strokes[2].id,
+  );
 });
 
 it("applies opt-in handwriting correction to output strokes without changing the written sample", () => {
@@ -170,4 +172,41 @@ it("applies opt-in handwriting correction to output strokes without changing the
     source.map((stroke) => stroke.id),
   );
   expect(source.map((stroke) => stroke.points)).toEqual(points);
+});
+
+it("places a borrowed jamo by its share of the source letter, not its absolute spot", () => {
+  const project = completeFixture();
+  const prep = defaultPreparation(project.name);
+  const center = (stroke: { points: { x: number; y: number }[] }) => {
+    const xs = stroke.points.map((p) => p.x),
+      ys = stroke.points.map((p) => p.y);
+    return [
+      (Math.min(...xs) + Math.max(...xs)) / 2,
+      (Math.min(...ys) + Math.max(...ys)) / 2,
+    ];
+  };
+  const target = "걘";
+  const before = prepareHandwriting(project, prep);
+  const jong = composeGlyph(target, before.library, before.pools)!.at(-1)!;
+  const sourceChar = jong.id.split("-")[0];
+  expect(sourceChar).not.toBe(target);
+  // 받침을 빌려 오는 글자를 아주 작게, 오른쪽 아래로 치우쳐 쓴 경우
+  const source = project.samples[sourceChar];
+  project.samples[sourceChar] = {
+    ...source,
+    strokes: source.strokes.map((stroke) => ({
+      ...stroke,
+      points: stroke.points.map((p) => ({
+        ...p,
+        x: 650 + (p.x - 500) * 0.6,
+        y: 650 + (p.y - 500) * 0.6,
+      })),
+    })),
+  };
+  const after = prepareHandwriting(project, prep);
+  const moved = composeGlyph(target, after.library, after.pools)!.at(-1)!;
+  const [x0, y0] = center(jong),
+    [x1, y1] = center(moved);
+  // 절대 좌표 그대로였다면 100 이상 밀려났을 받침이 제자리 근처에 놓인다.
+  expect(Math.hypot(x1 - x0, y1 - y0)).toBeLessThan(25);
 });

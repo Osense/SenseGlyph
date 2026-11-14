@@ -32,7 +32,8 @@ export async function convertFont({
   let woff2 = await compress(new Uint8Array(ttf));
   // WOFF2 해독기는 압축률이 100배를 넘으면 받지 않는다(같은 모양이 아주 많은 폰트).
   // 그럴 때는 압축이 덜 되는 OTF 로 다시 만든다.
-  if (ttf.byteLength / woff2.length > 90) woff2 = await compress(new Uint8Array(otf));
+  if (ttf.byteLength / woff2.length > 90)
+    woff2 = await compress(new Uint8Array(otf));
   if (
     woff2.length < 48 ||
     new DataView(woff2.buffer, woff2.byteOffset).getUint32(0) !== 0x774f4632

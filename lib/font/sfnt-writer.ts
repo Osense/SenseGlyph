@@ -144,7 +144,13 @@ function cubicToQuads(
         cy = 2 * my - (ay + by) / 2;
       }
     }
-    out.push([1, Math.round(cx), Math.round(cy), Math.round(bx), Math.round(by)]);
+    out.push([
+      1,
+      Math.round(cx),
+      Math.round(cy),
+      Math.round(bx),
+      Math.round(by),
+    ]);
   }
   return out;
 }
@@ -228,7 +234,8 @@ function encodeGlyf(glyph: OutlineGlyph): TrueTypeGlyph {
     }
     ends.push(xs.length - 1);
   }
-  if (!ends.length) return { bytes: new Uint8Array(0), box: null, points: 0, contours: 0 };
+  if (!ends.length)
+    return { bytes: new Uint8Array(0), box: null, points: 0, contours: 0 };
   let xMin = Infinity,
     yMin = Infinity,
     xMax = -Infinity,
@@ -270,7 +277,7 @@ function encodeGlyf(glyph: OutlineGlyph): TrueTypeGlyph {
     } else yBytes.i16(dy);
     flags.push(f);
   }
-  for (let i = 0; i < flags.length; ) {
+  for (let i = 0; i < flags.length;) {
     let repeat = 0;
     while (
       i + repeat + 1 < flags.length &&
@@ -333,7 +340,8 @@ function t2Number(w: Writer, v: number) {
 /** 윤곽의 방향을 뒤집는다(CFF 는 바깥 윤곽이 반시계 방향이 관례). */
 export function reverseContour(contour: Contour): Contour {
   const points: [number, number][] = [[contour.x, contour.y]];
-  for (const s of contour.segments) points.push([s[s.length - 2] as number, s[s.length - 1] as number]);
+  for (const s of contour.segments)
+    points.push([s[s.length - 2] as number, s[s.length - 1] as number]);
   const segments: Segment[] = [];
   for (let i = contour.segments.length - 1; i >= 0; i--) {
     const s = contour.segments[i];
@@ -360,12 +368,7 @@ function charstring(source: OutlineGlyph): Uint8Array {
     py = contour.y;
     const segments = [...contour.segments];
     const last = segments.at(-1);
-    if (
-      last &&
-      last[0] === 0 &&
-      last[1] === contour.x &&
-      last[2] === contour.y
-    )
+    if (last && last[0] === 0 && last[1] === contour.x && last[2] === contour.y)
       segments.pop();
     let i = 0;
     while (i < segments.length) {
@@ -422,7 +425,8 @@ function cffIndex(items: Uint8Array[]): Uint8Array {
   w.u16(items.length);
   if (!items.length) return w.done();
   const total = items.reduce((s, b) => s + b.length, 0) + 1;
-  const offSize = total < 0x100 ? 1 : total < 0x10000 ? 2 : total < 0x1000000 ? 3 : 4;
+  const offSize =
+    total < 0x100 ? 1 : total < 0x10000 ? 2 : total < 0x1000000 ? 3 : 4;
   w.u8(offSize);
   let offset = 1;
   const put = (v: number) => {
@@ -470,7 +474,11 @@ function buildCFF(info: FontInfo, glyphs: OutlineGlyph[], bbox: Box) {
   const privateDict = privateW.done();
 
   // Top DICT: 위치 값은 5바이트 고정 길이로 써서 크기를 먼저 알 수 있게 한다.
-  const topDict = (charsetAt: number, charStringsAt: number, privateAt: number) => {
+  const topDict = (
+    charsetAt: number,
+    charStringsAt: number,
+    privateAt: number,
+  ) => {
     const w = new Writer(64);
     cffNumber(w, versionSID);
     w.u8(0);
@@ -480,7 +488,8 @@ function buildCFF(info: FontInfo, glyphs: OutlineGlyph[], bbox: Box) {
     w.u8(3);
     cffNumber(w, weightSID);
     w.u8(4);
-    for (const v of [bbox.xMin, bbox.yMin, bbox.xMax, bbox.yMax]) cffNumber(w, v);
+    for (const v of [bbox.xMin, bbox.yMin, bbox.xMax, bbox.yMax])
+      cffNumber(w, v);
     w.u8(5);
     const fixed = (v: number) => {
       w.u8(29);
@@ -497,27 +506,57 @@ function buildCFF(info: FontInfo, glyphs: OutlineGlyph[], bbox: Box) {
   };
   const topSize = cffIndex([topDict(0, 0, 0)]).length;
   const charsetAt =
-    header.length + nameIndex.length + topSize + stringIndex.length + globalSubrs.length;
+    header.length +
+    nameIndex.length +
+    topSize +
+    stringIndex.length +
+    globalSubrs.length;
   const charStringsAt = charsetAt + charset.length;
   const privateAt = charStringsAt + charStrings.length;
   const top = cffIndex([topDict(charsetAt, charStringsAt, privateAt)]);
   const w = new Writer(privateAt + privateDict.length);
-  for (const part of [header, nameIndex, top, stringIndex, globalSubrs, charset, charStrings, privateDict])
+  for (const part of [
+    header,
+    nameIndex,
+    top,
+    stringIndex,
+    globalSubrs,
+    charset,
+    charStrings,
+    privateDict,
+  ])
     w.raw(part);
   return w.done();
 }
 
 /* ---------- 공통 표 ---------- */
 const UNICODE_RANGES: [number, number, number][] = [
-  [0x0000, 0x007f, 0], [0x0080, 0x00ff, 1], [0x0100, 0x017f, 2],
-  [0x0370, 0x03ff, 7], [0x0400, 0x04ff, 9], [0x1100, 0x11ff, 28],
-  [0x2000, 0x206f, 31], [0x2070, 0x209f, 32], [0x20a0, 0x20cf, 33],
-  [0x2100, 0x214f, 34], [0x2150, 0x218f, 35], [0x2190, 0x21ff, 36],
-  [0x2200, 0x22ff, 37], [0x2300, 0x23ff, 38], [0x2460, 0x24ff, 42],
-  [0x2500, 0x257f, 43], [0x2580, 0x259f, 44], [0x25a0, 0x25ff, 45],
-  [0x2600, 0x26ff, 46], [0x2700, 0x27bf, 47], [0x3000, 0x303f, 48],
-  [0x3130, 0x318f, 52], [0x3200, 0x32ff, 54], [0x3300, 0x33ff, 55],
-  [0xac00, 0xd7af, 56], [0xff00, 0xffef, 68],
+  [0x0000, 0x007f, 0],
+  [0x0080, 0x00ff, 1],
+  [0x0100, 0x017f, 2],
+  [0x0370, 0x03ff, 7],
+  [0x0400, 0x04ff, 9],
+  [0x1100, 0x11ff, 28],
+  [0x2000, 0x206f, 31],
+  [0x2070, 0x209f, 32],
+  [0x20a0, 0x20cf, 33],
+  [0x2100, 0x214f, 34],
+  [0x2150, 0x218f, 35],
+  [0x2190, 0x21ff, 36],
+  [0x2200, 0x22ff, 37],
+  [0x2300, 0x23ff, 38],
+  [0x2460, 0x24ff, 42],
+  [0x2500, 0x257f, 43],
+  [0x2580, 0x259f, 44],
+  [0x25a0, 0x25ff, 45],
+  [0x2600, 0x26ff, 46],
+  [0x2700, 0x27bf, 47],
+  [0x3000, 0x303f, 48],
+  [0x3130, 0x318f, 52],
+  [0x3200, 0x32ff, 54],
+  [0x3300, 0x33ff, 55],
+  [0xac00, 0xd7af, 56],
+  [0xff00, 0xffef, 68],
 ];
 function utf16(s: string) {
   const b = new Uint8Array(s.length * 2),
@@ -539,7 +578,8 @@ function nameTable(info: FontInfo) {
     [17, "Regular"],
   ];
   for (const [id, s] of en) records.push([0x0409, id, utf16(s)]);
-  for (const id of [1, 4, 16]) records.push([0x0412, id, utf16(info.familyKorean)]);
+  for (const id of [1, 4, 16])
+    records.push([0x0412, id, utf16(info.familyKorean)]);
   records.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   const w = new Writer(512);
   w.u16(0);
@@ -586,7 +626,10 @@ function assemble(sfntVersion: number, tables: Record<string, Uint8Array>) {
     w.pad4();
   }
   const bytes = w.done();
-  new DataView(bytes.buffer).setUint32(headAt + 8, (0xb1b0afba - checksum(bytes)) >>> 0);
+  new DataView(bytes.buffer).setUint32(
+    headAt + 8,
+    (0xb1b0afba - checksum(bytes)) >>> 0,
+  );
   return bytes.buffer;
 }
 
@@ -596,7 +639,10 @@ export interface WrittenFonts {
 }
 
 /** 같은 글리프로 TTF 와 OTF 를 함께 쓴다. glyphs[0] 은 .notdef 여야 한다. */
-export function writeFonts(info: FontInfo, glyphs: OutlineGlyph[]): WrittenFonts {
+export function writeFonts(
+  info: FontInfo,
+  glyphs: OutlineGlyph[],
+): WrittenFonts {
   const now = Math.floor(Date.now() / 1000) + 2082844800; // 1904년부터 초
   const boxes = glyphs.map(glyphBox);
   const all = boxes.filter((b): b is Box => !!b);
@@ -698,7 +744,11 @@ export function writeFonts(info: FontInfo, glyphs: OutlineGlyph[]): WrittenFonts
   const os2 = (() => {
     const w = new Writer(96);
     w.u16(4);
-    w.i16(Math.round(advances.reduce((s, a) => s + a, 0) / Math.max(1, advances.length)));
+    w.i16(
+      Math.round(
+        advances.reduce((s, a) => s + a, 0) / Math.max(1, advances.length),
+      ),
+    );
     w.u16(400);
     w.u16(5);
     w.u16(0); // fsType: 설치 가능

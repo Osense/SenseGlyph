@@ -27,11 +27,11 @@ function subscribe(listener: () => void) {
 }
 
 export function useStudioDark() {
-  return useSyncExternalStore(subscribe, isDark, () => true);
+  return useSyncExternalStore(subscribe, isDark, () => false);
 }
 
 /** 미리보기 손글씨 색: 테마의 글자색(--ink)을 그대로 쓴다. */
-export function inkOf(element: Element | null, fallback = "#f4ecea") {
+export function inkOf(element: Element | null, fallback = "#1f1515") {
   if (!element) return fallback;
   const value = getComputedStyle(element).getPropertyValue("--ink").trim();
   return value || fallback;

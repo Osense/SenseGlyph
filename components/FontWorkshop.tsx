@@ -303,11 +303,15 @@ export default function FontWorkshop({
       fallbackFonts: fallbackFontUrls(project.settings.referenceFont),
     };
     const token = generation.current;
-    const handle = buildFontParallel(FONT_WORKER_URL, request, (value, text) => {
-      if (token !== generation.current) return;
-      setProgress(value);
-      setMessage(text);
-    });
+    const handle = buildFontParallel(
+      FONT_WORKER_URL,
+      request,
+      (value, text) => {
+        if (token !== generation.current) return;
+        setProgress(value);
+        setMessage(text);
+      },
+    );
     worker.current = handle;
     handle.promise.then(
       async (reply) => {

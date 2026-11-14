@@ -49,8 +49,11 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
     if (job.type === "chunk") {
       // 모으는 일을 맡을 0번 작업자는 견본 글꼴을 미리 받아 둔다.
       if (job.part === 0) void fallbacksFor(job.request);
-      const chunk = buildGlyphChunk(job.request, job.part, job.parts, (done, total) =>
-        send({ type: "chunk-progress", done, total }),
+      const chunk = buildGlyphChunk(
+        job.request,
+        job.part,
+        job.parts,
+        (done, total) => send({ type: "chunk-progress", done, total }),
       );
       send({ type: "chunk", data: chunk.data }, [chunk.data.buffer]);
       return;
@@ -62,10 +65,10 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
       (value, message) => send({ type: "progress", value, message }),
       sources,
     );
-    send({ type: "result", ttf: result.ttf, otf: result.otf, stats: result.stats }, [
-      result.ttf,
-      result.otf,
-    ]);
+    send(
+      { type: "result", ttf: result.ttf, otf: result.otf, stats: result.stats },
+      [result.ttf, result.otf],
+    );
   } catch (error) {
     const detail = error instanceof Error ? error.message : "";
     // 한글 안내(검증 오류)는 그대로, 라이브러리 내부 오류는 알아듣기 쉬운 말로 바꾼다.

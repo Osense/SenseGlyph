@@ -214,7 +214,13 @@ function PartThumbnail({
   const colorOf = useMemo(() => {
     const colors = new Map(
       strokes.map((stroke) => {
-        const part = assignStroke(char, stroke, active, project.settings);
+        const part = assignStroke(
+          char,
+          stroke,
+          active,
+          project.settings,
+          strokes,
+        );
         const color = PART_COLORS[part];
         return [
           stroke.id,

@@ -1,0 +1,116 @@
+1:"$Sreact.fragment"
+3:"/SenseGlyph/_next/static/chunks/3qfy96eoyh-ek.js"
+4:I[39756,["$3"],"default"]
+5:I[37457,["$3"],"default"]
+10:"ViewportBoundary"
+11:I[97367,["$3"],"$10"]
+12:"MetadataBoundary"
+13:I[97367,["$3"],"$12"]
+14:"$Sreact.suspense"
+:HL["/SenseGlyph/_next/static/chunks/1x9z80pbynbx1.css","style"]
+:HL["/SenseGlyph/_next/static/chunks/2-5un75smdv_h.css","style"]
+2:T5f3,
+@font-face {
+  font-family: "Noto Serif KR";
+  src: url("/SenseGlyph/fonts/NotoSerifKR.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Noto Sans KR";
+  src: url("/SenseGlyph/fonts/NotoSansKR.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Special Symbols Fallback";
+  src: url("/SenseGlyph/fonts/SpecialSymbolsFallback.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Gmarket Sans";
+  src: url("/SenseGlyph/fonts/GmarketSansMedium.woff") format("woff");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Nanum Myeongjo";
+  src: url("/SenseGlyph/fonts/NanumMyeongjo-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Black Han Sans";
+  src: url("/SenseGlyph/fonts/BlackHanSans-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Samlip Hobbang";
+  src: url("/SenseGlyph/fonts/SDSamliphopangche_Basic.woff") format("woff");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "School Safety Chalk";
+  src: url("/SenseGlyph/fonts/HakgyoansimBunpilR.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "School Safety Brush Pen";
+  src: url("/SenseGlyph/fonts/HakgyoansimButpenM.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Galmuri11";
+  src: url("/SenseGlyph/fonts/Galmuri11.woff2") format("woff2");
+  font-display: swap;
+}
+
+7:X
+a:X
+a:C
+b:[["children",{"s":"__PAGE__","h":160,"d":{"r":["$","$1","c",{"children":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":"$0:t:t:d:r:props:children:1:props:children:1:props:children:props:notFound:0:1:props:style","children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],"$Lc","$Ld"]}]}]],null,"$Le"]}],"p":"$@f","v":null,"s":"$7"}}]]
+8:[["children",{"s":"/_not-found","h":96,"d":{"r":["$","$1","c",{"children":[null,["$","$L4",null,{"parallelRouterKey":"children","template":["$","$L5",null,{}]}]]}],"p":"$@9","v":"$a","s":"$7"},"c":"$Qb"}]]
+0:{"t":{"t":{"s":"","h":80,"d":{"r":["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/SenseGlyph/_next/static/chunks/1x9z80pbynbx1.css","precedence":"next"}],["$","link","1",{"rel":"stylesheet","href":"/SenseGlyph/_next/static/chunks/2-5un75smdv_h.css","precedence":"next"}],["$","script","script-0",{"src":"/SenseGlyph/_next/static/chunks/3qfy96eoyh-ek.js","async":true}]],["$","html",null,{"lang":"ko","style":{"colorScheme":"only light"},"children":[["$","head",null,{"children":["$","style",null,{"dangerouslySetInnerHTML":{"__html":"$2"}}]}],["$","body",null,{"children":["$","$L4",null,{"parallelRouterKey":"children","template":["$","$L5",null,{}],"notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]]}]}]]}]]}],"p":"$@6","v":null,"s":"$7"},"c":"$Q8"},"h":{"r":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L11",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}],["$","meta","2",{"name":"theme-color","content":"#f7f1ef"}],["$","meta","3",{"name":"color-scheme","content":"only light"}]]}],["$","$L13",null,{"children":[["$","div",null,{"hidden":true,"children":["$","$14",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"쎈스 글리프 — 내 손으로 쓴 한 획이, 나만의 폰트가 됩니다"}],["$","meta","1",{"name":"description","content":"세상에 당신만의 모양으로 이야기를 건넬 수 있게 되었어요. 태블릿에 글자를 써서 나만의 한글 폰트를 만드는 OSNS.studio의 손글씨 폰트 작업실."}],"$L15","$L16","$L17","$L18","$L19","$L1a","$L1b","$L1c","$L1d","$L1e","$L1f","$L20","$L21","$L22","$L23","$L24","$L25","$L26","$L27","$L28","$L29","$L2a","$L2b"]}]}],null]}],null]}],"p":"$@2c","v":null,"s":"$7"}},"a":"$@2d","u":"$@2e","b":"g9k-CrYDK1y6bHg8f6CJq"}
+2f:I[97367,["$3"],"OutletBoundary"]
+31:I[27201,["$3"],"IconMark"]
+c:["$","h1",null,{"className":"next-error-h1","style":"$0:t:t:d:r:props:children:1:props:children:1:props:children:props:notFound:0:1:props:children:props:children:1:props:style","children":404}]
+d:["$","div",null,{"style":"$0:t:t:d:r:props:children:1:props:children:1:props:children:props:notFound:0:1:props:children:props:children:2:props:style","children":["$","h2",null,{"style":"$0:t:t:d:r:props:children:1:props:children:1:props:children:props:notFound:0:1:props:children:props:children:2:props:children:props:style","children":"This page could not be found."}]}]
+e:["$","$L2f",null,{"children":["$","$14",null,{"name":"Next.MetadataOutlet","children":"$@30"}]}]
+15:["$","meta","2",{"property":"og:title","content":"쎈스 글리프 — 내 손으로 쓴 한 획이, 나만의 폰트가 됩니다"}]
+16:["$","meta","3",{"property":"og:description","content":"세상에 당신만의 모양으로 이야기를 건넬 수 있게 되었어요. 태블릿에 글자를 써서 나만의 한글 폰트를 만드는 OSNS.studio의 손글씨 폰트 작업실."}]
+17:["$","meta","4",{"property":"og:url","content":"https://osense.github.io/SenseGlyph/"}]
+18:["$","meta","5",{"property":"og:site_name","content":"쎈스 글리프"}]
+19:["$","meta","6",{"property":"og:locale","content":"ko_KR"}]
+1a:["$","meta","7",{"property":"og:image","content":"https://osense.github.io/SenseGlyph/senseglyph-share-v2.png"}]
+1b:["$","meta","8",{"property":"og:image:type","content":"image/png"}]
+1c:["$","meta","9",{"property":"og:image:width","content":"1200"}]
+1d:["$","meta","10",{"property":"og:image:height","content":"630"}]
+1e:["$","meta","11",{"property":"og:image:alt","content":"쎈스 글리프. 내 손으로 쓴 한 획이, 나만의 폰트가 됩니다. OSNS.studio 제작."}]
+1f:["$","meta","12",{"property":"og:type","content":"website"}]
+20:["$","meta","13",{"name":"twitter:card","content":"summary_large_image"}]
+21:["$","meta","14",{"name":"twitter:title","content":"쎈스 글리프 — 내 손으로 쓴 한 획이, 나만의 폰트가 됩니다"}]
+22:["$","meta","15",{"name":"twitter:description","content":"세상에 당신만의 모양으로 이야기를 건넬 수 있게 되었어요. 태블릿에 글자를 써서 나만의 한글 폰트를 만드는 OSNS.studio의 손글씨 폰트 작업실."}]
+23:["$","meta","16",{"name":"twitter:image","content":"https://osense.github.io/SenseGlyph/senseglyph-share-v2.png"}]
+24:["$","meta","17",{"name":"twitter:image:alt","content":"쎈스 글리프. 내 손으로 쓴 한 획이, 나만의 폰트가 됩니다. OSNS.studio 제작."}]
+25:["$","meta","18",{"name":"twitter:image:type","content":"image/png"}]
+26:["$","meta","19",{"name":"twitter:image:width","content":"1200"}]
+27:["$","meta","20",{"name":"twitter:image:height","content":"630"}]
+28:["$","link","21",{"rel":"icon","href":"/SenseGlyph/brand-icon-32.png","type":"image/png","sizes":"32x32"}]
+29:["$","link","22",{"rel":"icon","href":"/SenseGlyph/brand-icon.svg","type":"image/svg+xml"}]
+2a:["$","link","23",{"rel":"apple-touch-icon","href":"/SenseGlyph/apple-touch-icon.png","sizes":"180x180"}]
+2b:["$","$L31","24",{}]
+7:300
+30:null
+2e:true
+7:C
+2d:0
+9:"$undefined"
+6:"$undefined"
+2c:"$undefined"
+f:"$undefined"

@@ -99,8 +99,7 @@ export function Thumbnail({
     ctx.save();
     ctx.scale(size / 1000, size / 1000);
     for (const s of strokes) {
-      ctx.fillStyle =
-        colorOf?.(s) ?? (tone === "error" ? error : ink);
+      ctx.fillStyle = colorOf?.(s) ?? (tone === "error" ? error : ink);
       paintStroke(ctx, s);
     }
     ctx.restore();

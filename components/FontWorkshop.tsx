@@ -11,6 +11,7 @@ import HandwritingSearch from "./HandwritingSearch";
 import SeparationEditor from "./SeparationEditor";
 import RewriteDialog from "./RewriteDialog";
 import MetricPreview from "./MetricPreview";
+import { APP_NAME, APP_VERSION, MAKER } from "../lib/version";
 import type {
   ConversionReply,
   ConversionRequest,
@@ -944,6 +945,9 @@ export default function FontWorkshop({
               </button>
               <span className="fw-note">
                 손글씨와 폰트는 이 기기 안에서만 만들어져요.
+              </span>
+              <span className="sg-credit">
+                <b>{MAKER}</b> 제작 · {APP_NAME} v{APP_VERSION}
               </span>
             </footer>
           </>

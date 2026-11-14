@@ -8,6 +8,7 @@ import {
 } from "./beautify";
 import { decompose, slotKeys, vowelType } from "../hangul";
 import { activeSeparation, effectiveSample } from "./editing";
+import { cachedJudgement } from "./judge";
 import {
   referenceGuide,
   referencePart,
@@ -96,7 +97,17 @@ export function assignStroke(
   const manual = separation?.assignments[stroke.id];
   if (manual && boxes[manual]) return manual;
   if (!separation?.boxes) {
-    const matched = referencePart(char, stroke, reference, context);
+    // 글자 전체 획을 알면 획순·획수·자리를 함께 보고 판정한다(lib/font/judge.ts).
+    if (context?.some((other) => other.id === stroke.id)) {
+      const judged = cachedJudgement(
+        char,
+        context,
+        reference,
+        separation?.assignments,
+      )?.parts.get(stroke.id);
+      if (judged && boxes[judged]) return judged;
+    }
+    const matched = referencePart(char, stroke, reference);
     if (matched) return matched;
   }
   const p = strokeCenter(stroke),

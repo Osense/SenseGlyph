@@ -9,6 +9,7 @@ import {
 } from "../data/charset";
 import { newProject } from "../lib/defaults";
 import { BASE_PATH } from "../lib/base-path";
+import { CREDIT } from "../lib/version";
 import {
   loadProject,
   saveProject,
@@ -503,6 +504,8 @@ export default function Page() {
     try {
       if (f.size > 100 * 1024 * 1024) throw Error("백업 파일이 너무 큽니다.");
       const p = parseProject(await f.text());
+      // 펜 전용·마우스 허용은 기기마다 다르므로 가져온 값을 쓰지 않는다(다른 기기에서 손가락으로 못 쓰던 문제).
+      p.settings = { ...p.settings, penOnly: false, allowMouse: true };
       setProject(p);
       setIndex(0);
       setList("basic");
@@ -518,6 +521,7 @@ export default function Page() {
           ㅆ
         </span>
         <p>쎈스 글리프를 여는 중…</p>
+        <p className="sg-credit">{CREDIT}</p>
       </main>
     );
   const params = s.brushParams[s.activeBrush],
@@ -1407,7 +1411,7 @@ export default function Page() {
               다시
             </p>
             <p className="version">
-              쎈스 글리프 · {REFERENCE_FONTS.length}가지 견본 · 모든 획은 벡터로
+              {CREDIT} · {REFERENCE_FONTS.length}가지 견본 · 모든 획은 벡터로
               보관됩니다.
             </p>
           </section>

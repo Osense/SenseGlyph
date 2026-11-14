@@ -26,11 +26,7 @@ import type { FontPreparation, Part, Separation } from "../lib/font/types";
 import { Thumbnail } from "./Preview";
 import SeparationTutorial, { TUTORIAL_KEY } from "./SeparationTutorial";
 import { referenceFont } from "../lib/reference-fonts";
-import {
-  guideTransform,
-  referenceGuide,
-  referenceUsesFallback,
-} from "../lib/font/reference";
+import { referenceGuide, referenceUsesFallback } from "../lib/font/reference";
 import type { SeparationStatus } from "../lib/font/separation-status";
 
 const STATUS_LABEL: Record<SeparationStatus, string> = {
@@ -123,15 +119,14 @@ export default function SeparationEditor({
     strip = useRef<HTMLDivElement>(null),
     gesture = useRef<Gesture | null>(null);
   const displayed = draft ?? strokes;
-  // 판정 범위는 견본 글자 모양 그대로, 쓴 글씨의 크기·위치에 맞춰 보여 준다.
-  const placement = guide ? guideTransform(guide, displayed) : null;
+  // 견본(판정 범위 그림)은 쓰기 칸에 보이던 자리 그대로 고정한다. 획을 움직여도 바뀌지 않는다.
   const regionRect = guide
-    ? placement!.toWriting({
+    ? {
         x: guide.x - guide.width / (guide.resolution - 3),
         y: guide.y - guide.height / (guide.resolution - 3),
         width: (guide.width * guide.resolution) / (guide.resolution - 3),
         height: (guide.height * guide.resolution) / (guide.resolution - 3),
-      })
+      }
     : null;
   const bounds = useMemo(
     () => strokeBounds(displayed, selection),
@@ -595,9 +590,7 @@ export default function SeparationEditor({
                 d="M500 0V1000 M0 500H1000 M500 0L1000 500 500 1000 0 500Z"
               />
               {parts.map((part) => {
-                const box = placement
-                  ? placement.toWriting(boxes[part]!)
-                  : boxes[part]!;
+                const box = boxes[part]!;
                 if (guide)
                   return (
                     <text

@@ -69,6 +69,7 @@ export const metadata: Metadata = {
       },
       { url: `${BASE_PATH}/brand-icon.svg`, type: "image/svg+xml" },
     ],
+    apple: [{ url: `${BASE_PATH}/apple-touch-icon.png`, sizes: "180x180" }],
   },
   openGraph: {
     type: "website",

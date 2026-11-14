@@ -212,6 +212,103 @@ def best_cut(pieces, side, candidates, prior_a, prior_b, expected, total, count_
     return [(cost, result, ts[len(ts) // 2]) for cost, result, ts in ranked]
 
 
+def horizontal_vowel_cut(top, vi):
+    """가로 모음(ㅗㅛㅜㅠㅡ)은 글자 폭을 거의 다 차지하는 가로획이 있다.
+    잉크가 붙어 있어 조각 수로는 나누기 어려운 글꼴(ㄴ·ㄷ 받침획이 모음 가로획에 닿는 경우)에서도
+    초성의 아래 가로획을 모음에 넘기지 않도록, 그 가로획을 기준으로 자를 위치를 정한다.
+    ㅜㅠㅡ: 가로획 바로 위. ㅗㅛ: 가로획 위의 짧은 기둥이 끝나는 곳(초성 아래 획 바로 밑)."""
+    m = np.zeros((R, R), dtype=bool)
+    for ys, xs in top: m[ys, xs] = True
+    rows = np.nonzero(m.any(axis=1))[0]
+    if len(rows) < 8: return None
+    def longest(row):
+        d = np.diff(np.concatenate([[0], row.astype(np.int8), [0]]))
+        starts, ends = np.where(d == 1)[0], np.where(d == -1)[0]
+        return int((ends - starts).max()) if len(starts) else 0
+    runs = np.array([longest(m[y]) for y in range(R)])
+    widest = runs.max()
+    if widest < 8: return None
+    bar = [y for y in range(R) if runs[y] >= widest * 0.85]
+    # 가장 아래쪽 넓은 가로획 묶음
+    bottom = bar[-1]; top_row = bottom
+    while top_row - 1 in bar: top_row -= 1
+    if vi in (13, 17, 18):  # ㅜ ㅠ ㅡ
+        return top_row
+    # ㅗ ㅛ: 위로 올라가며 짧은 기둥을 지나 초성 아래 획이 나오는 곳을 찾는다.
+    counts = m.sum(axis=1)
+    limit = max(rows[0], top_row - int((rows[-1] - rows[0]) * 0.45))
+    y = top_row - 1; skip = 0
+    while y > limit and counts[y] > widest * 0.35 and skip < 4:  # 가로획 둥근 가장자리
+        y -= 1; skip += 1
+    while y > limit:
+        if counts[y] == 0: return y + 1
+        if counts[y] > widest * 0.35: return y + 1
+        y -= 1
+    return None
+
+
+def jong_cut_hint(big, vi):
+    """가로 모음(ㅗㅛㅜㅠㅡ) 글자에서 받침이 시작하는 줄을 어림한다.
+    글자 폭을 거의 다 차지하는 모음 가로획을 찾고, ㅜㅠ는 아래 기둥이 끝나는 곳,
+    ㅗㅛㅡ는 가로획 바로 아래를 받침 시작으로 본다."""
+    m = np.zeros((R, R), dtype=bool)
+    for ys, xs in big: m[ys, xs] = True
+    rows = np.nonzero(m.any(axis=1))[0]
+    if len(rows) < 10: return None
+    y0, y1 = rows[0], rows[-1]
+    def longest(row):
+        d = np.diff(np.concatenate([[0], row.astype(np.int8), [0]]))
+        starts, ends = np.where(d == 1)[0], np.where(d == -1)[0]
+        return int((ends - starts).max()) if len(starts) else 0
+    runs = np.array([longest(m[y]) for y in range(R)])
+    upper_end = int(y0 + (y1 - y0) * 0.72)
+    widest = runs[y0:upper_end].max()
+    if widest < 8: return None
+    bar = [y for y in range(y0 + int((y1 - y0) * 0.15), upper_end) if runs[y] >= widest * 0.9]
+    if not bar: return None
+    counts = m.sum(axis=1)
+    clusters = []
+    for y in bar:
+        if clusters and y == clusters[-1][1] + 1: clusters[-1][1] = y
+        else: clusters.append([y, y])
+    def narrow(rows_):
+        good = [r for r in rows_ if 0 < counts[r] <= widest * 0.4]
+        return len(good) >= 3
+    def edge(y, step):  # 가로획 둥근 가장자리 몇 줄은 건너뛴다
+        k = 0
+        while 0 < y < R - 1 and counts[y] > widest * 0.4 and k < 4: y += step; k += 1
+        return y
+    # 모음 가로획: ㅜㅠ는 바로 아래, ㅗㅛ는 바로 위에 짧은 기둥이 있는 넓은 가로획
+    # (굵은 글꼴은 ㄴ·ㄷ 아래 획도 글자 폭만큼 넓어서 폭만으로는 고를 수 없다)
+    chosen = None
+    for a, b in clusters:
+        if vi in (13, 17):
+            y = edge(b + 1, 1)
+            if narrow(range(y, min(R, y + 6))): chosen = (a, b); break
+        elif vi in (8, 12):
+            y = edge(a - 1, -1)
+            if narrow(range(max(0, y - 5), y + 1)): chosen = (a, b); break
+    if chosen is None:
+        middle = y0 + (y1 - y0) * 0.45
+        chosen = tuple(min(clusters, key=lambda c: abs((c[0] + c[1]) / 2 - middle)))
+    start, end = chosen
+    y = end + 1; skip = 0
+    while y < y1 and counts[y] > widest * 0.35 and skip < 4:
+        y += 1; skip += 1
+    if vi in (13, 17):  # ㅜ ㅠ: 짧은 기둥을 지나 받침이 나오는 곳
+        limit = min(y1, int(y + (y1 - y0) * 0.35))
+        for k in range(y, limit):
+            if counts[k] == 0: return k
+        while y < limit:
+            if counts[y] > widest * 0.35: return y
+            y += 1
+        return None
+    # ㅗ ㅛ ㅡ: 가로획 바로 아래(틈이 있으면 틈)
+    for k in range(y, min(y1, y + 12)):
+        if counts[k] == 0: return k
+    return y
+
+
 def take(pieces, result, flag):
     out = []
     for (ys, xs), r in zip(pieces, result):
@@ -269,6 +366,10 @@ def build(char, glyphs, cmap, priors):
             cand = range(int(tx0 + (tx1 - tx0) * 0.2), int(tx0 + (tx1 - tx0) * 0.9))
             return best_cut(top, lambda ys, xs, t: xs < t, cand, pc, pv, (tx0 + (tx1 - tx0) * 0.56,), total)
         if kind == 'H':
+            forced = horizontal_vowel_cut(top, vi)
+            if forced is not None:
+                found = best_cut(top, lambda ys, xs, t: ys < t, [forced], pc, pv, (forced,), total)
+                if found: return found
             cand = range(int(ty0 + (ty1 - ty0) * 0.15), int(ty0 + (ty1 - ty0) * 0.88))
             return best_cut(top, lambda ys, xs, t: ys < t, cand, pc, pv, (ty0 + (ty1 - ty0) * 0.52,), total)
         xs_c = range(int(tx0 + (tx1 - tx0) * 0.3), int(tx0 + (tx1 - tx0) * 0.9), 3)
@@ -280,13 +381,18 @@ def build(char, glyphs, cmap, priors):
     if ji:
         rows = range(int(R * 0.40), int(R * 0.96))
         # The final consonant sits below; piece counts of the upper half are only a hint.
+        hint = jong_cut_hint(big, vi) if kind == 'H' else None
         lower = best_cut(big, lambda ys, xs, t: ys < t, rows, pc + pv, pj, (R * 0.66,), total, 0.4, 14.0, keep=6)
+        if hint is not None:
+            lower += best_cut(big, lambda ys, xs, t: ys < t, [hint], pc + pv, pj, (hint,), total, 0.4, 14.0, keep=2)
         # The same font's syllable without the final consonant (곤 -> 고) shows
         # what the upper part has to look like.
         open_syllable = chr(0xac00 + (ci * 21 + vi) * 28)
         template = shape(rasterise(outline(glyphs, cmap, open_syllable), 160)[0])
         plans = []
-        for cost, result, _ in lower:
+        for cost, result, cut_at in lower:
+            if hint is not None:  # 가로 모음 아래에서 받침이 시작하는 곳에 가까울수록 우선
+                cost += abs(float(np.atleast_1d(cut_at)[0]) - hint) / R * 30
             top = take(big, result, True)
             upper = split_upper(top)
             if not upper: continue

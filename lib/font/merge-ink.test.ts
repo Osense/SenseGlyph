@@ -24,7 +24,12 @@ describe("mergeInk", () => {
         for (const r of outlines(
           pts,
           "pixel",
-          { size: 30 + rnd() * 30, usePressure: false, nibAngle: 30, pixelSize: 12 },
+          {
+            size: 30 + rnd() * 30,
+            usePressure: false,
+            nibAngle: 30,
+            pixelSize: 12,
+          },
           "original",
         ))
           rings.push(

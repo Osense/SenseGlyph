@@ -141,7 +141,7 @@ export function referenceVote(
   stroke: Stroke,
   settings?: ReferenceSettings,
   context?: Stroke[],
-): { part: Part; share: number } | null {
+): { part: Part; share: number; shares: [number, number, number] } | null {
   const guide = referenceGuide(char, settings);
   if (!guide) return null;
   const votes = [0, 0, 0];
@@ -182,7 +182,15 @@ export function referenceVote(
   }
   const best = Math.max(...votes),
     total = votes[0] + votes[1] + votes[2];
-  return { part: parts[votes.indexOf(best)], share: total ? best / total : 1 };
+  return {
+    part: parts[votes.indexOf(best)],
+    share: total ? best / total : 1,
+    shares: votes.map((v) => (total ? v / total : 1 / 3)) as [
+      number,
+      number,
+      number,
+    ],
+  };
 }
 export function referenceUsesFallback(char: string, font = "sans") {
   return !fonts[font]?.[char] && !!fonts.fallback?.[char];

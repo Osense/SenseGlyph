@@ -1,4 +1,5 @@
 "use client";
+import { APP_NAME, APP_VERSION, MAKER } from "../lib/version";
 import { useState } from "react";
 import { BrushPreview } from "./Preview";
 import WritingPad from "./WritingPad";
@@ -151,6 +152,9 @@ export default function JourneySetup({
               ? "한 폰트는 한 가지 도구로 쓰면 가장 고르게 나와요. 나중에 바꿀 수도 있어요."
               : "나중에 돌아와서 바꿀 수 있어요."}
         </small>
+        <p className="sg-credit">
+          <b>{MAKER}</b> 제작 · {APP_NAME} v{APP_VERSION}
+        </p>
       </div>
       {step === 0 ? (
         <div className="brush-experience">

@@ -455,3 +455,19 @@ main.studio.journey .sg-confirm:not([data-confirmed]):hover:not(:disabled),
 main.studio.journey .fw-tabs button[aria-current="step"]:hover {
   background: var(--accent);
 }
+
+/* 만든 곳·버전: 첫 화면과 마지막 화면에 작게 */
+main.studio.journey .sg-credit,
+.sg-credit {
+  margin: 14px 0 0;
+  color: var(--dim, #8f7174);
+  font: 400 11px var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.04em;
+}
+.sg-credit b {
+  color: var(--accent, #d93a26);
+  font-weight: 600;
+}
+.fw-actions .sg-credit {
+  margin: 0 0 0 auto;
+}

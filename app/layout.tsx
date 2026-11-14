@@ -45,16 +45,16 @@ ${REFERENCE_FONTS.map(({ family, file }) => {
 `;
 }).join("")}
 `;
-const title = "쎈스 글리프 — 손글씨 폰트 작업실";
+const title = "쎈스 글리프 — 내 손으로 쓴 한 획이, 나만의 폰트가 됩니다";
 const description =
-  "직접 쓴 손글씨의 자모와 간격을 다듬어 나만의 한글 폰트를 만드세요. OSNS.studio 제작.";
+  "세상에 당신만의 모양으로 이야기를 건넬 수 있게 되었어요. 태블릿에 글자를 써서 나만의 한글 폰트를 만드는 OSNS.studio의 손글씨 폰트 작업실.";
 const siteUrl = "https://osense.github.io/SenseGlyph/";
 const shareImage = {
-  url: new URL("senseglyph-share.png", siteUrl).href,
+  url: new URL("senseglyph-share-v2.png", siteUrl).href,
   width: 1200,
   height: 630,
   type: "image/png",
-  alt: "쎈스 글리프. 손글씨를 써서 나만의 한글 폰트로. OSNS.studio 제작.",
+  alt: "쎈스 글리프. 내 손으로 쓴 한 획이, 나만의 폰트가 됩니다. OSNS.studio 제작.",
 };
 
 export const metadata: Metadata = {

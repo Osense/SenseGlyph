@@ -105,9 +105,15 @@ export interface FontStats {
   glyphs: number;
   characters: string[];
 }
+/** 폰트 작업자에게 보내는 일: 글자 몫 만들기(병렬) 또는 모아서 파일 쓰기. */
+export type WorkerRequest =
+  | { type: "chunk"; request: BuildRequest; part: number; parts: number }
+  | { type: "assemble"; request: BuildRequest; chunks: Int32Array[] };
 export type WorkerReply =
   | { type: "progress"; value: number; message: string }
-  | { type: "result"; buffer: ArrayBuffer; stats: FontStats }
+  | { type: "chunk-progress"; done: number; total: number }
+  | { type: "chunk"; data: Int32Array }
+  | { type: "result"; ttf: ArrayBuffer; otf: ArrayBuffer; stats: FontStats }
   | { type: "error"; message: string };
 
 export function defaultPreparation(name: string): FontPreparation {

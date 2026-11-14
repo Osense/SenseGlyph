@@ -14,7 +14,8 @@ it("exports four valid fonts with the output names and original Hangul coverage"
   preparation.settings.englishFamilyName = "My Handwriting";
   const original = generateFont({ project, preparation });
   const zip = await convertFont({
-    buffer: original.buffer,
+    ttf: original.ttf,
+    otf: original.otf,
     format: "zip",
     filename: "OSNS 새글씨",
     names: { korean: "새글씨", english: "NewHandwriting" },

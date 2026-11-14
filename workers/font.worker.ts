@@ -1,8 +1,12 @@
 import opentype from "opentype.js";
 import { decompress } from "woff2-encoder";
-import { generateFont } from "../lib/font/generate";
+import { assembleFont, buildGlyphChunk } from "../lib/font/generate";
 import type { FallbackSource } from "../lib/font/fallback";
-import type { BuildRequest, WorkerReply } from "../lib/font/types";
+import type {
+  BuildRequest,
+  WorkerReply,
+  WorkerRequest,
+} from "../lib/font/types";
 
 const send = (message: WorkerReply, transfer: Transferable[] = []) =>
   self.postMessage(message, { transfer });
@@ -35,15 +39,33 @@ async function fallbackSources(
   return sources;
 }
 
-self.onmessage = async (event: MessageEvent<BuildRequest>) => {
+let fallbackPromise: Promise<FallbackSource[]> | null = null;
+const fallbacksFor = (request: BuildRequest) =>
+  (fallbackPromise ??= fallbackSources(request.fallbackFonts));
+
+self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
   try {
-    const sources = await fallbackSources(event.data.fallbackFonts);
-    const result = generateFont(
-      event.data,
+    const job = event.data;
+    if (job.type === "chunk") {
+      // 모으는 일을 맡을 0번 작업자는 견본 글꼴을 미리 받아 둔다.
+      if (job.part === 0) void fallbacksFor(job.request);
+      const chunk = buildGlyphChunk(job.request, job.part, job.parts, (done, total) =>
+        send({ type: "chunk-progress", done, total }),
+      );
+      send({ type: "chunk", data: chunk.data }, [chunk.data.buffer]);
+      return;
+    }
+    const sources = await fallbacksFor(job.request);
+    const result = assembleFont(
+      job.request,
+      job.chunks.map((data) => ({ data })),
       (value, message) => send({ type: "progress", value, message }),
       sources,
     );
-    send({ type: "result", ...result }, [result.buffer]);
+    send({ type: "result", ttf: result.ttf, otf: result.otf, stats: result.stats }, [
+      result.ttf,
+      result.otf,
+    ]);
   } catch (error) {
     const detail = error instanceof Error ? error.message : "";
     // 한글 안내(검증 오류)는 그대로, 라이브러리 내부 오류는 알아듣기 쉬운 말로 바꾼다.

@@ -39,13 +39,14 @@ import type {
   BuildRequest,
   FontPreparation,
   FontStats,
-  WorkerReply,
 } from "../lib/font/types";
+import { buildFontParallel, type BuildHandle } from "../lib/font/build-client";
 
 type GeneratedFont = {
   request: BuildRequest;
   preparation: FontPreparation;
-  buffer: ArrayBuffer;
+  ttf: ArrayBuffer;
+  otf: ArrayBuffer;
   stats: FontStats;
   face: FontFace;
 };
@@ -208,7 +209,7 @@ export default function FontWorkshop({
     result.preparation === prep &&
     result.request.project.settings.referenceFont ===
       project.settings.referenceFont;
-  const worker = useRef<Worker | null>(null),
+  const worker = useRef<BuildHandle | null>(null),
     exportWorker = useRef<Worker | null>(null),
     root = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -218,7 +219,7 @@ export default function FontWorkshop({
   const generation = useRef(0);
   const resetResult = () => {
     generation.current++;
-    worker.current?.terminate();
+    worker.current?.cancel();
     worker.current = null;
     exportWorker.current?.terminate();
     exportWorker.current = null;
@@ -238,7 +239,7 @@ export default function FontWorkshop({
   useEffect(
     () => () => {
       generation.current++;
-      worker.current?.terminate();
+      worker.current?.cancel();
       exportWorker.current?.terminate();
     },
     [],
@@ -302,69 +303,64 @@ export default function FontWorkshop({
       fallbackFonts: fallbackFontUrls(project.settings.referenceFont),
     };
     const token = generation.current;
-    try {
-      const nextWorker = new Worker(FONT_WORKER_URL);
-      worker.current = nextWorker;
-      nextWorker.onmessage = async (event: MessageEvent<WorkerReply>) => {
+    const handle = buildFontParallel(FONT_WORKER_URL, request, (value, text) => {
+      if (token !== generation.current) return;
+      setProgress(value);
+      setMessage(text);
+    });
+    worker.current = handle;
+    handle.promise.then(
+      async (reply) => {
         if (token !== generation.current) return;
-        const reply = event.data;
-        if (reply.type === "progress") {
-          setProgress(reply.value);
-          setMessage(reply.message);
-        } else if (reply.type === "error") {
-          setError(reply.message);
+        worker.current = null;
+        try {
+          const family = "SenseGlyphPreview-" + crypto.randomUUID();
+          const loaded = await new FontFace(family, reply.ttf).load();
+          if (token !== generation.current) return;
+          if (lastGeneratedFont) document.fonts.delete(lastGeneratedFont.face);
+          document.fonts.add(loaded);
+          const generated = {
+            request,
+            preparation: prep,
+            ttf: reply.ttf,
+            otf: reply.otf,
+            stats: reply.stats,
+            face: loaded,
+          };
+          lastGeneratedFont = generated;
+          setResult(generated);
+          setProgress(100);
           setBuilding(false);
-          nextWorker.terminate();
-          worker.current = null;
-        } else {
-          nextWorker.terminate();
-          worker.current = null;
-          try {
-            const family = "SenseGlyphPreview-" + crypto.randomUUID();
-            const loaded = await new FontFace(family, reply.buffer).load();
-            if (token !== generation.current) return;
-            if (lastGeneratedFont)
-              document.fonts.delete(lastGeneratedFont.face);
-            document.fonts.add(loaded);
-            const generated = {
-              request,
-              preparation: prep,
-              buffer: reply.buffer,
-              stats: reply.stats,
-              face: loaded,
-            };
-            lastGeneratedFont = generated;
-            setResult(generated);
-            setProgress(100);
+        } catch {
+          if (token === generation.current) {
+            setError("폰트 미리보기를 불러오지 못했어요. 다시 만들어 주세요.");
             setBuilding(false);
-          } catch {
-            if (token === generation.current) {
-              setError(
-                "폰트 미리보기를 불러오지 못했어요. 다시 만들어 주세요.",
-              );
-              setBuilding(false);
-            }
           }
         }
-      };
-      nextWorker.onerror = () => {
-        if (token === generation.current) {
-          setError("폰트를 만드는 중 문제가 생겼어요. 다시 시도해 주세요.");
-          setBuilding(false);
-          nextWorker.terminate();
-          worker.current = null;
-        }
-      };
-      nextWorker.postMessage(request);
-    } catch (error) {
-      setBuilding(false);
-      setError(
-        error instanceof Error
-          ? error.message
-          : "폰트 생성기를 시작하지 못했어요.",
-      );
-    }
+      },
+      (failure: Error) => {
+        if (token !== generation.current) return;
+        worker.current = null;
+        setError(failure.message || "폰트를 만드는 중 문제가 생겼어요.");
+        setBuilding(false);
+      },
+    );
   };
+  // 다듬기 화면에서 손을 멈추면 뒤에서 미리 만들어 두어, 내보내기를 누르면 바로 받을 수 있게 합니다.
+  useEffect(() => {
+    if (
+      stage !== "build" ||
+      finishStep !== "refine" ||
+      isCurrent ||
+      building ||
+      error ||
+      draft ||
+      !report.direct
+    )
+      return;
+    const timer = setTimeout(build, 1500);
+    return () => clearTimeout(timer);
+  }, [stage, finishStep, isCurrent, building, error, draft, prep]);
   // 내보내기 화면에 오면 최신 설정의 폰트를 바로 만듭니다.
   useEffect(() => {
     if (
@@ -438,7 +434,7 @@ export default function FontWorkshop({
       setExporting(null);
       setExportError(message);
     };
-    const convert = (buffer: ArrayBuffer) => {
+    const convert = () => {
       try {
         const converter = new Worker(FONT_EXPORT_WORKER_URL);
         exportWorker.current = converter;
@@ -458,13 +454,19 @@ export default function FontWorkshop({
           if (exportWorker.current === converter)
             fail("파일 변환에 실패했어요. 다시 시도해 주세요.");
         };
-        const request: ConversionRequest = { buffer, format, filename, names };
+        const request: ConversionRequest = {
+          ttf: result.ttf,
+          otf: result.otf,
+          format,
+          filename,
+          names,
+        };
         converter.postMessage(request);
       } catch {
         fail("파일 변환을 시작하지 못했어요. 다시 시도해 주세요.");
       }
     };
-    convert(result.buffer);
+    convert();
   };
   const syllables = report.available.filter((ch) => decompose(ch)).length;
   const detail = correctionDetail(view);

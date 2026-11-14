@@ -119,6 +119,18 @@ export default function Page() {
     padArea = useRef<HTMLDivElement>(null);
   // 지금 화면에서 쓰기 칸이 커질 수 있는 최대 크기(양옆 이동 버튼 104px 제외)
   const [padFit, setPadFit] = useState(600);
+  // 고른 화면(밝게/어둡게)을 브라우저에도 알려, 휴대폰 다크 모드가 강제로 덧칠하지 않게 한다.
+  useEffect(() => {
+    const scheme = dark ? "dark" : "only light";
+    document.documentElement.style.colorScheme = scheme;
+    document
+      .querySelector('meta[name="color-scheme"]')
+      ?.setAttribute("content", scheme);
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", dark ? "#120e0e" : "#f7f1ef");
+    document.body.style.background = dark ? "#120e0e" : "#f7f1ef";
+  }, [dark]);
   useEffect(() => {
     const area = padArea.current;
     if (!area || typeof ResizeObserver === "undefined") return;

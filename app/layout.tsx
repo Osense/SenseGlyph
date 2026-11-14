@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./font-workshop.css";
 import "./editor.css";
@@ -87,9 +87,15 @@ export const metadata: Metadata = {
     images: [shareImage],
   },
 };
+// 안드로이드 크롬 등은 휴대폰이 다크 모드면 페이지를 강제로 어둡게 칠한다(자동 다크).
+// 앱이 밝은/어두운 화면을 직접 고르므로, 기본은 '밝은 화면만'이라고 알려 강제 어둡게를 막는다.
+export const viewport: Viewport = {
+  themeColor: "#f7f1ef",
+  colorScheme: "only light",
+};
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko">
+    <html lang="ko" style={{ colorScheme: "only light" }}>
       <head>
         <style dangerouslySetInnerHTML={{ __html: FONT_FACES }} />
       </head>

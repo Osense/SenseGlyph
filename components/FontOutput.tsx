@@ -2,6 +2,12 @@
 
 import { isNativeApp } from "../lib/native";
 import { romanizeName } from "../lib/font/romanize";
+import {
+  checkFontName,
+  cleanEnglishName,
+  cleanLocalName,
+  type NameCheck,
+} from "../lib/font-name-registry";
 import { useT } from "../lib/i18n";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { ExportFormat } from "../lib/font/export-formats";
@@ -203,10 +209,13 @@ export default function FontOutput({
     script === "ja" ? SPECIMEN_JA : SPECIMEN,
   );
   // 영문 이름은 비워 두면 현지 이름을 로마자로 바꿔 자동으로 채운다(PostScript 이름은 영문이어야 함).
-  const autoEnglish = romanizeName(korean.trim().normalize("NFC"), script);
+  const autoEnglish = romanizeName(
+    korean.trim().normalize("NFC"),
+    script,
+  ).toLowerCase();
   const names = {
     korean: korean.trim().normalize("NFC"),
-    english: english.trim() || autoEnglish,
+    english: cleanEnglishName(english) || autoEnglish,
     script,
   };
   const localName = script === "ja" ? "일본어" : "한글";
@@ -230,11 +239,32 @@ export default function FontOutput({
   const [mode, setMode] = useState<"download" | "share">("download");
   const [shareUnsupported, setShareUnsupported] = useState(false);
   const [shareError, setShareError] = useState("");
-  const start = (next: "download" | "share" = "download") => {
+  // 이름 중복 확인: 이미 있는 폰트 이름(그리고 나중에는 다른 사용자가 쓰는 이름)은 쓸 수 없다.
+  const nameKey = names.korean + "|" + names.english;
+  const [nameCheck, setNameCheck] = useState<{
+    key: string;
+    result: NameCheck;
+  } | null>(null);
+  const [checking, setChecking] = useState(false);
+  const checkedNow = nameCheck?.key === nameKey ? nameCheck.result : null;
+  const runCheck = async () => {
+    if (!names.korean) return null;
+    setChecking(true);
+    try {
+      const result = await checkFontName(names.korean, names.english);
+      setNameCheck({ key: nameKey, result });
+      return result;
+    } finally {
+      setChecking(false);
+    }
+  };
+  const start = async (next: "download" | "share" = "download") => {
     if (!canDownload) {
       setBlocked(true);
       return;
     }
+    const result = checkedNow ?? (await runCheck());
+    if (!result?.available) return;
     // 안드로이드 크롬 등은 글꼴·압축 파일 공유를 막아 둡니다. 미리 확인하고 안내합니다.
     if (next === "share" && !canShareFormat(format)) {
       setShareUnsupported(true);
@@ -352,7 +382,9 @@ export default function FontOutput({
                     : t("여기에 이름을 넣어주세요!")
                 }
                 aria-invalid={(!!korean && !koreanValid) || undefined}
-                onChange={(event) => setKorean(event.target.value)}
+                onChange={(event) =>
+                  setKorean(cleanLocalName(event.target.value))
+                }
               />
             </span>
             {!!korean && !koreanValid && (
@@ -373,7 +405,9 @@ export default function FontOutput({
                 value={english}
                 placeholder={autoEnglish}
                 aria-invalid={(!!english && !englishValid) || undefined}
-                onChange={(event) => setEnglish(event.target.value)}
+                onChange={(event) =>
+                  setEnglish(cleanEnglishName(event.target.value))
+                }
               />
             </span>
             {!!english && !englishValid ? (
@@ -390,6 +424,40 @@ export default function FontOutput({
               )
             )}
           </label>
+        </div>
+        <div className="fw-name-check">
+          <button
+            type="button"
+            disabled={!names.korean || !koreanValid || checking}
+            onClick={() => runCheck()}
+          >
+            {checking ? t("확인 중…") : t("이름 중복 확인")}
+          </button>
+          {checkedNow &&
+            (checkedNow.available ? (
+              <span className="is-ok" role="status">
+                {t("사용 가능합니다!")}
+              </span>
+            ) : (
+              <span className="fw-error" role="alert">
+                {t("이미 있는 이름입니다.")}{" "}
+                {checkedNow.reason === "reserved"
+                  ? t(
+                      "‘{name}’은(는) 이미 있는 폰트 이름이에요. 다른 이름을 지어 주세요.",
+                      {
+                        name: checkedNow.name,
+                      },
+                    )
+                  : t("‘{name}’은(는) 다른 사용자가 쓰고 있어요.", {
+                      name: checkedNow.name,
+                    })}
+              </span>
+            ))}
+          <small>
+            {t(
+              "띄어쓰기는 자동으로 빠지고, 영문은 소문자로만 들어가요. 내려받을 때도 한 번 더 확인해요.",
+            )}
+          </small>
         </div>
 
         <fieldset className="fw-formats">

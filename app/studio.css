@@ -3764,3 +3764,35 @@ button {
 .sg-account-table tr.is-sample td {
   color: var(--muted);
 }
+.fw-name-check {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin: 8px 0 4px;
+  font-size: 13px;
+}
+.fw-name-check button {
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: var(--sheet);
+  color: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+}
+.fw-name-check button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.fw-name-check .is-ok {
+  color: #1f8a4c;
+  font-weight: 700;
+}
+.fw-name-check small {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 11px;
+}

@@ -255,12 +255,22 @@ check(
 await page.click("text=확인하고 고치기");
 await page.fill('[aria-label="한글 폰트 이름"]', "시험 글씨");
 await page.fill('[aria-label="영문 폰트 이름"]', "TestHand");
-await page.click(".fw-download");
 check(
-  "띄어쓰기 안내 팝업",
-  await page.locator(".fw-blockers >> text=띄어쓰기는 하지 마세요").isVisible(),
+  "이름의 띄어쓰기는 빠지고 영문은 소문자",
+  (await page.inputValue('[aria-label="한글 폰트 이름"]')) === "시험글씨" &&
+    (await page.inputValue('[aria-label="영문 폰트 이름"]')) === "testhand",
 );
-await page.click("text=확인하고 고치기");
+await page.click('button:has-text("이름 중복 확인")');
+await page.waitForSelector(".fw-name-check .is-ok");
+check("새 이름은 사용 가능", true);
+await page.fill('[aria-label="한글 폰트 이름"]', "나눔 고딕");
+await page.click('button:has-text("이름 중복 확인")');
+check(
+  "이미 있는 폰트 이름은 막기",
+  await page
+    .locator(".fw-name-check >> text=이미 있는 이름입니다.")
+    .isVisible(),
+);
 check("견본 글꼴 대체 경고", await page.locator(".fw-fallback").isVisible());
 check("출력 구성 구분 없음", !(await page.locator("text=프리미엄").count()));
 await page.fill('[aria-label="한글 폰트 이름"]', "시험글씨");

@@ -1,18 +1,17 @@
 "use client";
-// 개인정보 처리·이용 안내. 앱 안의 창과 /privacy 페이지가 같은 내용을 쓴다.
+// 개인정보 처리방침. 앱 안의 안내 창과 /privacy 페이지가 같은 내용을 쓴다(LegalDocument).
 // 수집 범위가 바뀌면 lib/analytics.ts 와 이 안내를 함께 고친다.
 import { useLang, type UiLang } from "../lib/i18n";
 import { APP_VERSION, MAKER } from "../lib/version";
 
 export const LEGAL_UPDATED = "2026-11-15";
-const CONTACT = "https://osns.studio/";
 
 type Section = { title: string; items: string[] };
 
 const KO: { title: string; intro: string; sections: Section[] } = {
-  title: "개인정보 처리 및 이용 안내",
+  title: "개인정보 처리방침",
   intro:
-    "쎈스 글리프는 회원 가입이 없고, 이름·이메일·연락처 같은 개인정보를 받지 않아요. 아래는 이 서비스가 처리하는 정보의 범위와 목적이에요.",
+    "쎈스 글리프는 회원 가입이 없고, 이름·이메일·연락처 같은 개인정보를 받지 않아요. 아래는 이 서비스가 처리하는 정보의 범위와 목적이에요. 이용 조건은 이용약관을, 결제와 환불은 가격 안내와 환불 규정을 확인해 주세요.",
   sections: [
     {
       title: "1. 손글씨와 폰트",
@@ -20,7 +19,6 @@ const KO: { title: string; intro: string; sections: Section[] } = {
         "쓴 글씨, 만든 폰트, 프로젝트 설정은 모두 이 기기(브라우저 저장소 또는 앱 저장소)에만 저장돼요. 서버로 보내지 않아요.",
         "폰트를 만드는 계산도 이 기기 안에서 해요.",
         "지우려면 ‘내 폰트’에서 프로젝트를 삭제하거나, 브라우저의 사이트 데이터를 지우거나, 앱을 삭제하면 돼요.",
-        "로그인 화면(계정 기능 준비 중)에 넣은 이메일은 이 기기에만 저장되고 어디로도 보내지 않아요. 비밀번호는 저장하지 않아요.",
       ],
     },
     {
@@ -65,16 +63,29 @@ const KO: { title: string; intro: string; sections: Section[] } = {
     {
       title: "7. 문의",
       items: [
-        "운영: OSNS.studio · 문의는 osns.studio 웹사이트의 연락 방법을 이용해 주세요.",
+        "운영과 개인정보 보호책임자: OSNS.studio 운영자. 문의는 osns.studio@gmail.com 으로 보내 주세요.",
+        "로그인 기능을 연 뒤에는 계정에 저장된 정보의 열람·정정·삭제·처리 정지를 언제든 요청할 수 있어요.",
+        "개인정보 침해가 걱정되면 개인정보침해신고센터(국번 없이 118, privacy.kisa.or.kr)에도 신고하거나 상담할 수 있어요.",
+      ],
+    },
+    {
+      title: "8. 로그인·결제를 시작하면 바뀌는 점 (예정)",
+      items: [
+        "아래 내용은 계정·결제 기능을 열 때부터 적용돼요. 열기 전에 이 방침을 고쳐 앱 안에서 알리고, 처음 로그인할 때 동의를 받아요.",
+        "수집 항목: 로그인한 서비스(구글·카카오·네이버)가 주는 회원 식별 번호·이메일·별명, 쓴 손글씨 데이터와 폰트 이름, 결제 기록(주문 번호·상품·금액·결제 일시·결제 수단 종류). 카드 번호는 결제대행사가 처리하고 쎈스 글리프는 받지 않아요.",
+        "목적: 로그인, 다른 기기에서 이어 쓰기와 다시 받기, 폰트 이름 중복 방지, 결제 확인과 환불 처리",
+        "보관 기간: 탈퇴하면 바로 지워요. 다만 전자상거래법에 따라 계약·청약 철회 기록과 대금 결제 기록은 5년, 소비자 불만·분쟁 처리 기록은 3년 동안 따로 보관해요.",
+        "처리 위탁과 국외 이전: 계정과 데이터 저장은 Google LLC(Firebase)에, 결제는 결제대행사에 맡길 예정이에요. 로그인 처리 과정에서 정보가 미국 등 국외 서버를 거칠 수 있어요. 맡기는 업체·국가·항목·기간은 기능을 열 때 이 방침에 적어요.",
+        "만 14세 미만 아동이 로그인하려면 법정대리인의 동의가 필요해요. 로그인하지 않으면 지금처럼 이 기기 안에서만 쓸 수 있어요.",
       ],
     },
   ],
 };
 
 const JA: typeof KO = {
-  title: "個人情報の取り扱いとご利用案内",
+  title: "プライバシーポリシー",
   intro:
-    "SenseGlyph には会員登録がなく、名前・メールアドレス・連絡先などの個人情報をお預かりしません。以下は、このサービスが扱う情報の範囲と目的です。",
+    "SenseGlyph には会員登録がなく、名前・メールアドレス・連絡先などの個人情報をお預かりしません。以下は、このサービスが扱う情報の範囲と目的です。ご利用条件は利用規約を、お支払いと返金は料金のご案内と返金ポリシーをご覧ください。",
   sections: [
     {
       title: "1. 手書き文字とフォント",
@@ -82,7 +93,6 @@ const JA: typeof KO = {
         "書いた文字、作ったフォント、プロジェクトの設定は、すべてこの端末（ブラウザまたはアプリの保存領域）にだけ保存されます。サーバーには送りません。",
         "フォントを作る計算も、この端末の中で行います。",
         "消すときは「マイフォント」でプロジェクトを削除するか、ブラウザのサイトデータを消去するか、アプリを削除してください。",
-        "ログイン画面（アカウント機能は準備中）で入力したメールアドレスはこの端末にだけ保存され、どこにも送りません。パスワードは保存しません。",
       ],
     },
     {
@@ -127,16 +137,29 @@ const JA: typeof KO = {
     {
       title: "7. お問い合わせ",
       items: [
-        "運営：OSNS.studio・お問い合わせは osns.studio ウェブサイトの連絡方法をご利用ください。",
+        "運営と個人情報保護責任者：OSNS.studio の運営者。お問い合わせは osns.studio@gmail.com までお送りください。",
+        "ログイン機能の提供開始後は、アカウントに保存された情報の閲覧・訂正・削除・処理停止をいつでも求めることができます。",
+        "韓国の個人情報侵害申告センター（118、privacy.kisa.or.kr）に申告・相談することもできます。",
+      ],
+    },
+    {
+      title: "8. ログイン・お支払いの開始後に変わる点（予定）",
+      items: [
+        "以下は、アカウント・決済機能を提供し始めたときから適用されます。提供前にこのポリシーを改定してアプリ内でお知らせし、最初のログイン時に同意をいただきます。",
+        "収集項目：ログインに使うサービス（Google・カカオ・ネイバー）から受け取る会員識別番号・メールアドレス・ニックネーム、書いた手書きデータとフォント名、決済記録（注文番号・商品・金額・決済日時・決済手段の種類）。カード番号は決済代行会社が処理し、SenseGlyph は受け取りません。",
+        "目的：ログイン、別の端末での続きの作業と再ダウンロード、フォント名の重複防止、決済の確認と返金処理",
+        "保存期間：退会するとすぐに削除します。ただし韓国の電子商取引法により、契約・申込み撤回の記録と代金決済の記録は5年、消費者の苦情・紛争処理の記録は3年、別途保存します。",
+        "処理の委託と国外移転：アカウントとデータの保存は Google LLC（Firebase）に、決済は決済代行会社に委託する予定です。ログイン処理の過程で、情報が米国などの国外サーバーを経由することがあります。委託先・国・項目・期間は、機能の提供開始時にこのポリシーに記載します。",
+        "14歳未満の方がログインするには、法定代理人の同意が必要です。ログインしなければ、これまでどおりこの端末の中だけで使えます。",
       ],
     },
   ],
 };
 
 const EN: typeof KO = {
-  title: "Privacy and Terms of Use",
+  title: "Privacy Policy",
   intro:
-    "SenseGlyph has no sign-up and never asks for personal information such as your name, email, or phone number. This page explains what information the service handles and why.",
+    "SenseGlyph has no sign-up and never asks for personal information such as your name, email, or phone number. This page explains what information the service handles and why. See the Terms of Service for conditions of use, and the Pricing page and Refund Policy for payments and refunds.",
   sections: [
     {
       title: "1. Your handwriting and fonts",
@@ -144,7 +167,6 @@ const EN: typeof KO = {
         "Your handwriting, the fonts you make, and project settings are stored only on this device (browser or app storage). Nothing is uploaded to a server.",
         "Fonts are built on this device as well.",
         "To delete them, remove the project in “My fonts”, clear this site’s data in your browser, or uninstall the app.",
-        "An email typed on the sign-in screen (accounts are coming soon) is kept only on this device and sent nowhere. Passwords are never stored.",
       ],
     },
     {
@@ -189,7 +211,20 @@ const EN: typeof KO = {
     {
       title: "7. Contact",
       items: [
-        "Operated by OSNS.studio. Please use the contact options on the osns.studio website.",
+        "Operator and privacy officer: the operator of OSNS.studio. Contact us at osns.studio@gmail.com.",
+        "Once sign-in is available, you can ask at any time to view, correct, delete or stop the processing of information stored in your account.",
+        "You can also report or consult the Korea Personal Information Infringement Report Center (118, privacy.kisa.or.kr).",
+      ],
+    },
+    {
+      title: "8. What changes when sign-in and payments start (planned)",
+      items: [
+        "The following applies from the moment account and payment features open. Before then, we will update this policy, announce it in the app, and ask for your consent when you first sign in.",
+        "Collected: the member ID, email and nickname provided by the sign-in service (Google, Kakao, Naver); your handwriting data and font names; payment records (order number, product, amount, payment time, type of payment method). Card numbers are handled by the payment gateway and never received by SenseGlyph.",
+        "Purpose: sign-in, continuing work and re-downloading on other devices, preventing duplicate font names, confirming payments and processing refunds.",
+        "Retention: deleted as soon as you close your account, except that, under Korea's e-commerce law, contract and withdrawal records and payment records are kept separately for 5 years, and complaint and dispute records for 3 years.",
+        "Outsourcing and transfers abroad: we plan to entrust account and data storage to Google LLC (Firebase) and payments to a payment gateway. Sign-in may pass information through servers abroad, such as in the United States. The companies, countries, items and periods will be listed here when the features open.",
+        "Children under 14 need a legal guardian's consent to sign in. Without signing in, the service keeps working only on this device, as it does now.",
       ],
     },
   ],
@@ -227,11 +262,6 @@ export default function LegalNotice({
           </ul>
         </section>
       ))}
-      <p>
-        <a href={CONTACT} target="_blank" rel="noreferrer">
-          osns.studio
-        </a>
-      </p>
     </article>
   );
 }

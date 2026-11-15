@@ -4,7 +4,15 @@ import { expect, it } from "vitest";
 import { EN, JA } from "./i18n-messages";
 import { translate } from "./i18n";
 
-const sources = ["app", "app/privacy", "components", "lib"].flatMap((dir) =>
+const sources = [
+  "app",
+  "app/privacy",
+  "app/pricing",
+  "app/terms",
+  "app/refund",
+  "components",
+  "lib",
+].flatMap((dir) =>
   readdirSync(dir)
     .filter((f) => /\.tsx?$/.test(f) && !f.includes(".test."))
     .map((f) => readFileSync(join(dir, f), "utf8")),

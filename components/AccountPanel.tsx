@@ -62,6 +62,7 @@ export default function AccountPanel({
     email: t("이메일"),
     google: "Google",
     kakao: t("카카오"),
+    naver: t("네이버"),
     guest: t("로그인 없이 시작"),
   }[session?.provider ?? "guest"];
   const tabs: [Tab, string][] = [

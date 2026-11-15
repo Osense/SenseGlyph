@@ -3,6 +3,8 @@
 // 지금은 PG가 연결되지 않아 결제하기는 '준비 중'으로 끝나고, 코드(권오현)를 넣으면 내려받는다.
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import BusinessInfo from "./BusinessInfo";
+import { legalHref } from "./LegalDocument";
 import { useT } from "../lib/i18n";
 import {
   PRICE,
@@ -93,6 +95,11 @@ export default function PaymentDialog({
             "글씨·정돈·이름이 결제한 그대로 고정되고, 같은 폰트는 언제든 다시 받을 수 있어요. 고치고 싶으면 새 프로젝트로 복제해서 다시 만들어야 해요.",
           )}
         </p>
+        <p className="sg-pay-trial">
+          {t(
+            "결제 전에 문장 미리보기와 글자별 확인으로 완성될 모양을 꼭 확인해 주세요. 이 미리보기가 시험 사용이에요.",
+          )}
+        </p>
         <fieldset className="sg-pay-methods">
           <legend>{t("결제 수단")}</legend>
           {METHODS.map((m) => (
@@ -117,9 +124,25 @@ export default function PaymentDialog({
             onChange={(event) => setAgree(event.target.checked)}
           />
           {t(
-            "주문 내용과 결제 후 수정 불가를 확인했고, 디지털 상품 특성상 내려받은 뒤에는 청약 철회가 제한되는 데 동의합니다.",
+            "미리보기로 결과물을 확인했고, 결제 후 수정할 수 없으며 내려받은 뒤에는 어떤 이유로도 환불되지 않는다는 데(파일이 열리지 않는 오류만 예외) 동의합니다.",
           )}
         </label>
+        <p className="sg-pay-links">
+          {(["pricing", "terms", "refund"] as const).map((page, index) => (
+            <span key={page}>
+              {index > 0 && " · "}
+              <a href={legalHref(page)} target="_blank" rel="noreferrer">
+                {t(
+                  page === "pricing"
+                    ? "가격 안내"
+                    : page === "terms"
+                      ? "이용약관"
+                      : "환불 규정",
+                )}
+              </a>
+            </span>
+          ))}
+        </p>
         <button
           type="button"
           className="sg-pay-button"
@@ -170,6 +193,7 @@ export default function PaymentDialog({
             "결제는 안전한 결제대행사(PG)를 통해 처리되며, 카드 정보는 쎈스 글리프에 저장되지 않아요.",
           )}
         </p>
+        <BusinessInfo compact />
       </section>
     </div>,
     // 화면 색·글꼴 변수가 있는 앱 바탕(.studio) 안에 그린다.

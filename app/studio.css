@@ -3255,6 +3255,10 @@ button {
   margin: 0 auto;
   padding: 32px 20px 64px;
   min-height: 100vh;
+  /* 앱 바탕(.studio)의 3단 격자를 풀고 문서처럼 위에서 아래로 흐르게 */
+  display: block;
+  height: auto;
+  overflow: visible;
 }
 .sg-legal-page .sg-legal-langs {
   position: static;
@@ -3273,6 +3277,90 @@ button {
   cursor: pointer;
   font: inherit;
   font-size: 12px;
+}
+/* 약관·정책 탭과 판매자 정보 */
+.sg-legal-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 16px 0 20px;
+}
+.sg-legal-nav a,
+.sg-legal-nav button {
+  border: 1px solid var(--line);
+  background: var(--sheet);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 13px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.sg-legal-nav [aria-current="page"] {
+  background: var(--ink);
+  color: var(--sheet);
+  border-color: var(--ink);
+}
+.sg-legal-tabs .sg-legal-nav {
+  margin-top: 0;
+}
+.sg-biz {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.sg-biz h2 {
+  font-size: 13px;
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+.sg-biz dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 16px;
+  margin: 0;
+}
+.sg-biz dl > div {
+  display: flex;
+  gap: 6px;
+}
+.sg-biz dt {
+  font-weight: 600;
+}
+.sg-biz dd {
+  margin: 0;
+}
+.sg-biz p {
+  margin: 8px 0 0;
+}
+.sg-biz a {
+  color: inherit;
+}
+.sg-biz.is-compact {
+  margin-top: 12px;
+  padding-top: 10px;
+  font-size: 11px;
+}
+.sg-pay-trial {
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 8px 0 0;
+  color: var(--ink);
+}
+.sg-pay-links,
+.sg-login-terms {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 6px 0 0;
+  line-height: 1.6;
+}
+.sg-pay-links a,
+.sg-login-terms a {
+  color: var(--accent);
 }
 .sg-legal-dialog {
   max-width: 720px;

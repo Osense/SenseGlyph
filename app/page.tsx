@@ -46,7 +46,7 @@ import type {
 import JourneySetup from "../components/JourneySetup";
 import { characterGuide } from "../lib/character-guide";
 import { useLang, useT, type UiLang } from "../lib/i18n";
-import LegalNotice from "../components/LegalNotice";
+import { LegalTabs } from "../components/LegalDocument";
 import LoginScreen from "../components/LoginScreen";
 import AccountPanel from "../components/AccountPanel";
 import { useAccount } from "../lib/account";
@@ -1720,7 +1720,7 @@ export default function Page() {
                 ✕
               </button>
             </div>
-            <LegalNotice />
+            <LegalTabs />
           </section>
         </div>
       )}

@@ -21,17 +21,15 @@ check(
   "첫 화면은 로그인 창",
   await page.locator(".sg-login-card h1").isVisible(),
 );
-await page.fill('.sg-login-card input[type="email"]', "osense@example.com");
-await page.fill('.sg-login-card input[type="password"]', "x");
 await page.click(".sg-login-primary");
 await page.waitForSelector(".sg-login", { state: "detached" });
-check("아무 값으로나 로그인", true);
+check("구글 버튼으로 로그인(목업)", true);
 await page.click(".sg-profile-button");
 await page.waitForSelector(".sg-account");
 check(
   "프로필에 이름·이메일",
   (await page.locator(".sg-account-head").innerText()).includes(
-    "osense@example.com",
+    "user@gmail.com",
   ),
 );
 for (const tab of ["내 폰트 라이브러리", "결제 내역"]) {

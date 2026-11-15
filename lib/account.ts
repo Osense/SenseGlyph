@@ -4,7 +4,7 @@
 // lib/project-store.ts 의 원격 저장소로 계정에 올린다.
 import { create } from "zustand";
 
-export type Provider = "email" | "google" | "kakao" | "guest";
+export type Provider = "email" | "google" | "kakao" | "naver" | "guest";
 export interface Session {
   name: string;
   email: string;
@@ -60,7 +60,9 @@ export const useAccount = create<{
             ? "Google 사용자"
             : provider === "kakao"
               ? "카카오 사용자"
-              : "사용자";
+              : provider === "naver"
+                ? "네이버 사용자"
+                : "사용자";
     const session: Session = {
       name,
       email:
@@ -69,7 +71,9 @@ export const useAccount = create<{
           ? "user@gmail.com"
           : provider === "kakao"
             ? "user@kakao.com"
-            : ""),
+            : provider === "naver"
+              ? "user@naver.com"
+              : ""),
       provider,
       since: get().session?.since ?? Date.now(),
     };

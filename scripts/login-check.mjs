@@ -39,7 +39,7 @@ for (const tab of ["내 폰트 라이브러리", "결제 내역"]) {
 await page.screenshot({ path: "artifacts/account.png" });
 check(
   "결제 내역 예시 표",
-  (await page.locator(".sg-account-table tbody tr").count()) === 3,
+  (await page.locator(".sg-account-table tbody tr").count()) === 2,
 );
 await page.click('.sg-account-tabs button:has-text("회원정보")');
 await page.click(".sg-account-logout");

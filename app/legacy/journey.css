@@ -1,10 +1,6 @@
 /* Guided service flow. GSAP is bundled locally for brief step transitions only. */
 .studio.journey {
   min-height: 0;
-  --paper: #faf9f5;
-  --ink: #292b27;
-  --accent: #b65032;
-  --line: #dddcd4;
   color: var(--ink);
   background: var(--paper);
   height: 100dvh;
@@ -705,10 +701,6 @@
   border-radius: 2px;
 }
 .journey.dark {
-  --paper: #20251f;
-  --ink: #ecebe1;
-  --line: #424b3e;
-  --accent: #d99576;
 }
 .journey.dark .journey-next,
 .journey.dark .font-primary,

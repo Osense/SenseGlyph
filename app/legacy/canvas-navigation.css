@@ -43,18 +43,30 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  border: 1px solid var(--border, #d5d9cf);
-  border-radius: 12px;
-  color: var(--ink, #263c33);
-  background: var(--paper, #fffef8);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--ink);
+  background: var(--sheet);
+  box-shadow: var(--shadow-soft);
   touch-action: manipulation;
   cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background-color 0.15s;
+}
+.canvas-step-button:not(:disabled):hover {
+  border-color: color-mix(in oklab, var(--accent) 45%, transparent);
+  color: var(--accent);
 }
 .canvas-step-button > span {
-  font: 32px/1 sans-serif;
+  display: grid;
+  place-items: center;
+  line-height: 1;
 }
 .canvas-step-button > small {
   font-size: 11px;
+  color: var(--muted);
 }
 .canvas-step-previous {
   left: 0;
@@ -67,19 +79,11 @@
   cursor: default;
 }
 .canvas-step-button:focus-visible {
-  outline: 3px solid #387aab;
+  outline: 3px solid color-mix(in oklab, var(--accent) 45%, transparent);
   outline-offset: 2px;
 }
 .canvas-step-button:not(:disabled):active {
-  background: #e1e9df;
-}
-.dark .canvas-step-button {
-  color: #e5eadf;
-  background: #252d26;
-  border-color: #56604e;
-}
-.dark .canvas-step-button:not(:disabled):active {
-  background: #394937;
+  background: var(--active-wash);
 }
 
 .studio .writing-area > .canvas-toolbar {

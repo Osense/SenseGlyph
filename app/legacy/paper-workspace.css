@@ -1,25 +1,8 @@
 /* Hallmark: Vellum surfaces, Blueprint guides, Specimen comparison. */
 .studio.journey {
-  --paper: #f9f6ed;
-  --sheet: #fffdf6;
-  --ink: #232c29;
-  --accent: #244f47;
-  --active-wash: #e8f0e9;
-  --line: #d8d5c5;
-  --muted: #545c55;
-  --on-accent: #fffdf6;
-  --display-face: "Noto Serif KR", serif;
 }
 
 .studio.journey.dark {
-  --paper: #20251f;
-  --sheet: #29312a;
-  --ink: #ecebe1;
-  --accent: #a7ceb7;
-  --active-wash: #34463c;
-  --line: #505d51;
-  --muted: #c2c9be;
-  --on-accent: #20251f;
 }
 
 .journey .brand {

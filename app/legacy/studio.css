@@ -11,17 +11,6 @@ main.studio.journey {
   overflow: hidden;
   background: var(--paper);
   color: var(--ink);
-  --danger: #b4472f;
-  --danger-wash: #fbebe5;
-  --ok: #2f7254;
-  --ok-wash: #e4f1e8;
-  --radius: 12px;
-}
-main.studio.journey.dark {
-  --danger: #ef9a83;
-  --danger-wash: #43302a;
-  --ok: #9fd3b4;
-  --ok-wash: #2c3f33;
 }
 main.studio.journey > :not(.sg-topbar, .toast, .modal-backdrop) {
   flex: 1 1 auto;
@@ -365,8 +354,10 @@ main.studio.journey > .sg-locked-bar {
   height: var(--writing-size);
 }
 .sg-pad-area .pad-sheet {
-  border-radius: 6px;
+  border-radius: 14px;
   background: var(--sheet);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-soft);
 }
 .sg-pad-area .pad-warning {
   top: auto;

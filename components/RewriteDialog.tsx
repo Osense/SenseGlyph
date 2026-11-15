@@ -1,4 +1,13 @@
 "use client";
+import {
+  ArrowRight,
+  Eraser,
+  PenLine,
+  Redo2,
+  RotateCcw,
+  Undo2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useLang, useT } from "../lib/i18n";
 
 import { useEffect, useRef, useState } from "react";
@@ -41,64 +50,95 @@ export default function RewriteDialog({
     document.addEventListener("keydown", key);
     return () => document.removeEventListener("keydown", key);
   }, [busy, char]);
+  const tool_ =
+    "h-11 gap-1.5 rounded-lg border border-border bg-card px-3.5 text-sm font-medium text-foreground hover:border-primary/40 hover:bg-card aria-pressed:border-primary aria-pressed:bg-wash aria-pressed:font-semibold aria-pressed:text-primary";
   return (
     <div
-      className="sg-rewrite"
+      data-ui
+      className="sg-rewrite fixed inset-0 z-[90] grid place-items-center bg-[rgb(30_10_10/0.42)] p-4 backdrop-blur-[2px]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="sg-rewrite-title"
       ref={root}
     >
-      <div className="sg-rewrite-card">
-        <header>
-          <strong className="sg-char" id="sg-rewrite-title">
+      <div
+        data-ui
+        className="sg-rewrite-card grid h-[min(860px,100%)] w-[min(760px,100%)] grid-rows-[auto_auto_minmax(0,1fr)] gap-3 rounded-2xl border border-border bg-background p-4 text-foreground shadow-lift sm:p-5"
+      >
+        <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 max-sm:grid-cols-[auto_1fr]">
+          <strong
+            className="sg-char grid size-14 place-items-center rounded-xl border border-border bg-card font-serif text-4xl leading-none shadow-soft"
+            id="sg-rewrite-title"
+          >
             {char}
           </strong>
-          <p>
-            {t("이 글자만 다시 써요.")}{" "}
+          <p className="m-0 font-serif text-[13.5px] leading-relaxed break-keep text-muted-foreground">
+            <b className="font-sans font-semibold text-foreground">
+              {t("이 글자만 다시 써요.")}
+            </b>{" "}
             {characterGuide(char, category, useLang.getState().lang)}
           </p>
-          <button className="sg-primary" disabled={busy} onClick={onClose}>
-            {t("다 썼어요 · 자모 나누기로 →")}
-          </button>
+          <Button
+            className="sg-primary max-sm:col-span-full"
+            disabled={busy}
+            onClick={onClose}
+          >
+            {t("다 썼어요 · 자모 나누기로")}
+            <ArrowRight />
+          </Button>
         </header>
         <div
-          className="sg-rewrite-tools"
+          className="sg-rewrite-tools flex flex-wrap gap-1.5"
           role="toolbar"
           aria-label={t("쓰기 도구")}
         >
-          <button
+          <Button
+            variant="ghost"
+            className={tool_}
             aria-pressed={tool === "pen"}
             disabled={busy}
             onClick={() => setTool("pen")}
           >
+            <PenLine />
             {t("펜")}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            className={tool_}
             aria-pressed={tool === "eraser"}
             disabled={busy}
             onClick={() => setTool("eraser")}
           >
+            <Eraser />
             {t("지우개")}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            className={tool_}
             disabled={busy || !history?.past.length}
             onClick={() => undo(char)}
           >
-            {t("↶ 취소")}
-          </button>
-          <button
+            <Undo2 />
+            {t("취소")}
+          </Button>
+          <Button
+            variant="ghost"
+            className={tool_}
             disabled={busy || !history?.future.length}
             onClick={() => redo(char)}
           >
-            {t("↷ 다시")}
-          </button>
-          <button
+            <Redo2 />
+            {t("다시")}
+          </Button>
+          <Button
+            variant="ghost"
+            className={tool_}
             disabled={busy || !strokes.length}
             onClick={() => commit(char, category, [])}
           >
-            {t("↺ 모두 지우기")}
-          </button>
+            <RotateCcw />
+            {t("모두 지우기")}
+          </Button>
         </div>
         <div className="sg-pad-area sg-rewrite-pad">
           <WritingPad

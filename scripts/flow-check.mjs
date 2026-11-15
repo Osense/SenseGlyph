@@ -179,6 +179,8 @@ await page.waitForTimeout(900);
 
 await page.click('.sg-steps button:has-text("자모 나누기")');
 await page.waitForSelector(".separation-editor");
+await page.waitForTimeout(500);
+await page.screenshot({ path: "artifacts/flow-separation.png" });
 check(
   "자모 나누기 화면",
   await page.locator(".sg-sep-char strong").isVisible(),

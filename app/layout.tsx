@@ -1,15 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import "./font-workshop.css";
-import "./editor.css";
-import "./workspace.css";
-import "./journey.css";
-import "./touch.css";
-import "./mobile.css";
-import "./canvas-navigation.css";
-import "./paper-workspace.css";
-import "./studio.css";
-import "./osns.css";
 import { BASE_PATH } from "../lib/base-path";
 import { REFERENCE_FONTS } from "../lib/reference-fonts";
 

@@ -2,6 +2,9 @@
 // 첫 화면: 쎈스 글리프의 좋은 점을 배경에 띄우고, 가운데 로그인 창.
 // 목업: 구글·카카오·네이버 버튼은 아직 이 기기 안에서만 들어가고, '로그인 없이 시작하기'로 바로 입장할 수 있다.
 // 자체 계정(이메일·비밀번호)은 만들지 않는다.
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { BASE_PATH } from "../lib/base-path";
 import { legalHref } from "./LegalDocument";
 import { useAccount } from "../lib/account";
 import { useLang, useT } from "../lib/i18n";
@@ -89,55 +92,103 @@ export default function LoginScreen() {
         ))}
         <span className="sg-login-glyphs">가 あ A 永 한</span>
       </div>
-      <section className="sg-login-card" aria-labelledby="sg-login-title">
-        <div className="sg-login-brand">
-          <b>OSNS</b> <span>studio</span> / {t("쎈스 글리프")}
+      <section
+        data-ui
+        className="sg-login-card relative grid w-[min(400px,100%)] gap-3 rounded-2xl border border-border bg-card px-7 pt-7 pb-5 text-card-foreground shadow-lift"
+        aria-labelledby="sg-login-title"
+      >
+        <div className="flex items-end gap-1.5 text-[13px] text-muted-foreground">
+          <img
+            src={BASE_PATH + "/logo/osns-crayon.svg"}
+            alt="OSNS"
+            className="h-[18px] w-auto"
+          />
+          <i className="font-serif leading-none">studio</i>
+          <span className="text-dim">/</span>
+          <span className="font-medium text-foreground">
+            {t("쎈스 글리프")}
+          </span>
         </div>
-        <h1 id="sg-login-title">{t("로그인")}</h1>
-        <p className="sg-login-sub">
-          {t(
-            "로그인하면 쓴 글씨를 계정에 저장해 다른 기기에서도 이어서 쓸 수 있어요.",
-          )}
-        </p>
-        <button
+        <div className="grid gap-1.5 pt-2 pb-1">
+          <h1
+            id="sg-login-title"
+            className="m-0 font-serif text-[28px] leading-tight font-normal tracking-[-0.02em]"
+          >
+            {t("로그인")}
+          </h1>
+          <p className="m-0 text-[13.5px] leading-relaxed text-muted-foreground">
+            {t(
+              "로그인하면 쓴 글씨를 계정에 저장해 다른 기기에서도 이어서 쓸 수 있어요.",
+            )}
+          </p>
+        </div>
+        <Button
           type="button"
-          className="sg-login-primary"
+          size="lg"
+          className="sg-login-primary w-full"
           onClick={() => signIn("google")}
         >
           {t("Google로 계속하기")}
-        </button>
-        <button type="button" onClick={() => signIn("kakao")}>
+        </Button>
+        <Button
+          type="button"
+          size="lg"
+          variant="ghost"
+          className="w-full bg-[#FEE500] font-semibold text-[#191600] hover:bg-[#f5dc00]"
+          onClick={() => signIn("kakao")}
+        >
           {t("카카오로 계속하기")}
-        </button>
-        <button type="button" onClick={() => signIn("naver")}>
+        </Button>
+        <Button
+          type="button"
+          size="lg"
+          variant="ghost"
+          className="w-full bg-[#03C75A] font-semibold text-white hover:bg-[#02b350] hover:text-white"
+          onClick={() => signIn("naver")}
+        >
           {t("네이버로 계속하기")}
-        </button>
-        <p className="sg-login-terms">
-          {t("계속하면 이용약관에 동의하고 개인정보 처리방침을 확인한 것으로 봐요.")}{" "}
-          <a href={legalHref("terms")} target="_blank" rel="noreferrer">
+        </Button>
+        <p className="m-0 text-[11.5px] leading-relaxed text-muted-foreground">
+          {t(
+            "계속하면 이용약관에 동의하고 개인정보 처리방침을 확인한 것으로 봐요.",
+          )}{" "}
+          <a
+            className="text-primary underline-offset-4 hover:underline"
+            href={legalHref("terms")}
+            target="_blank"
+            rel="noreferrer"
+          >
             {t("이용약관")}
           </a>{" "}
           ·{" "}
-          <a href={legalHref("privacy")} target="_blank" rel="noreferrer">
+          <a
+            className="text-primary underline-offset-4 hover:underline"
+            href={legalHref("privacy")}
+            target="_blank"
+            rel="noreferrer"
+          >
             {t("개인정보 처리방침")}
           </a>
         </p>
-        <div className="sg-login-or">
-          <span>{t("또는")}</span>
+        <div className="my-1 flex items-center gap-3 text-xs text-dim before:h-px before:flex-1 before:bg-divider after:h-px after:flex-1 after:bg-divider">
+          {t("또는")}
         </div>
-        <button
+        <Button
           type="button"
-          className="sg-login-guest"
+          variant="soft"
+          size="lg"
+          className="sg-login-guest w-full"
           onClick={() => signIn("guest")}
         >
-          {t("로그인 없이 시작하기 →")}
-        </button>
-        <p className="sg-login-note">
+          {t("로그인 없이 시작하기")}
+          <ArrowRight />
+        </Button>
+        <p className="m-0 text-xs leading-relaxed text-muted-foreground">
           {t(
             "따로 회원가입은 없어요. 베타 기간에는 로그인 없이도 모든 기능을 쓸 수 있고, 계정 저장은 준비 중이라 지금은 이 기기에만 저장돼요.",
           )}
         </p>
-        <p className="sg-login-credit">
+        <p className="m-0 border-t border-divider pt-3 text-center font-mono text-[11px] text-dim">
           {t("{maker} 제작", { maker: MAKER })} · v{APP_VERSION}
         </p>
       </section>

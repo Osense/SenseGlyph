@@ -1,4 +1,5 @@
 "use client";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useT } from "../lib/i18n";
 
 export interface CanvasNavigation {
@@ -30,7 +31,9 @@ export default function CanvasStepButtons({
         disabled={navigation.inkLocked || navigation.previousDisabled}
         onClick={navigation.onPrevious}
       >
-        <span aria-hidden="true">‹</span>
+        <span aria-hidden="true">
+          <ChevronLeft className="size-6" strokeWidth={2.2} />
+        </span>
         <small>{t("이전")}</small>
       </button>
       <button
@@ -44,7 +47,9 @@ export default function CanvasStepButtons({
         disabled={navigation.inkLocked || navigation.nextDisabled}
         onClick={navigation.onNext}
       >
-        <span aria-hidden="true">›</span>
+        <span aria-hidden="true">
+          <ChevronRight className="size-6" strokeWidth={2.2} />
+        </span>
         <small>{t("다음")}</small>
       </button>
     </>

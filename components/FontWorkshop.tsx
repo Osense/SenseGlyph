@@ -1,6 +1,11 @@
 "use client";
 
 import FontOutput from "./FontOutput";
+import { ArrowLeft, ArrowRight, ChevronDown, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { FieldHead, Kicker, Panel, Segmented } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import WorkProgress from "./WorkProgress";
 import { useT } from "../lib/i18n";
 import { useStudio } from "../lib/store";
@@ -672,31 +677,56 @@ export default function FontWorkshop({
 
   const missingSlots =
     script === "ko" && report.missingSlots.length > 0 ? (
-      <details className="fw-missing">
-        <summary>
-          자모 자리 {report.missingSlots.length}개가 비어 있어 한글{" "}
-          {(11172 - syllables).toLocaleString()}자는 아직 만들 수 없어요
+      <details
+        data-ui
+        className="fw-missing group rounded-xl border border-dashed border-warning/50 bg-warning-wash [&[open]>summary_svg]:rotate-180"
+      >
+        <summary
+          data-ui
+          className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[13.5px] font-medium text-foreground [&::-webkit-details-marker]:hidden"
+        >
+          <span>
+            {t("자모 자리 {n}개가 비어 있어 한글 {m}자는 아직 만들 수 없어요", {
+              n: report.missingSlots.length,
+              m: (11172 - syllables).toLocaleString(),
+            })}
+          </span>
+          <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform" />
         </summary>
-        <p>아래 글자를 쓰면 빈 자리가 채워져요.</p>
-        <div className="fw-chip-list">
-          {report.missingSamples.map((char) => (
-            <button
-              key={char}
-              type="button"
-              onClick={() => {
-                if (project.samples[char]?.strokes.length) {
-                  setSelected(char);
-                  setListMode("all");
-                  setStage("separation");
-                } else onWrite(char);
-              }}
-            >
-              {char}
-              <small>
-                {project.samples[char]?.strokes.length ? "확인" : "쓰기"}
-              </small>
-            </button>
-          ))}
+        <div className="grid gap-3 border-t border-warning/30 px-4 pt-3 pb-4">
+          <p className="m-0 text-[13px] text-muted-foreground">
+            {t("아래 글자를 쓰면 빈 자리가 채워져요.")}
+          </p>
+          <div className="fw-chip-list flex flex-wrap gap-1.5">
+            {report.missingSamples.map((char) => {
+              const done = !!project.samples[char]?.strokes.length;
+              return (
+                <button
+                  key={char}
+                  data-ui
+                  type="button"
+                  className="grid h-14 w-12 cursor-pointer place-items-center content-center gap-0.5 rounded-lg border border-border bg-card text-lg leading-none transition-colors hover:border-primary/50"
+                  onClick={() => {
+                    if (done) {
+                      setSelected(char);
+                      setListMode("all");
+                      setStage("separation");
+                    } else onWrite(char);
+                  }}
+                >
+                  {char}
+                  <small
+                    className={cn(
+                      "text-[10px] font-medium",
+                      done ? "text-success" : "text-primary",
+                    )}
+                  >
+                    {done ? t("확인") : t("쓰기")}
+                  </small>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </details>
     ) : null;
@@ -713,57 +743,98 @@ export default function FontWorkshop({
           <h1 id="fw-title" className="sg-visually-hidden" tabIndex={-1}>
             {t("자모 나누기")}
           </h1>
-          <div className="fw-sep-top">
-            <button type="button" className="fw-secondary" onClick={onClose}>
-              {t("← 글자 쓰기")}
-            </button>
+          <div
+            data-ui
+            className="fw-sep-top flex flex-wrap items-center gap-x-3 gap-y-2"
+          >
+            <Button variant="outline" size="sm" onClick={onClose}>
+              <ArrowLeft />
+              {t("글자 쓰기")}
+            </Button>
             {writtenHangul.length > 0 && (
-              <div
-                className="fw-segment"
-                role="group"
-                aria-label={t("보여줄 글자")}
-              >
-                <button
-                  type="button"
-                  aria-pressed={listMode === "all"}
-                  onClick={() => setListMode("all")}
-                >
-                  전체 <b>{writtenHangul.length}</b>
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={listMode === "check"}
-                  onClick={() => setListMode("check")}
-                >
-                  주의 <b>{checkCount}</b>
-                </button>
-              </div>
+              <Segmented
+                size="sm"
+                label={t("보여줄 글자")}
+                value={listMode}
+                options={[
+                  {
+                    id: "all",
+                    label: (
+                      <>
+                        {t("전체")}
+                        <b className="font-mono text-[11px] tabular-nums opacity-70">
+                          {writtenHangul.length}
+                        </b>
+                      </>
+                    ),
+                  },
+                  {
+                    id: "check",
+                    label: (
+                      <>
+                        {t("주의")}
+                        <b
+                          className={cn(
+                            "font-mono text-[11px] tabular-nums",
+                            checkCount > 0 ? "text-destructive" : "opacity-70",
+                          )}
+                        >
+                          {checkCount}
+                        </b>
+                      </>
+                    ),
+                  },
+                ]}
+                onChange={setListMode}
+              />
             )}
-            <span className="fw-sep-stats" role="status">
-              살펴본 글자 <b>{visited.size}</b>/{writtenHangul.length} · 만들 수
-              있는 한글 <b>{syllables.toLocaleString()}</b>
+            <span
+              className="fw-sep-stats ml-auto text-[13px] text-muted-foreground max-sm:order-last max-sm:w-full"
+              role="status"
+            >
+              {t("살펴본 글자")}{" "}
+              <b className="font-mono font-semibold text-foreground tabular-nums">
+                {visited.size}
+              </b>
+              <span className="font-mono tabular-nums">
+                /{writtenHangul.length}
+              </span>{" "}
+              · {t("만들 수 있는 한글")}{" "}
+              <b className="font-mono font-semibold text-foreground tabular-nums">
+                {syllables.toLocaleString()}
+              </b>
             </span>
-            <button
-              type="button"
-              className="fw-primary"
+            <Button
+              size="sm"
+              className="h-10 px-4"
               disabled={!report.direct}
               onClick={() => {
                 setFinishStep("refine");
                 setStage("build");
               }}
             >
-              {t("폰트 다듬기 →")}
-            </button>
+              {t("폰트 다듬기")}
+              <ArrowRight />
+            </Button>
           </div>
           {writtenHangul.length > 0 && (
-            <p className="fw-sep-notice" role="note">
-              자동으로 나눈 결과예요. 한 글자가 잘못 나뉘면 그 자모를 쓰는 다른
-              글자들까지 함께 어긋나요. <b>전체를 한 번씩 넘겨 보며</b> 확인해
-              주세요.{" "}
+            <p
+              data-ui
+              className="fw-sep-notice m-0 rounded-lg bg-muted px-3.5 py-2.5 font-serif text-[13px] leading-relaxed break-keep text-muted-foreground"
+              role="note"
+            >
+              {t(
+                "자동으로 나눈 결과예요. 한 글자가 잘못 나뉘면 그 자모를 쓰는 다른 글자들까지 함께 어긋나요.",
+              )}{" "}
+              <b className="font-sans font-semibold text-foreground">
+                {t("전체를 한 번씩 넘겨 보며 확인해 주세요.")}
+              </b>{" "}
               {checkCount > 0 ? (
                 <>
-                  <i className="fw-warn-dot">!</i> 표시는 특히 잘못 나뉜 것 같은
-                  글자예요.
+                  <i className="mx-0.5 inline-grid size-4 place-items-center rounded-full bg-destructive align-[-2px] font-sans text-[10px] font-bold text-white not-italic">
+                    !
+                  </i>{" "}
+                  {t("표시는 특히 잘못 나뉜 것 같은 글자예요.")}
                 </>
               ) : null}
             </p>
@@ -781,16 +852,15 @@ export default function FontWorkshop({
               visited={visited}
             />
           ) : (
-            <div className="fw-empty">
-              {t("아직 쓴 한글이 없어요.")}
-              <button
-                type="button"
-                className="fw-primary"
-                onClick={() => onWrite(HANGUL[0])}
-              >
-                {t("한글 쓰러 가기 →")}
-              </button>
-            </div>
+            <Panel className="fw-empty grid justify-items-start gap-4 p-6">
+              <p className="m-0 font-serif text-[15px] text-muted-foreground">
+                {t("아직 쓴 한글이 없어요.")}
+              </p>
+              <Button onClick={() => onWrite(HANGUL[0])}>
+                {t("한글 쓰러 가기")}
+                <ArrowRight />
+              </Button>
+            </Panel>
           )}
           {missingSlots}
         </section>
@@ -810,116 +880,151 @@ export default function FontWorkshop({
     note?: string,
     step = 1,
   ) => (
-    <label className="fw-slider">
-      <span>
-        {t(label)} <b>{shown}</b>
-      </span>
-      <input
-        type="range"
+    <div className="fw-slider grid gap-2" key={label}>
+      <FieldHead label={t(label)} value={shown} />
+      <Slider
         aria-label={t(label)}
         min={min}
         max={max}
         step={step}
-        value={value}
-        onChange={(event) => onInput(+event.target.value)}
-        onPointerUp={flushDraft}
-        onKeyUp={flushDraft}
-        onBlur={flushDraft}
+        value={[value]}
+        onValueChange={([next]) => onInput(next)}
+        onValueCommit={flushDraft}
       />
-      {note && <small>{t(note)}</small>}
-    </label>
+      {note && (
+        <small className="text-xs leading-relaxed text-muted-foreground">
+          {t(note)}
+        </small>
+      )}
+    </div>
   );
+  const cardTitle =
+    "m-0 font-mono text-[11px] font-medium tracking-[0.08em] text-dim uppercase";
 
   return (
-    <div className="guided-workshop journey-panel">
+    <div
+      data-ui
+      className="guided-workshop journey-panel min-h-0 flex-1 overflow-y-auto"
+    >
       <section
-        className="font-workshop fw"
+        data-ui
+        className="font-workshop fw mx-auto grid w-full max-w-[1280px] gap-6 px-4 py-6 wide:px-10 wide:py-8"
         data-locked={project.purchase ? "" : undefined}
         ref={root}
         aria-labelledby="fw-title"
       >
-        <header className="fw-head">
-          <div>
-            <span className="step-kicker">
+        <header
+          data-ui
+          className="fw-head flex flex-wrap items-end justify-between gap-4"
+        >
+          <div className="grid gap-2">
+            <Kicker className="step-kicker">
               {script === "ja" ? "04" : "05"} / {t("폰트 완성")}
-            </span>
-            <h1 id="fw-title" tabIndex={-1}>
+            </Kicker>
+            <h1
+              id="fw-title"
+              tabIndex={-1}
+              className="m-0 font-serif text-[clamp(26px,2.6vw,36px)] leading-tight font-normal tracking-[-0.03em] outline-none"
+            >
               {finishStep === "refine"
                 ? t("폰트를 다듬어요")
                 : t("폰트를 내보내요")}
             </h1>
           </div>
-          <nav className="fw-tabs" aria-label={t("폰트 완성 순서")}>
-            <button
-              type="button"
-              aria-current={finishStep === "refine" ? "step" : undefined}
-              onClick={() => setFinishStep("refine")}
-            >
-              <span>1</span> {t("다듬기")}
-            </button>
-            <button
-              type="button"
-              aria-current={finishStep === "export" ? "step" : undefined}
-              disabled={!report.direct}
-              onClick={() => setFinishStep("export")}
-            >
-              <span>2</span> {t("내보내기")}
-            </button>
+          <nav
+            data-ui
+            className="fw-tabs flex items-center gap-1 rounded-xl bg-muted p-1"
+            aria-label={t("폰트 완성 순서")}
+          >
+            {(
+              [
+                ["refine", "다듬기", false],
+                ["export", "내보내기", !report.direct],
+              ] as const
+            ).map(([id, label, disabled], index) => (
+              <button
+                key={id}
+                data-ui
+                type="button"
+                aria-current={finishStep === id ? "step" : undefined}
+                disabled={disabled}
+                onClick={() => setFinishStep(id)}
+                className="flex h-9 cursor-pointer items-center gap-2 rounded-lg px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground disabled:cursor-default disabled:opacity-45 aria-[current=step]:bg-card aria-[current=step]:font-semibold aria-[current=step]:text-foreground aria-[current=step]:shadow-soft"
+              >
+                <span
+                  className={cn(
+                    "grid size-5 place-items-center rounded-full font-mono text-[10px] font-semibold",
+                    finishStep === id
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card text-dim",
+                  )}
+                >
+                  {index + 1}
+                </span>
+                {t(label)}
+              </button>
+            ))}
           </nav>
         </header>
 
         {!report.direct ? (
-          <div className="fw-empty">
-            {t("한 글자 이상 쓰면 폰트를 만들 수 있어요.")}
-            <button
-              type="button"
-              className="fw-primary"
-              onClick={() => onWrite(firstChar)}
-            >
-              {t("첫 글자 쓰러 가기 →")}
-            </button>
-          </div>
+          <Panel className="fw-empty grid justify-items-start gap-4 p-6">
+            <p className="m-0 font-serif text-[15px] text-muted-foreground">
+              {t("한 글자 이상 쓰면 폰트를 만들 수 있어요.")}
+            </p>
+            <Button onClick={() => onWrite(firstChar)}>
+              {t("첫 글자 쓰러 가기")}
+              <ArrowRight />
+            </Button>
+          </Panel>
         ) : finishStep === "refine" ? (
           <>
-            <div className="fw-refine">
-              <div className="fw-controls">
-                <section className="fw-card" aria-labelledby="fw-correction">
-                  <div className="fw-card-head">
-                    <h3 id="fw-correction">{t("손글씨 정돈")}</h3>
+            <div
+              data-ui
+              className="fw-refine grid items-start gap-6 wide:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]"
+            >
+              <div
+                data-ui
+                className="fw-controls grid gap-4 in-data-[locked]:pointer-events-none in-data-[locked]:opacity-55"
+              >
+                <Panel
+                  className="fw-card grid gap-4"
+                  aria-labelledby="fw-correction"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 id="fw-correction" className={cardTitle}>
+                      {t("손글씨 정돈")}
+                    </h3>
                     {customDetail && (
-                      <span className="fw-badge">{t("고급 설정 사용 중")}</span>
+                      <span className="fw-badge rounded-full bg-wash px-2 py-0.5 text-[11px] font-semibold text-primary">
+                        {t("고급 설정 사용 중")}
+                      </span>
                     )}
                   </div>
-                  <p className="fw-help">
+                  <p className="m-0 font-serif text-[13.5px] leading-relaxed break-keep text-muted-foreground">
                     {t(
                       "0%는 쓴 획 그대로예요. 올릴수록 자모 배치와 기울기를 견본 글꼴 쪽으로 정돈하지만, 내 글씨의 획과 개성은 남겨요.",
                     )}
                   </p>
-                  <div
-                    className="fw-segment"
-                    role="group"
-                    aria-label={t("정돈 단계")}
-                  >
-                    {PRESETS.map((preset) => (
-                      <button
-                        key={preset.value}
-                        type="button"
-                        aria-pressed={
-                          !customDetail && strength === preset.value
-                        }
-                        onClick={() =>
-                          settings({
-                            correction: preset.value,
-                            correctionDetail: undefined,
-                            alignToReference: undefined,
-                            averageStrokes: undefined,
-                          })
-                        }
-                      >
-                        {t(preset.label)}
-                      </button>
-                    ))}
-                  </div>
+                  <Segmented
+                    className="w-full [&>button]:flex-1 [&>button]:px-1.5"
+                    size="sm"
+                    label={t("정돈 단계")}
+                    value={customDetail ? "custom" : String(strength)}
+                    options={PRESETS.map((preset) => ({
+                      id: String(preset.value),
+                      label: t(preset.label),
+                    }))}
+                    onChange={(id) => {
+                      const value = +id;
+                      settings({
+                        correction: value,
+                        correctionDetail: undefined,
+                        alignToReference: undefined,
+                        averageStrokes: undefined,
+                      });
+                    }}
+                  />
                   {slider(
                     "정돈 강도",
                     strength,
@@ -937,51 +1042,59 @@ export default function FontWorkshop({
                     5,
                   )}
                   <details
-                    className="fw-advanced"
+                    className="fw-advanced group rounded-lg border border-divider bg-background/50 [&[open]>summary_svg]:rotate-180"
                     open={customDetail || undefined}
                   >
-                    <summary>{t("고급 설정 · 항목별로 조절")}</summary>
-                    {CORRECTION_KEYS.filter(
-                      (key) =>
-                        script === "ko" ||
-                        (key !== "layout" && key !== "balance"),
-                    ).map((key) =>
-                      slider(
-                        key === "layout" && script === "ja"
-                          ? DETAIL_LABELS[key].label
-                          : DETAIL_LABELS[key].label,
-                        detail[key] ?? 0,
-                        0,
-                        100,
-                        (value) =>
-                          stageSetting({
-                            correctionDetail: { ...detail, [key]: value },
-                            alignToReference: undefined,
-                            averageStrokes: undefined,
-                          }),
-                        (detail[key] ?? 0) + "%",
-                        DETAIL_LABELS[key].note,
-                        5,
-                      ),
-                    )}
-                    {customDetail && (
-                      <button
-                        type="button"
-                        className="fw-link"
-                        onClick={() =>
-                          settings({
-                            correctionDetail: undefined,
-                            correction: strength,
-                          })
-                        }
-                      >
-                        {t("정돈 강도에 맞춰 되돌리기")}
-                      </button>
-                    )}
+                    <summary
+                      data-ui
+                      className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-[13px] font-medium text-foreground [&::-webkit-details-marker]:hidden"
+                    >
+                      {t("고급 설정 · 항목별로 조절")}
+                      <ChevronDown className="size-4 text-muted-foreground transition-transform" />
+                    </summary>
+                    <div className="grid gap-4 border-t border-divider px-3 pt-3 pb-4">
+                      {CORRECTION_KEYS.filter(
+                        (key) =>
+                          script === "ko" ||
+                          (key !== "layout" && key !== "balance"),
+                      ).map((key) =>
+                        slider(
+                          DETAIL_LABELS[key].label,
+                          detail[key] ?? 0,
+                          0,
+                          100,
+                          (value) =>
+                            stageSetting({
+                              correctionDetail: { ...detail, [key]: value },
+                              alignToReference: undefined,
+                              averageStrokes: undefined,
+                            }),
+                          (detail[key] ?? 0) + "%",
+                          DETAIL_LABELS[key].note,
+                          5,
+                        ),
+                      )}
+                      {customDetail && (
+                        <Button
+                          variant="link"
+                          className="justify-self-start"
+                          onClick={() =>
+                            settings({
+                              correctionDetail: undefined,
+                              correction: strength,
+                            })
+                          }
+                        >
+                          {t("정돈 강도에 맞춰 되돌리기")}
+                        </Button>
+                      )}
+                    </div>
                   </details>
-                </section>
-                <section className="fw-card" aria-labelledby="fw-size">
-                  <h3 id="fw-size">{t("크기와 간격")}</h3>
+                </Panel>
+                <Panel className="fw-card grid gap-4" aria-labelledby="fw-size">
+                  <h3 id="fw-size" className={cardTitle}>
+                    {t("크기와 간격")}
+                  </h3>
                   {slider(
                     "글자 크기",
                     bodySize(view),
@@ -1012,9 +1125,14 @@ export default function FontWorkshop({
                     "글자가 줄 위에 놓이는 높이예요.",
                     5,
                   )}
-                </section>
-                <section className="fw-card" aria-labelledby="fw-stroke">
-                  <h3 id="fw-stroke">{t("획")}</h3>
+                </Panel>
+                <Panel
+                  className="fw-card grid gap-4"
+                  aria-labelledby="fw-stroke"
+                >
+                  <h3 id="fw-stroke" className={cardTitle}>
+                    {t("획")}
+                  </h3>
                   {slider(
                     "획 굵기",
                     view.strokeWeight ?? 100,
@@ -1025,36 +1143,24 @@ export default function FontWorkshop({
                     undefined,
                     5,
                   )}
-                  <div className="fw-field-row">
-                    <span>{t("획 끝")}</span>
-                    <div
-                      className="fw-segment"
-                      role="group"
-                      aria-label={t("획 끝 모양")}
-                    >
-                      {(
-                        [
-                          ["original", "쓴 그대로"],
-                          ["round", "둥글게"],
-                          ["pointed", "뾰족하게"],
-                        ] as const
-                      ).map(([value, label]) => (
-                        <button
-                          key={value}
-                          type="button"
-                          aria-pressed={
-                            (prep.settings.strokeFinish ?? "original") === value
-                          }
-                          onClick={() => settings({ strokeFinish: value })}
-                        >
-                          {t(label)}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <span className="text-sm font-medium">{t("획 끝")}</span>
+                    <Segmented
+                      size="sm"
+                      label={t("획 끝 모양")}
+                      value={prep.settings.strokeFinish ?? "original"}
+                      options={[
+                        { id: "original", label: t("쓴 그대로") },
+                        { id: "round", label: t("둥글게") },
+                        { id: "pointed", label: t("뾰족하게") },
+                      ]}
+                      onChange={(value) => settings({ strokeFinish: value })}
+                    />
                   </div>
-                  <button
-                    type="button"
-                    className="fw-link"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="justify-self-start text-muted-foreground"
                     onClick={() =>
                       settings({
                         correction: 0,
@@ -1069,9 +1175,10 @@ export default function FontWorkshop({
                       })
                     }
                   >
+                    <RotateCcw />
                     {t("모든 다듬기 설정 처음으로")}
-                  </button>
-                </section>
+                  </Button>
+                </Panel>
               </div>
               <MetricPreview
                 project={project}
@@ -1081,42 +1188,53 @@ export default function FontWorkshop({
             </div>
             {missingSlots}
             {script === "ko" && (
-              <details className="fw-more">
-                <summary>
+              <details
+                data-ui
+                className="fw-more group rounded-xl border border-border bg-card shadow-soft in-data-[locked]:pointer-events-none in-data-[locked]:opacity-55 [&[open]>summary_svg]:rotate-180"
+              >
+                <summary
+                  data-ui
+                  className="flex cursor-pointer list-none items-center justify-between gap-2 px-5 py-4 text-sm font-medium [&::-webkit-details-marker]:hidden"
+                >
                   {t("원본 손글씨 찾기 · 어떤 글자의 자모가 쓰였는지 보기")}
+                  <ChevronDown className="size-4 text-muted-foreground transition-transform" />
                 </summary>
-                <HandwritingSearch
-                  project={project}
-                  preparation={prep}
-                  onSeparate={(char) => {
-                    setSelected(char);
-                    setListMode("all");
-                    setStage("separation");
-                  }}
-                  onWrite={onWrite}
-                />
+                <div className="border-t border-divider p-5">
+                  <HandwritingSearch
+                    project={project}
+                    preparation={prep}
+                    onSeparate={(char) => {
+                      setSelected(char);
+                      setListMode("all");
+                      setStage("separation");
+                    }}
+                    onWrite={onWrite}
+                  />
+                </div>
               </details>
             )}
-            <footer className="fw-actions">
-              <button
-                type="button"
-                className="fw-secondary"
+            <footer
+              data-ui
+              className="fw-actions flex flex-wrap items-center justify-between gap-3 border-t border-divider pt-5"
+            >
+              <Button
+                variant="outline"
                 onClick={() =>
                   script === "ja" ? onClose() : setStage("separation")
                 }
               >
-                {script === "ja" ? t("← 글자 쓰기") : t("← 자모 나누기")}
-              </button>
-              <button
-                type="button"
-                className="fw-primary"
+                <ArrowLeft />
+                {script === "ja" ? t("글자 쓰기") : t("자모 나누기")}
+              </Button>
+              <Button
+                size="lg"
                 onClick={() => {
                   setFinishStep("export");
                   build();
                 }}
               >
                 {t("폰트 만들기 →")}
-              </button>
+              </Button>
             </footer>
           </>
         ) : (
@@ -1179,27 +1297,27 @@ export default function FontWorkshop({
                 useStudio.getState().markPurchased(purchase)
               }
             />
-            <footer className="fw-actions">
-              <button
-                type="button"
-                className="fw-secondary"
-                onClick={() => setFinishStep("refine")}
-              >
-                {t("← 다듬기")}
-              </button>
-              <span className="fw-note">
+            <footer
+              data-ui
+              className="fw-actions flex flex-wrap items-center justify-between gap-3 border-t border-divider pt-5"
+            >
+              <Button variant="outline" onClick={() => setFinishStep("refine")}>
+                <ArrowLeft />
+                {t("다듬기")}
+              </Button>
+              <span className="fw-note text-xs text-muted-foreground">
                 {t("손글씨와 폰트는 이 기기 안에서만 만들어져요.")}{" "}
                 {onLegal && (
-                  <button
-                    type="button"
-                    className="sg-link-button"
+                  <Button
+                    variant="link"
+                    className="h-auto text-xs"
                     onClick={onLegal}
                   >
                     {t("개인정보·이용 안내")}
-                  </button>
+                  </Button>
                 )}
               </span>
-              <span className="sg-credit">
+              <span className="font-mono text-[11px] text-dim">
                 {t("{maker} 제작", { maker: MAKER })} · {t(APP_NAME)} v
                 {APP_VERSION}
               </span>

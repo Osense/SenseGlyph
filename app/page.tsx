@@ -57,6 +57,55 @@ import {
   setCountingDisabled,
 } from "../lib/analytics";
 import { gsap } from "gsap";
+import {
+  ArrowRight,
+  Check,
+  ChevronLeft,
+  CircleHelp,
+  Download,
+  Copy,
+  Eraser,
+  FolderOpen,
+  Lock,
+  Minus,
+  Plus,
+  Redo2,
+  RotateCcw,
+  Settings2,
+  SkipForward,
+  SlidersHorizontal,
+  Undo2,
+  Upload,
+} from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { FieldHead, Panel, Segmented } from "@/components/ui-kit";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import ProjectManager from "../components/ProjectManager";
 import WritingTips, { WRITING_TIPS_KEY } from "../components/WritingTips";
 
@@ -214,6 +263,8 @@ export default function Page() {
   useEffect(() => {
     const scheme = dark ? "dark" : "only light";
     document.documentElement.style.colorScheme = scheme;
+    // 대화창처럼 body 로 띄우는 요소도 같은 밝기의 색을 쓰도록
+    document.documentElement.classList.toggle("dark", dark);
     document
       .querySelector('meta[name="color-scheme"]')
       ?.setAttribute("content", scheme);
@@ -601,39 +652,6 @@ export default function Page() {
         behavior: "smooth",
       });
   }, [char, list, step, project?.id]);
-  useEffect(() => {
-    if (!modal && !toolSheet) return;
-    const prev = document.activeElement as HTMLElement | null;
-    const dialog = document.getElementById(
-      modal ? "settings-dialog" : "tool-sheet",
-    );
-    dialog?.querySelector<HTMLElement>("button,input")?.focus();
-    const handle = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setModal(false);
-        setToolSheet(false);
-      }
-      if (e.key === "Tab") {
-        const items = Array.from(
-          dialog?.querySelectorAll<HTMLElement>("button,input,select") ?? [],
-        ).filter((x) => !x.hasAttribute("disabled"));
-        const first = items[0],
-          last = items[items.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last?.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first?.focus();
-        }
-      }
-    };
-    document.addEventListener("keydown", handle);
-    return () => {
-      document.removeEventListener("keydown", handle);
-      prev?.focus();
-    };
-  }, [modal, toolSheet]);
   const exportJSON = () => {
     if (!project) return;
     if (isNativeApp()) {
@@ -794,89 +812,159 @@ export default function Page() {
         (leftHanded ? " is-left-handed" : "")
       }
     >
-      <header className="sg-topbar">
+      <header
+        data-ui
+        className="sg-topbar relative z-20 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-divider bg-card/85 px-3 py-2 backdrop-blur-md wide:h-16 wide:flex-nowrap wide:gap-x-5 wide:px-6 wide:py-0"
+      >
         <a
-          className="sg-brand"
+          data-ui
+          className="sg-brand group flex min-w-0 shrink-0 items-center gap-2 text-foreground no-underline"
           href="./"
           aria-label={t("쎈스 글리프 처음 화면")}
         >
-          <span className="sg-osns" aria-hidden="true">
-            <img src={BASE_PATH + "/logo/osns-crayon.svg"} alt="" />
-            <i>studio</i>
+          <span className="flex items-end gap-1" aria-hidden="true">
+            <img
+              src={BASE_PATH + "/logo/osns-crayon.svg"}
+              alt=""
+              className="h-[22px] w-auto"
+            />
+            <i className="font-serif text-[15px] leading-none text-foreground/80 italic">
+              studio
+            </i>
           </span>
-          <span className="sg-brand-slash" aria-hidden="true">
+          <span className="text-dim max-sm:hidden" aria-hidden="true">
             /
           </span>
-          <span className="sg-brand-name">{t("쎈스 글리프")}</span>
+          <span className="hidden text-[15px] font-semibold tracking-tight sm:inline">
+            {t("쎈스 글리프")}
+          </span>
         </a>
-        <nav className="sg-steps" aria-label={t("폰트 만드는 순서")}>
-          {stepsFor(script).map(({ label, step: position }, order) => (
-            <button
-              key={label}
-              className={
-                viewStep === position
-                  ? "is-current"
-                  : position < viewStep
-                    ? "is-past"
-                    : ""
-              }
-              aria-current={viewStep === position ? "step" : undefined}
-              data-ink-locked={busy || undefined}
-              disabled={busy}
-              onClick={() => changeStep(position)}
-            >
-              <span>{t(label)}</span>
-              <span className="step-number">
-                {String(order + 1).padStart(2, "0")}
-              </span>
-            </button>
-          ))}
+        <nav
+          data-ui
+          className="sg-steps order-last flex w-full items-center gap-1 overflow-x-auto rounded-xl bg-muted p-1 wide:order-none wide:mx-auto wide:w-auto"
+          aria-label={t("폰트 만드는 순서")}
+        >
+          {stepsFor(script).map(({ label, step: position }, order) => {
+            const current = viewStep === position,
+              past = position < viewStep;
+            return (
+              <button
+                key={label}
+                data-ui
+                className={cn(
+                  current ? "is-current" : past ? "is-past" : "",
+                  "group/step flex h-10 min-w-0 flex-1 cursor-pointer data-[current=true]:max-[699px]:flex-[2.4] items-center justify-center gap-2 rounded-lg px-3 text-[14px] whitespace-nowrap text-muted-foreground transition-colors hover:bg-card/70 hover:text-foreground disabled:cursor-default disabled:opacity-50 wide:flex-none wide:px-3.5",
+                  current &&
+                    "bg-card font-semibold text-foreground shadow-soft hover:bg-card",
+                  past && "text-foreground/80",
+                )}
+                aria-current={current ? "step" : undefined}
+                data-current={current}
+                data-ink-locked={busy || undefined}
+                disabled={busy}
+                onClick={() => changeStep(position)}
+              >
+                <span
+                  className={cn(
+                    "grid size-5 shrink-0 place-items-center rounded-full font-mono text-[10px] leading-none font-semibold tabular-nums",
+                    current
+                      ? "bg-primary text-primary-foreground"
+                      : past
+                        ? "bg-primary/15 text-primary"
+                        : "bg-card text-dim",
+                  )}
+                >
+                  {past ? (
+                    <Check className="size-3" strokeWidth={3} />
+                  ) : (
+                    order + 1
+                  )}
+                </span>
+                <span
+                  className={cn(
+                    "truncate",
+                    !current && "max-wide:hidden min-[700px]:max-wide:inline",
+                  )}
+                >
+                  {t(label)}
+                </span>
+              </button>
+            );
+          })}
         </nav>
-        <div className="sg-top-actions">
-          <span className="sg-save" role="status">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 wide:ml-0">
+          <span
+            className="sg-save mr-1 hidden items-center gap-1.5 font-mono text-[11px] text-muted-foreground wide:inline-flex"
+            data-ui
+            role="status"
+          >
+            <span
+              className="size-1.5 rounded-full bg-primary"
+              aria-hidden="true"
+            />
             {t(saved)}
           </span>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             className="sg-top-button"
             data-ink-locked={busy || undefined}
             disabled={busy}
             onClick={() => setProjectsOpen(true)}
           >
-            {t("내 폰트")}
-          </button>
-          <button
-            className="sg-top-button sg-icon"
+            <FolderOpen />
+            <span className="max-sm:sr-only">{t("내 폰트")}</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="sg-top-button"
             onClick={() => setModal(true)}
             data-ink-locked={busy || undefined}
             disabled={busy}
             aria-label={t("설정 열기")}
           >
-            ⚙
-          </button>
-          <button
-            className="sg-top-button sg-icon sg-profile-button"
+            <Settings2 />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="sg-top-button sg-profile-button rounded-full"
             onClick={() => setAccountOpen(true)}
             data-ink-locked={busy || undefined}
             disabled={busy}
             aria-label={t("내 계정 열기")}
             title={t(session?.name ?? "게스트")}
           >
-            <span className="sg-avatar" aria-hidden="true">
+            <span
+              className="grid size-8 place-items-center rounded-full bg-primary text-[13px] font-bold text-primary-foreground ring-2 ring-card"
+              aria-hidden="true"
+            >
               {(session?.name ?? "?").slice(0, 1).toUpperCase()}
             </span>
-          </button>
+          </Button>
         </div>
       </header>
       {project.purchase && (
-        <div className="sg-locked-bar" role="status">
-          <span>
-            <b>{t("결제한 폰트예요.")}</b>{" "}
-            {t(
-              "글씨와 정돈은 더 고칠 수 없고, 같은 폰트만 다시 받을 수 있어요.",
-            )}
+        <div
+          data-ui
+          className="sg-locked-bar mx-3 mt-2 flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-wash px-4 py-2.5 text-[13px] text-foreground wide:mx-6"
+          role="status"
+        >
+          <span className="flex items-center gap-2.5">
+            <Lock className="size-4 shrink-0 text-primary" aria-hidden="true" />
+            <span>
+              <b className="font-semibold">{t("결제한 폰트예요.")}</b>{" "}
+              <span className="text-muted-foreground">
+                {t(
+                  "글씨와 정돈은 더 고칠 수 없고, 같은 폰트만 다시 받을 수 있어요.",
+                )}
+              </span>
+            </span>
           </span>
-          <button
+          <Button
             type="button"
+            size="sm"
             disabled={busy}
             onClick={async () => {
               const active = useStudio.getState().project;
@@ -894,8 +982,9 @@ export default function Page() {
               );
             }}
           >
+            <Copy />
             {t("새 프로젝트로 복제해서 고치기")}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -922,135 +1011,126 @@ export default function Page() {
               {t("글자 쓰기")}
             </h1>
             <div className="sg-rail" role="toolbar" aria-label={t("쓰기 도구")}>
-              <button
-                className="sg-tool"
-                aria-pressed={tool === "pen"}
-                data-ink-locked={busy || undefined}
+              <RailTool
+                pressed={tool === "pen"}
+                locked={busy}
                 disabled={busy}
                 onClick={() => setTool("pen")}
-              >
-                <BrushPreview brush={s.activeBrush} />
-                <span>{t(brushLabel ?? "")}</span>
-              </button>
-              <button
-                className="sg-tool"
-                aria-pressed={tool === "eraser"}
-                data-ink-locked={busy || undefined}
+                icon={<BrushPreview brush={s.activeBrush} />}
+                label={t(brushLabel ?? "")}
+              />
+              <RailTool
+                pressed={tool === "eraser"}
+                locked={busy}
                 disabled={busy}
                 onClick={() => setTool(tool === "eraser" ? "pen" : "eraser")}
-              >
-                <i aria-hidden="true">◇</i>
-                <span>{t("지우개")}</span>
-              </button>
+                icon={<Eraser />}
+                label={t("지우개")}
+              />
               <span className="sg-rail-gap" />
-              <button
-                className="sg-tool"
+              <RailTool
                 aria-label={t("실행 취소")}
-                data-ink-locked={(busy && !!history?.past.length) || undefined}
+                locked={busy && !!history?.past.length}
                 disabled={busy || !history?.past.length}
                 onClick={() => undo(char)}
-              >
-                <i aria-hidden="true">↶</i>
-                <span>{t("취소")}</span>
-              </button>
-              <button
-                className="sg-tool"
+                icon={<Undo2 />}
+                label={t("취소")}
+              />
+              <RailTool
                 aria-label={t("다시 실행")}
-                data-ink-locked={
-                  (busy && !!history?.future.length) || undefined
-                }
+                locked={busy && !!history?.future.length}
                 disabled={busy || !history?.future.length}
                 onClick={() => redo(char)}
-              >
-                <i aria-hidden="true">↷</i>
-                <span>{t("다시")}</span>
-              </button>
-              <button
-                className="sg-tool"
-                data-ink-locked={(busy && !!strokes.length) || undefined}
+                icon={<Redo2 />}
+                label={t("다시")}
+              />
+              <RailTool
+                locked={busy && !!strokes.length}
                 disabled={busy || !strokes.length}
                 onClick={resetGlyph}
-              >
-                <i aria-hidden="true">↺</i>
-                <span>{t("다시쓰기")}</span>
-              </button>
-              {/* 다음 글자: 펜을 쥔 반대손이 도구 사이에서 바로 누르도록 */}
-              <button
-                className="sg-tool sg-tool-next sg-rail-next"
+                icon={<RotateCcw />}
+                label={t("다시쓰기")}
+              />
+              {/* 다음 글자: 펜을 쥔 반대손이 도구 사이에서 바로 누르도록.
+                  세로 화면에서는 줄의 맨 앞(왼손잡이는 맨 끝)으로 간다. */}
+              <RailTool
+                tone="primary"
+                className="sg-tool-next sg-rail-next"
                 aria-label={nextLabel}
-                data-ink-locked={busy || undefined}
+                locked={busy}
                 disabled={busy}
                 onClick={nextWritingChar}
-              >
-                <i aria-hidden="true">→</i>
-                <span>{nextShort}</span>
-              </button>
+                icon={<ArrowRight strokeWidth={2.4} />}
+                label={nextShort}
+              />
               <span className="sg-rail-gap" />
-              <button
-                className="sg-tool"
+              <RailTool
                 aria-haspopup="dialog"
                 aria-expanded={toolSheet}
-                data-ink-locked={busy || undefined}
+                locked={busy}
                 disabled={busy}
                 onClick={() => setToolSheet(true)}
-              >
-                <i aria-hidden="true">⚙</i>
-                <span>{t("도구 설정")}</span>
-              </button>
-              <button
-                className="sg-tool"
+                icon={<SlidersHorizontal />}
+                label={t("도구 설정")}
+              />
+              <RailTool
                 aria-haspopup="dialog"
-                data-ink-locked={busy || undefined}
+                locked={busy}
                 disabled={busy}
                 onClick={() => setTipsOpen(true)}
-              >
-                <i aria-hidden="true" className="sg-tool-q">
-                  ?
-                </i>
-                <span>{t("쓰기 팁")}</span>
-              </button>
+                icon={<CircleHelp />}
+                label={t("쓰기 팁")}
+              />
             </div>
 
             <div className="sg-stage">
               <div className="sg-char-head">
-                <strong className="sg-char">{char}</strong>
+                <strong
+                  data-ui
+                  className="sg-char grid size-[60px] shrink-0 place-items-center rounded-xl border border-border bg-card font-serif text-[38px] leading-none text-foreground shadow-soft max-sm:size-12 max-sm:text-3xl"
+                >
+                  {char}
+                </strong>
                 <div className="sg-char-info">
-                  <span>
-                    {t(cat.label)}
+                  <span
+                    data-ui
+                    className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted-foreground"
+                  >
+                    <span className="font-medium text-foreground">
+                      {t(cat.label)}
+                    </span>
                     {isPremiumCategory(category) && (
-                      <em className="sg-tag">{t("특수문자")}</em>
+                      <em className="rounded-full bg-wash px-2 py-px text-[11px] font-semibold text-primary not-italic">
+                        {t("특수문자")}
+                      </em>
                     )}
                     {currentPosition >= 0 && (
-                      <>
-                        {" "}
-                        · {currentPosition + 1} / {navigationChars.length}
-                      </>
+                      <span className="font-mono text-[12px] tabular-nums">
+                        {currentPosition + 1} / {navigationChars.length}
+                      </span>
                     )}
                   </span>
-                  <p>{characterGuide(char, category, lang)}</p>
+                  <p
+                    data-ui
+                    className="mt-1 mb-0 font-serif text-[14px] leading-[1.65] break-keep text-foreground/85"
+                  >
+                    {characterGuide(char, category, lang)}
+                  </p>
                 </div>
-                <div
-                  className="sg-segment"
-                  role="group"
-                  aria-label={t("견본 보기")}
-                >
-                  {(
-                    [
-                      { id: "inside-faint", label: "따라 쓰기" },
-                      { id: "outside", label: "보고 쓰기" },
-                    ] as const
-                  ).map((m) => (
-                    <button
-                      key={m.id}
-                      aria-pressed={s.sampleMode === m.id}
-                      data-ink-locked={busy || undefined}
-                      disabled={busy}
-                      onClick={() => update({ sampleMode: m.id })}
-                    >
-                      {t(m.label)}
-                    </button>
-                  ))}
-                </div>
+                <Segmented
+                  className="max-sm:col-span-full max-sm:justify-self-start"
+                  label={t("견본 보기")}
+                  value={
+                    s.sampleMode === "outside" ? "outside" : "inside-faint"
+                  }
+                  options={[
+                    { id: "inside-faint", label: t("따라 쓰기") },
+                    { id: "outside", label: t("보고 쓰기") },
+                  ]}
+                  locked={busy}
+                  disabled={busy}
+                  onChange={(id) => update({ sampleMode: id })}
+                />
               </div>
               <div
                 className="sg-pad-area"
@@ -1091,36 +1171,55 @@ export default function Page() {
               </div>
               <div className="sg-pad-foot">
                 <div
-                  className="sg-size"
+                  data-ui
+                  className="sg-size inline-flex items-center gap-0.5 rounded-full border border-border bg-card p-1 text-xs shadow-soft"
                   role="group"
                   aria-label={t("쓰기 칸 크기")}
                 >
-                  <span aria-hidden="true">{t("칸")}</span>
-                  <button
+                  <span
+                    aria-hidden="true"
+                    className="pr-1 pl-2.5 font-medium text-muted-foreground"
+                  >
+                    {t("칸")}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    className="size-8 rounded-full"
                     aria-label={t("쓰기 칸 더 작게")}
                     data-ink-locked={busy || undefined}
                     disabled={busy || shownPad <= PAD_SIZES[0]}
                     onClick={() => stepPad(-1)}
                   >
-                    −
-                  </button>
+                    <Minus />
+                  </Button>
                   <button
-                    className="sg-size-value"
+                    data-ui
+                    className="sg-size-value flex h-8 min-w-16 cursor-pointer items-baseline justify-center gap-0.5 rounded-full bg-muted px-3 font-mono hover:bg-wash"
                     aria-label={t("쓰기 칸 크기 자세히")}
                     onClick={() => setToolSheet(true)}
                   >
-                    <b>{shownPad}</b>
-                    <small>px</small>
+                    <b className="text-[13px] font-semibold text-foreground tabular-nums">
+                      {shownPad}
+                    </b>
+                    <small className="text-[10px] text-muted-foreground">
+                      px
+                    </small>
                   </button>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    className="size-8 rounded-full"
                     aria-label={t("쓰기 칸 더 크게")}
                     data-ink-locked={busy || undefined}
                     disabled={busy || (!s.writingSize && legacyScale === 1)}
                     onClick={() => stepPad(1)}
                   >
-                    +
-                  </button>
+                    <Plus />
+                  </Button>
                   <button
+                    data-ui
+                    className="h-8 cursor-pointer rounded-full px-3 font-semibold text-muted-foreground hover:text-foreground aria-pressed:bg-primary aria-pressed:text-primary-foreground"
                     aria-pressed={
                       !s.writingSize && (s.writingPreset ?? "fill") === "fill"
                     }
@@ -1145,58 +1244,83 @@ export default function Page() {
             </div>
 
             <aside className="sg-side" aria-label={t("이동과 글자 확인")}>
-              <div className="sg-nav">
-                <div className="sg-nav-row">
-                  <button
-                    data-ink-locked={busy || undefined}
-                    disabled={
-                      busy ||
-                      (list === "review"
-                        ? navigationChars.length < 2
-                        : currentPosition <= 0)
-                    }
-                    onClick={() => go(-1)}
-                  >
-                    {t("← 이전")}
-                  </button>
-                  <button
-                    data-ink-locked={busy || undefined}
-                    disabled={busy}
-                    onClick={() => {
-                      if (!strokes.length)
-                        commit(char, category, strokes, "skipped");
-                      go(1);
-                    }}
-                  >
-                    {t("건너뛰기")}
-                  </button>
-                </div>
+              <div data-ui className="sg-nav grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  data-ink-locked={busy || undefined}
+                  disabled={
+                    busy ||
+                    (list === "review"
+                      ? navigationChars.length < 2
+                      : currentPosition <= 0)
+                  }
+                  onClick={() => go(-1)}
+                >
+                  <ChevronLeft />
+                  {t("이전")}
+                </Button>
+                <Button
+                  variant="outline"
+                  data-ink-locked={busy || undefined}
+                  disabled={busy}
+                  onClick={() => {
+                    if (!strokes.length)
+                      commit(char, category, strokes, "skipped");
+                    go(1);
+                  }}
+                >
+                  {t("건너뛰기")}
+                  <SkipForward />
+                </Button>
               </div>
-              <section
-                className={
-                  "sg-check" + (currentIssues.length ? " has-issues" : "")
-                }
+              <Panel
+                tone={currentIssues.length ? "danger" : "default"}
+                className={cn(
+                  "sg-check grid gap-3",
+                  currentIssues.length > 0 && "has-issues",
+                )}
                 aria-label={t("현재 글자 확인")}
               >
-                <div className="sg-check-head">
-                  <strong>
+                <div className="sg-check-head flex items-center justify-between gap-2">
+                  <strong className="flex items-center gap-2 text-sm font-semibold">
+                    <i
+                      aria-hidden="true"
+                      className={cn(
+                        "size-2 rounded-full",
+                        currentIssues.length
+                          ? "bg-destructive"
+                          : strokes.length
+                            ? "bg-success"
+                            : "bg-border",
+                      )}
+                    />
                     {currentIssues.length
                       ? t("다시 볼 글자")
                       : strokes.length
                         ? t("잘 썼어요")
                         : t("아직 안 쓴 글자")}
                   </strong>
-                  <span>{t("{n}획", { n: strokes.length })}</span>
+                  <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-[11px] text-muted-foreground tabular-nums">
+                    {t("{n}획", { n: strokes.length })}
+                  </span>
                 </div>
                 {currentIssues.length > 0 && (
-                  <ul className="sg-reasons">
+                  <ul className="sg-reasons m-0 grid list-none gap-1 p-0 text-[13px] text-destructive">
                     {currentIssues.map((issue) => (
-                      <li key={issue.kind}>{t(issue.label)}</li>
+                      <li key={issue.kind} className="flex gap-1.5 break-keep">
+                        <span aria-hidden="true">·</span>
+                        {t(issue.label)}
+                      </li>
                     ))}
                   </ul>
                 )}
-                <div className="sg-check-actions">
-                  <button
+                <div className="sg-check-actions flex flex-wrap gap-2">
+                  <Button
+                    variant={
+                      project.samples[char]?.needsReview ? "soft" : "secondary"
+                    }
+                    size="sm"
+                    className="flex-1"
                     data-ink-locked={busy || undefined}
                     disabled={busy}
                     aria-pressed={!!project.samples[char]?.needsReview}
@@ -1211,9 +1335,12 @@ export default function Page() {
                     {project.samples[char]?.needsReview
                       ? t("표시 지우기")
                       : t("나중에 다시 보기")}
-                  </button>
+                  </Button>
                   {category === "hangul-syllable" && strokes.length > 0 && (
-                    <button
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="flex-1"
                       data-ink-locked={busy || undefined}
                       disabled={busy}
                       onClick={() => {
@@ -1222,79 +1349,108 @@ export default function Page() {
                       }}
                     >
                       {t("자모 확인")}
-                    </button>
+                    </Button>
                   )}
                 </div>
-              </section>
-              <section className="sg-sample" aria-label={t("견본")}>
-                <div className="sg-sample-head">
-                  <span>
-                    {t("견본")} <b>{sampleName}</b>
+              </Panel>
+              <Panel
+                className="sg-sample grid gap-3 max-wide:portrait:hidden"
+                aria-label={t("견본")}
+              >
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="min-w-0 truncate text-muted-foreground">
+                    {t("견본")}{" "}
+                    <b className="font-semibold text-foreground">
+                      {sampleName}
+                    </b>
                   </span>
-                  <button
-                    className="sg-link"
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="text-[13px]"
                     data-ink-locked={busy || undefined}
                     disabled={busy}
                     onClick={() => changeStep(1)}
                   >
                     {t("바꾸기")}
-                  </button>
+                  </Button>
                 </div>
                 {referenceUsesFallback(char, s.referenceFont) && (
-                  <small>
+                  <small className="text-xs text-muted-foreground">
                     {t("‘{char}’은 기본 견본으로 보여요.", { char })}
                   </small>
                 )}
                 {s.sampleMode === "inside-faint" && (
-                  <label className="sg-slider">
-                    <span>
-                      {t("견본 진하기")}{" "}
-                      <b>{Math.round(s.sampleOpacity * 100)}%</b>
-                    </span>
-                    <input
-                      type="range"
+                  <div className="grid gap-1.5">
+                    <FieldHead
+                      label={t("견본 진하기")}
+                      value={Math.round(s.sampleOpacity * 100) + "%"}
+                    />
+                    <Slider
                       aria-label={t("견본 진하기")}
-                      min="5"
-                      max="40"
-                      value={Math.round(s.sampleOpacity * 100)}
-                      onChange={(e) =>
-                        update({ sampleOpacity: +e.target.value / 100 })
+                      min={5}
+                      max={40}
+                      value={[Math.round(s.sampleOpacity * 100)]}
+                      onValueChange={([value]) =>
+                        update({ sampleOpacity: value / 100 })
                       }
                     />
-                  </label>
+                  </div>
                 )}
-              </section>
-              <button
-                className="sg-next-step"
+              </Panel>
+              <Button
+                variant="soft"
+                size="lg"
+                className="sg-next-step mt-auto w-full border border-dashed border-primary/50 max-wide:portrait:hidden"
                 data-ink-locked={busy || undefined}
                 disabled={busy}
                 onClick={() => goStep(3)}
               >
                 {script === "ja"
-                  ? t("쓴 글자로 폰트 만들기 →")
-                  : t("쓴 글자로 자모 나누기 →")}
-              </button>
+                  ? t("쓴 글자로 폰트 만들기")
+                  : t("쓴 글자로 자모 나누기")}
+                <ArrowRight />
+              </Button>
             </aside>
           </section>
 
-          <footer className="sg-strip" aria-label={t("글자 모음")}>
-            <div className="sg-strip-head">
+          <footer
+            data-ui
+            className="sg-strip grid shrink-0 gap-2 border-t border-divider bg-card/70 px-3 pt-2 pb-2.5 backdrop-blur-sm wide:px-5"
+            aria-label={t("글자 모음")}
+          >
+            <div className="flex min-w-0 items-center justify-between gap-3">
               <div
-                className="sg-lists"
+                data-ui
+                className="sg-lists flex min-w-0 gap-1.5 overflow-x-auto [scrollbar-width:none]"
                 role="group"
                 aria-label={t("글자 목록")}
               >
                 {LIST_IDS.map((id) => (
                   <button
                     key={id}
+                    data-ui
                     aria-pressed={list === id}
                     data-list={id}
                     data-ink-locked={busy || undefined}
                     disabled={busy}
                     onClick={() => selectList(id)}
+                    className={cn(
+                      "flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-[13px] whitespace-nowrap text-foreground/85 transition-colors hover:border-primary/40 disabled:cursor-default disabled:opacity-50",
+                      "aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:font-semibold aria-pressed:text-primary-foreground",
+                      id === "premium" && "border-dashed",
+                    )}
                   >
-                    {id === "review" ? t("다시 확인") : t(LISTS[id]!.label)}{" "}
-                    <b>
+                    {id === "review" ? t("다시 확인") : t(LISTS[id]!.label)}
+                    <b
+                      className={cn(
+                        "font-mono text-[11px] font-medium tabular-nums opacity-70",
+                        id === "review" &&
+                          reviewChars.length > 0 &&
+                          list !== id &&
+                          "text-destructive opacity-100",
+                      )}
+                    >
                       {id === "review"
                         ? reviewChars.length
                         : `${written(id)}/${listChars(id).length}`}
@@ -1302,12 +1458,23 @@ export default function Page() {
                   </button>
                 ))}
               </div>
-              <div className="sg-progress" aria-label={t("기본 글자 진행률")}>
+              <div
+                className="flex shrink-0 items-center gap-2.5 text-xs whitespace-nowrap text-muted-foreground max-sm:hidden"
+                aria-label={t("기본 글자 진행률")}
+              >
                 <span>
-                  {t("기본 글자")} <b>{basicDone}</b> / {BASIC_CHARSET.length}
+                  {t("기본 글자")}{" "}
+                  <b className="font-mono font-semibold text-foreground tabular-nums">
+                    {basicDone}
+                  </b>
+                  <span className="font-mono tabular-nums">
+                    {" "}
+                    / {BASIC_CHARSET.length}
+                  </span>
                 </span>
-                <span className="sg-progress-bar">
+                <span className="relative h-1.5 w-28 overflow-hidden rounded-full bg-muted max-wide:hidden">
                   <i
+                    className="absolute inset-y-0 left-0 rounded-full bg-primary transition-[width] duration-500"
                     style={{
                       width: (basicDone / BASIC_CHARSET.length) * 100 + "%",
                     }}
@@ -1316,7 +1483,8 @@ export default function Page() {
               </div>
             </div>
             <div
-              className="sg-glyphs"
+              data-ui
+              className="sg-glyphs flex snap-x snap-proximity gap-1.5 overflow-x-auto px-0.5 pt-0.5 pb-1"
               aria-label={t("{name} 목록", {
                 name:
                   list === "review"
@@ -1325,13 +1493,20 @@ export default function Page() {
               })}
             >
               {!navigationChars.length && (
-                <div className="sg-strip-empty" role="status">
+                <div
+                  className="flex min-h-[58px] items-center gap-3 text-sm text-muted-foreground"
+                  role="status"
+                >
                   {list === "review"
                     ? t("다시 볼 글자가 없어요.")
                     : t("이 목록에 글자가 없어요.")}
-                  <button onClick={() => selectList("basic")}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => selectList("basic")}
+                  >
                     {t("기본 글자 보기")}
-                  </button>
+                  </Button>
                 </div>
               )}
               {navigationChars.map((c, i) => {
@@ -1344,15 +1519,26 @@ export default function Page() {
                     : sample?.status === "skipped"
                       ? "skipped"
                       : "empty";
+                const current = c.char === char;
                 return (
                   <button
                     id={"glyph-" + c.char}
                     key={c.char}
-                    className="sg-glyph"
+                    data-ui
+                    className={cn(
+                      "sg-glyph relative grid h-[58px] w-[52px] shrink-0 cursor-pointer snap-center grid-rows-[1fr_auto] justify-items-center rounded-[10px] border border-border bg-card p-0.5 transition-[border-color,box-shadow] hover:border-primary/40 disabled:cursor-default",
+                      "[&_canvas]:!h-9 [&_canvas]:!w-9",
+                      state === "review" &&
+                        "border-destructive/60 bg-destructive-wash",
+                      state === "done" && "bg-card",
+                      state === "empty" && "bg-card/60",
+                      current &&
+                        "border-primary ring-[3px] ring-primary/20 hover:border-primary",
+                    )}
                     data-state={state}
                     data-ink-locked={busy || undefined}
                     disabled={busy}
-                    aria-current={c.char === char ? "step" : undefined}
+                    aria-current={current ? "step" : undefined}
                     aria-label={
                       c.char +
                       " " +
@@ -1379,9 +1565,22 @@ export default function Page() {
                         tone={problems.length ? "error" : "normal"}
                       />
                     ) : (
-                      <span>{c.char}</span>
+                      <span
+                        className={cn(
+                          "self-center text-[22px] leading-none",
+                          current ? "text-foreground" : "text-dim/70",
+                        )}
+                      >
+                        {c.char}
+                      </span>
                     )}
-                    <small>
+                    <small
+                      className={cn(
+                        "font-mono text-[10px] leading-4 text-muted-foreground tabular-nums",
+                        state === "done" && "font-bold text-success",
+                        state === "review" && "font-bold text-destructive",
+                      )}
+                    >
                       {state === "review"
                         ? "!"
                         : state === "done"
@@ -1397,182 +1596,179 @@ export default function Page() {
           </footer>
 
           {tipsOpen && <WritingTips onClose={closeTips} script={script} />}
-          {toolSheet && (
-            <div
-              className="sg-sheet-backdrop"
-              onClick={() => setToolSheet(false)}
+          <Sheet open={toolSheet} onOpenChange={setToolSheet}>
+            <SheetContent
+              id="tool-sheet"
+              side={leftHanded ? "left" : "right"}
+              className="sg-tool-sheet w-[min(400px,92vw)] gap-0 overflow-y-auto sm:max-w-[400px]"
+              closeLabel={t("도구 설정 닫기")}
             >
-              <section
-                className="sg-sheet"
-                id="tool-sheet"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="tool-sheet-title"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="sg-sheet-head">
-                  <h2 id="tool-sheet-title">{t("도구 설정")}</h2>
-                  <button
-                    onClick={() => setToolSheet(false)}
-                    aria-label={t("도구 설정 닫기")}
-                  >
-                    ✕
-                  </button>
-                </div>
-                <h3>{t("쓰는 도구")}</h3>
-                <div className="sg-brushes">
-                  {BRUSHES.map((b) => (
-                    <button
-                      key={b.id}
-                      aria-pressed={s.activeBrush === b.id}
-                      onClick={() => {
-                        update({ activeBrush: b.id });
-                        setTool("pen");
-                      }}
-                    >
-                      <BrushPreview brush={b.id} />
-                      <span>{t(b.label)}</span>
-                    </button>
-                  ))}
-                </div>
-                <p className="sg-help">
-                  {t(
-                    "한 폰트는 한 가지 도구로 쓰면 글자 모양이 고르게 나와요.",
-                  )}
-                </p>
-                <label className="sg-slider">
-                  <span>
-                    {t("굵기")} <b>{params.size}</b>
-                  </span>
-                  <input
-                    aria-label={t("펜 굵기")}
-                    type="range"
-                    min="20"
-                    max="120"
-                    value={params.size}
-                    onChange={(e) => setParams({ size: +e.target.value })}
-                  />
-                </label>
-                <label className="sg-check-row">
-                  <input
-                    type="checkbox"
-                    checked={params.usePressure}
-                    onChange={(e) =>
-                      setParams({ usePressure: e.target.checked })
-                    }
-                  />
-                  {t("펜 누르는 힘 반영")}
-                </label>
-                {s.activeBrush === "pixel" && (
-                  <PixelSizeControl
-                    params={params}
-                    onChange={(pixel) =>
-                      update({ brushParams: { ...s.brushParams, pixel } })
-                    }
-                  />
-                )}
-                {s.activeBrush === "nib" && (
-                  <label className="sg-slider">
-                    <span>
-                      {t("펜촉 각도")} <b>{params.nibAngle}°</b>
-                    </span>
-                    <input
-                      aria-label={t("펜촉 각도")}
-                      type="range"
-                      min="0"
-                      max="180"
-                      value={params.nibAngle}
-                      onChange={(e) => setParams({ nibAngle: +e.target.value })}
+              <SheetHeader className="border-b border-divider px-6 pt-5 pb-4">
+                <SheetTitle className="text-lg">{t("도구 설정")}</SheetTitle>
+                <SheetDescription className="sr-only">
+                  {t("쓰는 도구, 지우개, 쓰기 칸 크기")}
+                </SheetDescription>
+              </SheetHeader>
+              <div className="grid gap-6 px-6 py-5">
+                <section className="grid gap-3">
+                  <h3 className="m-0 font-mono text-[11px] font-medium tracking-[0.08em] text-dim uppercase">
+                    {t("쓰는 도구")}
+                  </h3>
+                  <div className="sg-brushes grid grid-cols-3 gap-2">
+                    {BRUSHES.map((b) => (
+                      <button
+                        key={b.id}
+                        data-ui
+                        aria-pressed={s.activeBrush === b.id}
+                        onClick={() => {
+                          update({ activeBrush: b.id });
+                          setTool("pen");
+                        }}
+                        className="flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border border-border bg-card px-2 py-3 text-[12px] font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground aria-pressed:border-primary aria-pressed:bg-wash aria-pressed:text-primary [&_canvas]:!h-6 [&_canvas]:!w-14"
+                      >
+                        <BrushPreview brush={b.id} />
+                        <span>{t(b.label)}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="m-0 font-serif text-[13px] leading-relaxed text-muted-foreground">
+                    {t(
+                      "한 폰트는 한 가지 도구로 쓰면 글자 모양이 고르게 나와요.",
+                    )}
+                  </p>
+                  <div className="grid gap-2">
+                    <FieldHead label={t("굵기")} value={params.size} />
+                    <Slider
+                      aria-label={t("펜 굵기")}
+                      min={20}
+                      max={120}
+                      value={[params.size]}
+                      onValueChange={([value]) => setParams({ size: value })}
+                    />
+                  </div>
+                  <label className="flex cursor-pointer items-center justify-between gap-3 text-sm">
+                    {t("펜 누르는 힘 반영")}
+                    <Switch
+                      checked={params.usePressure}
+                      onCheckedChange={(value) =>
+                        setParams({ usePressure: value })
+                      }
                     />
                   </label>
-                )}
-                <h3>{t("지우개")}</h3>
-                <div
-                  className="sg-segment"
-                  role="group"
-                  aria-label={t("지우개 방식")}
-                >
-                  {(
-                    [
-                      ["stroke", "획 통째로"],
-                      ["partial", "닿은 부분만"],
-                    ] as const
-                  ).map(([id, label]) => (
-                    <button
-                      key={id}
-                      aria-pressed={s.eraserMode === id}
-                      onClick={() => update({ eraserMode: id })}
-                    >
-                      {t(label)}
-                    </button>
-                  ))}
-                </div>
-                <label className="sg-slider">
-                  <span>
-                    {t("지우개 크기")} <b>{s.eraserSize}</b>
-                  </span>
-                  <input
-                    aria-label={t("지우개 크기")}
-                    type="range"
-                    min="20"
-                    max="200"
-                    value={s.eraserSize}
-                    onChange={(e) => update({ eraserSize: +e.target.value })}
-                  />
-                </label>
-                <h3>{t("쓰기 칸 크기 (고급)")}</h3>
-                <p className="sg-help">
-                  {t(
-                    "쓰기 칸 아래의 − · + 버튼은 정해진 단계로 바꾸고, 여기서는 10px 단위로 정할 수 있어요. 같은 숫자면 어느 기기에서나 비슷한 크기예요. 지금 화면에서는 {px}px까지 커질 수 있어요.",
-                    { px: padFit },
-                  )}
-                </p>
-                <div className="sg-px-row">
-                  <input
-                    aria-label={t("쓰기 칸 크기 슬라이더")}
-                    type="range"
-                    min="140"
-                    max="900"
-                    step="10"
-                    value={s.writingSize ?? shownPad}
-                    onChange={(e) => update({ writingSize: +e.target.value })}
-                  />
-                  <label>
-                    <input
-                      aria-label={t("쓰기 칸 크기 픽셀")}
-                      type="number"
-                      min="140"
-                      max="900"
-                      step="10"
-                      value={s.writingSize ?? ""}
-                      placeholder={t("자동")}
-                      onChange={(e) => {
-                        const value = +e.target.value;
-                        if (
-                          Number.isFinite(value) &&
-                          value >= 140 &&
-                          value <= 900
-                        )
-                          update({ writingSize: value });
-                      }}
+                  {s.activeBrush === "pixel" && (
+                    <PixelSizeControl
+                      params={params}
+                      onChange={(pixel) =>
+                        update({ brushParams: { ...s.brushParams, pixel } })
+                      }
                     />
-                    px
-                  </label>
-                </div>
-                {s.writingSize && (
-                  <button
-                    className="sg-link"
-                    onClick={() => update({ writingSize: undefined })}
-                  >
-                    {t("화면 가득으로 되돌리기")}
-                  </button>
-                )}
-                <p className="sg-help">
-                  {t("칸 크기를 바꿔도 폰트의 글자 크기는 바뀌지 않아요.")}
-                </p>
-              </section>
-            </div>
-          )}
+                  )}
+                  {s.activeBrush === "nib" && (
+                    <div className="grid gap-2">
+                      <FieldHead
+                        label={t("펜촉 각도")}
+                        value={params.nibAngle + "°"}
+                      />
+                      <Slider
+                        aria-label={t("펜촉 각도")}
+                        min={0}
+                        max={180}
+                        value={[params.nibAngle ?? 30]}
+                        onValueChange={([value]) =>
+                          setParams({ nibAngle: value })
+                        }
+                      />
+                    </div>
+                  )}
+                </section>
+                <section className="grid gap-3 border-t border-divider pt-5">
+                  <h3 className="m-0 font-mono text-[11px] font-medium tracking-[0.08em] text-dim uppercase">
+                    {t("지우개")}
+                  </h3>
+                  <Segmented
+                    className="w-full [&>button]:flex-1"
+                    label={t("지우개 방식")}
+                    value={s.eraserMode}
+                    options={[
+                      { id: "stroke", label: t("획 통째로") },
+                      { id: "partial", label: t("닿은 부분만") },
+                    ]}
+                    onChange={(id) => update({ eraserMode: id })}
+                  />
+                  <div className="grid gap-2">
+                    <FieldHead label={t("지우개 크기")} value={s.eraserSize} />
+                    <Slider
+                      aria-label={t("지우개 크기")}
+                      min={20}
+                      max={200}
+                      value={[s.eraserSize]}
+                      onValueChange={([value]) => update({ eraserSize: value })}
+                    />
+                  </div>
+                </section>
+                <section className="grid gap-3 border-t border-divider pt-5">
+                  <h3 className="m-0 font-mono text-[11px] font-medium tracking-[0.08em] text-dim uppercase">
+                    {t("쓰기 칸 크기 (고급)")}
+                  </h3>
+                  <p className="m-0 font-serif text-[13px] leading-relaxed text-muted-foreground">
+                    {t(
+                      "쓰기 칸 아래의 − · + 버튼은 정해진 단계로 바꾸고, 여기서는 10px 단위로 정할 수 있어요. 같은 숫자면 어느 기기에서나 비슷한 크기예요. 지금 화면에서는 {px}px까지 커질 수 있어요.",
+                      { px: padFit },
+                    )}
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <Slider
+                      className="flex-1"
+                      aria-label={t("쓰기 칸 크기 슬라이더")}
+                      min={140}
+                      max={900}
+                      step={10}
+                      value={[s.writingSize ?? shownPad]}
+                      onValueChange={([value]) =>
+                        update({ writingSize: value })
+                      }
+                    />
+                    <div className="relative w-28">
+                      <Input
+                        aria-label={t("쓰기 칸 크기 픽셀")}
+                        type="number"
+                        min="140"
+                        max="900"
+                        step="10"
+                        className="pr-9 font-mono tabular-nums"
+                        value={s.writingSize ?? ""}
+                        placeholder={t("자동")}
+                        onChange={(e) => {
+                          const value = +e.target.value;
+                          if (
+                            Number.isFinite(value) &&
+                            value >= 140 &&
+                            value <= 900
+                          )
+                            update({ writingSize: value });
+                        }}
+                      />
+                      <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 font-mono text-xs text-muted-foreground">
+                        px
+                      </span>
+                    </div>
+                  </div>
+                  {s.writingSize && (
+                    <Button
+                      variant="link"
+                      className="justify-self-start"
+                      onClick={() => update({ writingSize: undefined })}
+                    >
+                      {t("화면 가득으로 되돌리기")}
+                    </Button>
+                  )}
+                  <p className="m-0 text-xs text-muted-foreground">
+                    {t("칸 크기를 바꿔도 폰트의 글자 크기는 바뀌지 않아요.")}
+                  </p>
+                </section>
+              </div>
+            </SheetContent>
+          </Sheet>
         </>
       )}
 
@@ -1627,10 +1823,16 @@ export default function Page() {
         />
       )}
       {toast && (
-        <div className="toast" role="status">
-          {toast}
+        <div
+          data-ui
+          className="toast fixed bottom-5 left-1/2 z-[110] flex max-w-[min(560px,calc(100vw-2rem))] -translate-x-1/2 animate-in items-center gap-3 rounded-xl bg-foreground py-2.5 pr-2.5 pl-4 text-[13.5px] text-background shadow-lift fade-in-0 slide-in-from-bottom-2"
+          role="status"
+        >
+          <span className="min-w-0 break-keep">{toast}</span>
           {toastUndo && (
             <button
+              data-ui
+              className="h-8 shrink-0 cursor-pointer rounded-lg px-3 text-[13px] font-semibold text-primary hover:bg-background/10"
               onClick={() => {
                 undo(char);
                 setToast("");
@@ -1641,173 +1843,178 @@ export default function Page() {
           )}
         </div>
       )}
-      {renameCopy && (
-        <div className="modal-backdrop" onClick={() => setRenameCopy(false)}>
+      <Dialog open={renameCopy} onOpenChange={setRenameCopy}>
+        <DialogContent
+          className="sg-rename-copy sm:max-w-md"
+          closeLabel={t("닫기")}
+        >
           <form
-            className="settings-modal sg-rename-copy"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="rename-copy-title"
-            onClick={(event) => event.stopPropagation()}
+            className="grid gap-5"
             onSubmit={(event) => {
               event.preventDefault();
               if (!project.name.trim()) rename(t("새 프로젝트"));
               setRenameCopy(false);
             }}
           >
-            <h2 id="rename-copy-title">{t("복제한 프로젝트 이름")}</h2>
-            <p>
-              {t(
-                "결제 기록 없이 새로 고칠 수 있는 프로젝트예요. 알아보기 쉬운 이름으로 바꿔 두세요.",
-              )}
-            </p>
-            <label className="field">
-              {t("프로젝트 이름")}
-              <input
+            <DialogHeader>
+              <DialogTitle>{t("복제한 프로젝트 이름")}</DialogTitle>
+              <DialogDescription>
+                {t(
+                  "결제 기록 없이 새로 고칠 수 있는 프로젝트예요. 알아보기 쉬운 이름으로 바꿔 두세요.",
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-2">
+              <Label htmlFor="rename-copy-name">{t("프로젝트 이름")}</Label>
+              <Input
+                id="rename-copy-name"
                 value={project.name}
                 maxLength={80}
                 autoFocus
                 onFocus={(event) => event.target.select()}
                 onChange={(event) => rename(event.target.value)}
               />
-            </label>
-            <button type="submit" className="sg-primary">
-              {t("확인")}
-            </button>
-          </form>
-        </div>
-      )}
-      {modal && (
-        <div className="modal-backdrop" onClick={() => setModal(false)}>
-          <section
-            className="settings-modal"
-            id="settings-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="settings-title"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-title">
-              <h2 id="settings-title">{t("설정")}</h2>
-              <button
-                onClick={() => setModal(false)}
-                aria-label={t("설정 닫기")}
-              >
-                ✕
-              </button>
             </div>
-            <label className="field">
-              {t("프로젝트 이름")}
-              <input
+            <DialogFooter>
+              <Button type="submit">{t("확인")}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={modal} onOpenChange={setModal}>
+        <DialogContent
+          id="settings-dialog"
+          className="settings-dialog gap-0 p-0 sm:max-w-[520px]"
+          closeLabel={t("설정 닫기")}
+          onOpenAutoFocus={(event) => event.preventDefault()}
+        >
+          <DialogHeader className="border-b border-divider px-6 pt-5 pb-4">
+            <DialogTitle className="text-lg">{t("설정")}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("프로젝트 이름, 입력, 화면, 개인정보, 백업")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-6 px-6 py-5">
+            <div className="grid gap-2">
+              <Label htmlFor="settings-project-name">
+                {t("프로젝트 이름")}
+              </Label>
+              <Input
+                id="settings-project-name"
                 value={project.name}
                 maxLength={80}
                 onChange={(e) => rename(e.target.value)}
               />
-            </label>
-            <h3>{t("입력")}</h3>
-            <label className="check">
-              <input
-                type="checkbox"
+            </div>
+            <SettingGroup title={t("입력")}>
+              <SettingSwitch
+                id="set-pen-only"
                 checked={s.penOnly}
-                onChange={(e) => update({ penOnly: e.target.checked })}
+                onChange={(value) => update({ penOnly: value })}
+                label={t("펜으로만 쓰기 (손바닥 오인식 방지)")}
               />
-              {t("펜으로만 쓰기 (손바닥 오인식 방지)")}
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
+              <SettingSwitch
+                id="set-mouse"
                 checked={s.allowMouse}
-                onChange={(e) => update({ allowMouse: e.target.checked })}
+                onChange={(value) => update({ allowMouse: value })}
+                label={t("마우스로 쓰기 허용")}
               />
-              {t("마우스로 쓰기 허용")}
-            </label>
-            <h3>{t("화면")}</h3>
-            <label className="check">
-              <input
-                type="checkbox"
+            </SettingGroup>
+            <SettingGroup title={t("화면")}>
+              <SettingSwitch
+                id="set-dark"
                 checked={dark}
-                onChange={(e) => setDark(e.target.checked)}
+                onChange={setDark}
+                label={t("어두운 화면")}
               />
-              {t("어두운 화면")}
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
+              <SettingSwitch
+                id="set-left"
                 checked={leftHanded}
-                onChange={(e) => setLeftHanded(e.target.checked)}
+                onChange={setLeftHanded}
+                label={t("왼손잡이 모드 (도구와 다음 글자 버튼을 오른쪽에)")}
               />
-              {t("왼손잡이 모드 (도구와 다음 글자 버튼을 오른쪽에)")}
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
+              <SettingSwitch
+                id="set-ask"
                 checked={askSteps}
-                onChange={(e) => setAskSteps(e.target.checked)}
+                onChange={setAskSteps}
+                label={t("다음 단계로 넘어가기 전에 물어보기")}
               />
-              {t("다음 단계로 넘어가기 전에 물어보기")}
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
+              <SettingSwitch
+                id="set-size-guide"
                 checked={s.grid.sizeGuide}
-                onChange={(event) =>
-                  update({
-                    grid: { ...s.grid, sizeGuide: event.target.checked },
-                  })
+                onChange={(value) =>
+                  update({ grid: { ...s.grid, sizeGuide: value } })
                 }
+                label={t("글자 크기 안내선")}
               />
-              {t("글자 크기 안내선")}
-            </label>
-            <label className="field">
-              {t("화면 언어")}
-              <select
-                value={uiChoice.value}
-                onChange={(event) =>
-                  uiChoice.set(event.target.value as UiLang | "auto")
-                }
-              >
-                <option value="auto">{t("기기 언어 따르기")}</option>
-                <option value="ko">한국어</option>
-                <option value="ja">日本語</option>
-                <option value="en">English</option>
-              </select>
-            </label>
-            <h3>{t("개인정보")}</h3>
-            <label className="check">
-              <input
-                type="checkbox"
+              <div className="flex items-center justify-between gap-4 px-4 py-3">
+                <Label htmlFor="set-lang" className="font-normal">
+                  {t("화면 언어")}
+                </Label>
+                <Select
+                  value={uiChoice.value}
+                  onValueChange={(value) =>
+                    uiChoice.set(value as UiLang | "auto")
+                  }
+                >
+                  <SelectTrigger id="set-lang" className="w-44">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">
+                      {t("기기 언어 따르기")}
+                    </SelectItem>
+                    <SelectItem value="ko">한국어</SelectItem>
+                    <SelectItem value="ja">日本語</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </SettingGroup>
+            <SettingGroup
+              title={t("개인정보")}
+              foot={
+                <>
+                  {t(
+                    "글씨와 폰트는 이 기기 밖으로 나가지 않아요. 방문·내보내기 횟수만 숫자로 셉니다.",
+                  )}{" "}
+                  <Button
+                    variant="link"
+                    className="h-auto text-[13px]"
+                    onClick={() => setLegalOpen(true)}
+                  >
+                    {t("개인정보·이용 안내")}
+                  </Button>
+                </>
+              }
+            >
+              <SettingSwitch
+                id="set-no-count"
                 checked={noCount}
-                onChange={(event) => {
-                  setCountingDisabled(event.target.checked);
-                  setNoCount(event.target.checked);
+                onChange={(value) => {
+                  setCountingDisabled(value);
+                  setNoCount(value);
                 }}
+                label={t("방문 집계 보내지 않기")}
               />
-              {t("방문 집계 보내지 않기")}
-            </label>
-            <p className="settings-help">
-              {t(
-                "글씨와 폰트는 이 기기 밖으로 나가지 않아요. 방문·내보내기 횟수만 숫자로 셉니다.",
-              )}{" "}
-              <button
-                type="button"
-                className="sg-link-button"
-                onClick={() => setLegalOpen(true)}
-              >
-                {t("개인정보·이용 안내")}
-              </button>
-            </p>
-            <h3>{t("백업")}</h3>
-            <p className="settings-help">
-              {t(
+            </SettingGroup>
+            <SettingGroup
+              title={t("백업")}
+              foot={t(
                 "글씨는 이 브라우저에 저장돼요. JSON으로 백업하면 다른 기기로 옮길 수 있어요. 가져오기는 새 프로젝트로 열려요.",
               )}
-            </p>
-            <div className="backup-buttons">
-              <button onClick={exportJSON}>{t("JSON 내보내기 ↓")}</button>
-              <button onClick={() => file.current?.click()}>
-                {t("JSON 가져오기 ↑")}
-              </button>
-            </div>
+            >
+              <div className="grid grid-cols-2 gap-2 p-3">
+                <Button variant="outline" onClick={exportJSON}>
+                  <Download />
+                  {t("JSON 내보내기")}
+                </Button>
+                <Button variant="outline" onClick={() => file.current?.click()}>
+                  <Upload />
+                  {t("JSON 가져오기")}
+                </Button>
+              </div>
+            </SettingGroup>
             <input
               ref={file}
               type="file"
@@ -1819,21 +2026,23 @@ export default function Page() {
                 e.target.value = "";
               }}
             />
-            <p className="settings-help">
-              {t(
-                "키보드: P 펜 · E 지우개 · ← → 글자 이동 · Ctrl/⌘+Z 취소 · Shift+Z 다시",
-              )}
-            </p>
-            <p className="version">
-              {t("{maker} 제작", { maker: MAKER })} · {t(APP_NAME)} v
-              {APP_VERSION} ·{" "}
-              {t("{n}가지 견본 · 모든 획은 벡터로 보관됩니다.", {
-                n: REFERENCE_FONTS.length,
-              })}
-            </p>
-          </section>
-        </div>
-      )}
+            <div className="grid gap-1 border-t border-divider pt-4 text-xs text-muted-foreground">
+              <p className="m-0 max-sm:hidden">
+                {t(
+                  "키보드: P 펜 · E 지우개 · ← → 글자 이동 · Ctrl/⌘+Z 취소 · Shift+Z 다시",
+                )}
+              </p>
+              <p className="version m-0 font-mono text-[11px]">
+                {t("{maker} 제작", { maker: MAKER })} · {t(APP_NAME)} v
+                {APP_VERSION} ·{" "}
+                {t("{n}가지 견본 · 모든 획은 벡터로 보관됩니다.", {
+                  n: REFERENCE_FONTS.length,
+                })}
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       {askTarget !== null && (
         <StepQuestion
           ask={stepAsk(askTarget)}
@@ -1846,28 +2055,18 @@ export default function Page() {
           }}
         />
       )}
-      {legalOpen && (
-        <div className="modal-backdrop" onClick={() => setLegalOpen(false)}>
-          <section
-            className="settings-modal sg-legal-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-label={t("개인정보·이용 안내")}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-title">
-              <span />
-              <button
-                onClick={() => setLegalOpen(false)}
-                aria-label={t("닫기")}
-              >
-                ✕
-              </button>
-            </div>
-            <LegalTabs />
-          </section>
-        </div>
-      )}
+      <Dialog open={legalOpen} onOpenChange={setLegalOpen}>
+        <DialogContent
+          className="sg-legal-dialog sm:max-w-2xl"
+          closeLabel={t("닫기")}
+          aria-describedby={undefined}
+        >
+          <DialogTitle className="sr-only">
+            {t("개인정보·이용 안내")}
+          </DialogTitle>
+          <LegalTabs />
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
@@ -1891,4 +2090,92 @@ function useUiChoice() {
       setValue(next);
     },
   };
+}
+
+/** 쓰기 화면 측면 도구 줄의 버튼 */
+function RailTool({
+  icon,
+  label,
+  pressed,
+  locked,
+  tone = "default",
+  className,
+  ...props
+}: Omit<React.ComponentProps<"button">, "children"> & {
+  icon: React.ReactNode;
+  label: React.ReactNode;
+  pressed?: boolean;
+  locked?: boolean;
+  tone?: "default" | "primary";
+}) {
+  return (
+    <button
+      data-ui
+      type="button"
+      aria-pressed={pressed}
+      data-ink-locked={locked || undefined}
+      className={cn(
+        "sg-tool flex shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 text-[11.5px] leading-tight font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:translate-y-px disabled:cursor-default [&_svg]:size-[22px] [&_svg]:shrink-0",
+        "max-wide:portrait:min-h-14 max-wide:portrait:flex-[1_0_64px]",
+        tone === "default" &&
+          "min-h-[62px] border-border bg-card text-muted-foreground shadow-[0_1px_0_rgb(0_0_0/0.03)] hover:border-primary/40 hover:text-foreground disabled:opacity-35 aria-pressed:border-primary aria-pressed:bg-wash aria-pressed:font-semibold aria-pressed:text-primary aria-pressed:shadow-none",
+        tone === "primary" &&
+          "my-1 min-h-[88px] border-primary bg-primary text-[12.5px] font-semibold text-primary-foreground shadow-[inset_0_-3px_0_rgb(0_0_0/0.16),0_6px_16px_-6px_rgb(200_40_20/0.55)] hover:bg-primary-strong disabled:opacity-50 max-wide:portrait:order-first max-wide:portrait:my-0 max-wide:portrait:flex-[1.4_0_88px] [&_svg]:size-7",
+        className,
+      )}
+      {...props}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+}
+
+/** 설정 창의 묶음: 작은 제목 + 둥근 칸 안의 줄들 */
+function SettingGroup({
+  title,
+  foot,
+  children,
+}: {
+  title: React.ReactNode;
+  foot?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="grid gap-2">
+      <h3 className="m-0 font-mono text-[11px] font-medium tracking-[0.08em] text-dim uppercase">
+        {title}
+      </h3>
+      <div className="divide-y divide-divider overflow-hidden rounded-xl border border-border bg-background/60">
+        {children}
+      </div>
+      {foot && (
+        <p className="m-0 font-serif text-[13px] leading-relaxed text-muted-foreground">
+          {foot}
+        </p>
+      )}
+    </section>
+  );
+}
+
+/** 설정 한 줄: 글 + 오른쪽 스위치 */
+function SettingSwitch({
+  id,
+  label,
+  checked,
+  onChange,
+}: {
+  id: string;
+  label: React.ReactNode;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 px-4 py-3">
+      <Label htmlFor={id} className="cursor-pointer leading-snug font-normal">
+        {label}
+      </Label>
+      <Switch id={id} checked={checked} onCheckedChange={onChange} />
+    </div>
+  );
 }

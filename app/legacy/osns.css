@@ -5,57 +5,18 @@
 
 @font-face {
   font-family: "Gowun Batang";
-  src: url("../public/fonts/GowunBatang-Regular.woff") format("woff");
+  src: url("../../public/fonts/GowunBatang-Regular.woff") format("woff");
   font-weight: 400;
   font-display: swap;
 }
 
 main.studio.journey {
-  --font-ui: "IBM Plex Sans", "Noto Sans KR", system-ui, sans-serif;
-  --font-mono:
-    "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --font-text: "Gowun Batang", "Noto Serif KR", serif;
-  --display-face: var(--font-text);
-
   /* 밝은 화면: 같은 브랜드 색을 종이 위에 */
-  --paper: #f7f1ef;
-  --sheet: #fffaf8;
-  --panel: #fffaf8;
-  --ink: #1f1515;
-  --muted: #76585b;
-  --dim: #8f7174;
-  --line: #e4d3d1;
-  --divider: #ecdedc;
-  --accent: #d93a26;
-  --amber: #b27100;
-  --on-accent: #fffaf8;
-  --active-wash: #f7e1dd;
-  --danger: #c0392b;
-  --danger-wash: #fbe5e1;
-  --ok: #2f7254;
-  --ok-wash: #e4f1e8;
-  --radius: 12px;
   font-family: var(--font-ui);
   accent-color: var(--accent);
 }
 main.studio.journey.dark {
   /* osns.studio globals.css 와 같은 값 */
-  --paper: #120e0e;
-  --sheet: #1d1315;
-  --panel: #180f11;
-  --ink: #f4ecea;
-  --muted: #b99598;
-  --dim: #a68488;
-  --line: #3a2628;
-  --divider: #2a1b1d;
-  --accent: #ff5a5a;
-  --amber: #ffb020;
-  --on-accent: #120e0e;
-  --active-wash: #241618;
-  --danger: #ff8f80;
-  --danger-wash: #3a1d1e;
-  --ok: #8fd6ad;
-  --ok-wash: #16271e;
   background: var(--paper);
   color: var(--ink);
 }
@@ -480,4 +441,27 @@ main.studio.journey .sg-credit,
   background: var(--ok-wash, #e4f1e8);
   color: var(--ok, #2f7254);
   font-size: 13px;
+}
+
+/* Tailwind·shadcn 으로 옮긴 요소(data-slot, data-ui)에는 예전 규칙이 닿지 않게 한다.
+ * 이 파일은 legacy 레이어 맨 끝이고, id 두 개 분량의 우선순위로 앞선 legacy 규칙을 모두
+ * base 레이어 값으로 되돌린다. 모양은 utilities 레이어의 Tailwind 클래스가 정한다. */
+:is([data-slot], [data-ui]):not(#_legacy):not(#_reset) {
+  all: revert-layer;
+}
+:is([data-slot], [data-ui]):not(#_legacy):not(#_reset):is(
+    :hover,
+    :focus-visible,
+    :active,
+    :disabled,
+    [aria-pressed],
+    [aria-checked],
+    [aria-selected],
+    [aria-current],
+    [aria-expanded]
+  ),
+:is([data-slot], [data-ui]):not(#_legacy):not(#_reset)::before,
+:is([data-slot], [data-ui]):not(#_legacy):not(#_reset)::after,
+:is([data-slot], [data-ui]):not(#_legacy):not(#_reset)::placeholder {
+  all: revert-layer;
 }

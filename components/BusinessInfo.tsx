@@ -7,10 +7,15 @@ import {
   HOSTING,
   hasBusinessInfo,
 } from "../lib/business";
+import { cn } from "@/lib/utils";
 import { useT } from "../lib/i18n";
 import { MAKER } from "../lib/version";
 
-export default function BusinessInfo({ compact = false }: { compact?: boolean }) {
+export default function BusinessInfo({
+  compact = false,
+}: {
+  compact?: boolean;
+}) {
   const t = useT();
   const rows: [string, string][] = hasBusinessInfo()
     ? [
@@ -29,28 +34,48 @@ export default function BusinessInfo({ compact = false }: { compact?: boolean })
         [t("호스팅서비스 제공자"), HOSTING],
       ];
   return (
-    <footer className={compact ? "sg-biz is-compact" : "sg-biz"}>
-      {!compact && <h2>{t("사업자 정보")}</h2>}
-      <dl>
+    <footer
+      data-ui
+      className={cn(
+        "sg-biz grid gap-2 text-muted-foreground",
+        compact ? "is-compact text-[11px]" : "text-xs",
+      )}
+    >
+      {!compact && (
+        <h2 className="m-0 font-mono text-[11px] font-medium tracking-[0.08em] text-dim uppercase">
+          {t("사업자 정보")}
+        </h2>
+      )}
+      <dl
+        className={cn(
+          "m-0 grid gap-x-4 gap-y-1",
+          compact ? "grid-cols-1 sm:grid-cols-2" : "sm:grid-cols-2",
+        )}
+      >
         {rows
           .filter(([, value]) => value)
           .map(([label, value]) => (
-            <div key={label}>
-              <dt>{label}</dt>
-              <dd>{value}</dd>
+            <div key={label} className="flex gap-2">
+              <dt className="shrink-0 text-dim">{label}</dt>
+              <dd className="m-0 min-w-0 break-words text-foreground/80">
+                {value}
+              </dd>
             </div>
           ))}
-        <div>
-          <dt>{t("문의")}</dt>
-          <dd>
-            <a href={`mailto:${BUSINESS.email || CONTACT_EMAIL}`}>
+        <div className="flex gap-2">
+          <dt className="shrink-0 text-dim">{t("문의")}</dt>
+          <dd className="m-0 min-w-0">
+            <a
+              className="text-primary underline-offset-4 hover:underline"
+              href={`mailto:${BUSINESS.email || CONTACT_EMAIL}`}
+            >
               {BUSINESS.email || CONTACT_EMAIL}
             </a>
           </dd>
         </div>
       </dl>
       {!hasBusinessInfo() && (
-        <p>
+        <p className="m-0 leading-relaxed">
           {t(
             "지금은 무료 베타 기간이라 판매하지 않아요. 사업자 등록과 통신판매업 신고를 마치면 이곳에 판매자 정보를 모두 표시해요.",
           )}

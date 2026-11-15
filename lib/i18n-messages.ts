@@ -829,6 +829,44 @@ export const JA: Record<string, string> = {
     "作ったフォントのライセンスは、すべてあなたのもの。",
   "가게 간판에도, 유튜브 자막에도, 판매하는 굿즈에도. 사용료도 출처 표기도 묻지 않아요.":
     "お店の看板にも、動画の字幕にも、販売するグッズにも。使用料もクレジット表記もいりません。",
+  "쓴 글자로 폰트 만들기": "書いた字でフォントを作る",
+  "쓴 글자로 자모 나누기": "書いた字で字母分け",
+  "쓰는 도구, 지우개, 쓰기 칸 크기": "書く道具、消しゴム、書く枠の大きさ",
+  "프로젝트 이름, 입력, 화면, 개인정보, 백업":
+    "プロジェクト名、入力、画面、プライバシー、バックアップ",
+  "JSON 내보내기": "JSON書き出し",
+  "JSON 가져오기": "JSON読み込み",
+  "새 폰트 시작은 ‘내 폰트’에서": "新しいフォントは「マイフォント」から",
+  "쓰지 않은 글자 쓰러 가기": "書いていない字を書きに行く",
+  "{file} 다운로드": "{file} をダウンロード",
+  다운로드: "ダウンロード",
+  공유하기: "共有",
+  다운로드하기: "ダウンロードする",
+  "아직 내려받을 수 없어요": "まだダウンロードできません",
+  "자모 자리 {n}개가 비어 있어 한글 {m}자는 아직 만들 수 없어요":
+    "字母の枠が{n}個空いているため、ハングル{m}字はまだ作れません",
+  "아래 글자를 쓰면 빈 자리가 채워져요.":
+    "下の字を書くと空いた枠が埋まります。",
+  전체: "すべて",
+  주의: "要確認",
+  "살펴본 글자": "確認した字",
+  "만들 수 있는 한글": "作れるハングル",
+  "폰트 다듬기": "フォントを整える",
+  "자동으로 나눈 결과예요. 한 글자가 잘못 나뉘면 그 자모를 쓰는 다른 글자들까지 함께 어긋나요.":
+    "自動で分けた結果です。一文字が間違って分かれると、その字母を使うほかの字もずれてしまいます。",
+  "전체를 한 번씩 넘겨 보며 확인해 주세요.":
+    "全体を一度ずつめくって確認してください。",
+  "표시는 특히 잘못 나뉜 것 같은 글자예요.":
+    "の印は、特に分け方があやしい字です。",
+  "한글 쓰러 가기": "ハングルを書きに行く",
+  "첫 글자 쓰러 가기": "最初の字を書きに行く",
+  선택됨: "選択中",
+  "로그인 없이 시작하기": "ログインせずに始める",
+  "새 폰트 시작하기": "新しいフォントを始める",
+  "다 썼어요 · 자모 나누기로": "書けました・字母分けへ",
+  "모두 지우기": "すべて消す",
+  "잘 모르겠다면 다 받기": "迷ったら全部",
+  "문서에서 굵게·가늘게도 쓰려면": "文書で太字・細字も使うなら",
 };
 export const EN: Record<string, string> = {
   " 폰트 이름": " font name",
@@ -1660,4 +1698,42 @@ export const EN: Record<string, string> = {
     "Every font you make is licensed to you — completely.",
   "가게 간판에도, 유튜브 자막에도, 판매하는 굿즈에도. 사용료도 출처 표기도 묻지 않아요.":
     "Shop signs, video subtitles, merch you sell — no royalties, no credit required.",
+  "쓴 글자로 폰트 만들기": "Make a font from what you wrote",
+  "쓴 글자로 자모 나누기": "Split jamo from what you wrote",
+  "쓰는 도구, 지우개, 쓰기 칸 크기": "Writing tool, eraser, writing box size",
+  "프로젝트 이름, 입력, 화면, 개인정보, 백업":
+    "Project name, input, display, privacy, backup",
+  "JSON 내보내기": "Export JSON",
+  "JSON 가져오기": "Import JSON",
+  "새 폰트 시작은 ‘내 폰트’에서": "Start a new font from ‘My fonts’",
+  "쓰지 않은 글자 쓰러 가기": "Write the missing characters",
+  "{file} 다운로드": "Download {file}",
+  다운로드: "Download",
+  공유하기: "Share",
+  다운로드하기: "Download",
+  "아직 내려받을 수 없어요": "Can't download yet",
+  "자모 자리 {n}개가 비어 있어 한글 {m}자는 아직 만들 수 없어요":
+    "{n} jamo slots are empty, so {m} Hangul syllables can't be made yet",
+  "아래 글자를 쓰면 빈 자리가 채워져요.":
+    "Write the characters below to fill the empty slots.",
+  전체: "All",
+  주의: "Check",
+  "살펴본 글자": "Reviewed",
+  "만들 수 있는 한글": "Hangul available",
+  "폰트 다듬기": "Refine font",
+  "자동으로 나눈 결과예요. 한 글자가 잘못 나뉘면 그 자모를 쓰는 다른 글자들까지 함께 어긋나요.":
+    "These are automatic splits. If one character is split wrongly, every character that uses its jamo will be off too.",
+  "전체를 한 번씩 넘겨 보며 확인해 주세요.":
+    "Please flip through all of them once.",
+  "표시는 특히 잘못 나뉜 것 같은 글자예요.":
+    "marks characters that look especially wrong.",
+  "한글 쓰러 가기": "Go write Hangul",
+  "첫 글자 쓰러 가기": "Write your first character",
+  선택됨: "Selected",
+  "로그인 없이 시작하기": "Start without signing in",
+  "새 폰트 시작하기": "Start a new font",
+  "다 썼어요 · 자모 나누기로": "Done · back to jamo split",
+  "모두 지우기": "Clear all",
+  "잘 모르겠다면 다 받기": "Not sure? Get them all",
+  "문서에서 굵게·가늘게도 쓰려면": "For bold and light in documents",
 };

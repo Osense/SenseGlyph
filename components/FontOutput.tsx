@@ -5,6 +5,31 @@ import { romanizeName } from "../lib/font/romanize";
 import type { Purchase } from "../lib/types";
 import PaymentDialog from "./PaymentDialog";
 import {
+  ArrowRight,
+  BadgeCheck,
+  Check,
+  ChevronDown,
+  Download,
+  Loader2,
+  Lock,
+  RefreshCw,
+  SearchCheck,
+  Share2,
+  TriangleAlert,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Panel } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
+import {
   checkFontName,
   cleanEnglishName,
   cleanLocalName,
@@ -25,31 +50,28 @@ export function FontDialog({
   title,
   children,
   onClose,
+  showClose = false,
 }: {
   title: string;
   children: ReactNode;
   onClose?: () => void;
+  showClose?: boolean;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  const heading = useId();
-  useEffect(() => {
-    const node = dialog.current!;
-    node.showModal();
-    return () => node.close();
-  }, []);
+  const t = useT();
   return (
-    <dialog
-      className="font-flow-dialog"
-      ref={dialog}
-      aria-labelledby={heading}
-      onCancel={(event) => {
-        event.preventDefault();
-        onClose?.();
-      }}
-    >
-      <h3 id={heading}>{title}</h3>
-      {children}
-    </dialog>
+    <Dialog open onOpenChange={(open) => !open && onClose?.()}>
+      <DialogContent
+        className="font-flow-dialog sm:max-w-md"
+        showCloseButton={showClose}
+        closeLabel={t("닫기")}
+        aria-describedby={undefined}
+      >
+        <DialogTitle className="pr-8 text-lg leading-snug">{title}</DialogTitle>
+        <div className="grid gap-3 text-[14px] leading-relaxed text-muted-foreground [&_b]:text-foreground">
+          {children}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -308,36 +330,54 @@ export default function FontOutput({
     }
   };
 
+  const ids = useId();
+  const fieldLabel = "text-[13px] font-semibold text-foreground";
+  const formatCard =
+    "relative grid cursor-pointer content-start gap-0.5 rounded-xl border border-border bg-card px-3.5 py-3 text-left shadow-soft transition-[border-color,background-color] hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-wash has-[:checked]:shadow-none has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/30";
   return (
-    <section className="fw-export" aria-label={t("폰트 내보내기")}>
-      <div className="fw-specimen-card">
-        <div className="fw-card-head">
-          <h3>{t("내 손글씨 폰트로 써 보기")}</h3>
+    <section
+      data-ui
+      className="fw-export grid items-start gap-6 wide:grid-cols-[minmax(0,1fr)_minmax(360px,440px)]"
+      aria-label={t("폰트 내보내기")}
+    >
+      <Panel className="fw-specimen-card grid gap-4 wide:sticky wide:top-0">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="m-0 font-mono text-[11px] font-medium tracking-[0.08em] text-dim uppercase">
+            {t("내 손글씨 폰트로 써 보기")}
+          </h3>
           {status === "ready" && (
-            <span className="fw-badge is-ok">
+            <span className="fw-badge is-ok inline-flex items-center gap-1 rounded-full bg-success-wash px-2.5 py-0.5 text-[11px] font-semibold text-success">
+              <Check className="size-3" strokeWidth={3} />
               {t("최신 설정으로 만든 폰트")}
             </span>
           )}
           {status === "stale" && (
-            <span className="fw-badge is-warn">{t("설정이 바뀌었어요")}</span>
+            <span className="fw-badge is-warn rounded-full bg-warning-wash px-2.5 py-0.5 text-[11px] font-semibold text-warning">
+              {t("설정이 바뀌었어요")}
+            </span>
           )}
         </div>
         {status === "building" ? (
-          <div className="fw-building" role="status">
-            <strong>{progress}%</strong>
-            <progress
-              max={100}
-              value={progress}
-              aria-label={t("폰트 생성 진행률")}
-            />
-            <span>{t(message || "폰트를 만들고 있어요")}</span>
+          <div
+            className="fw-building grid gap-3 rounded-xl bg-muted px-5 py-8"
+            role="status"
+          >
+            <strong className="font-mono text-3xl font-semibold text-primary tabular-nums">
+              {progress}%
+            </strong>
+            <Progress value={progress} aria-label={t("폰트 생성 진행률")} />
+            <span className="text-sm text-muted-foreground">
+              {t(message || "폰트를 만들고 있어요")}
+            </span>
           </div>
         ) : family ? (
           <>
             <textarea
-              className={
-                "fw-specimen" + (status === "stale" ? " is-stale" : "")
-              }
+              data-ui
+              className={cn(
+                "fw-specimen min-h-[220px] w-full resize-y rounded-xl border border-border bg-background px-5 py-4 text-[clamp(26px,3vw,38px)] leading-[1.45] text-foreground outline-none focus-visible:border-primary/60 focus-visible:ring-[3px] focus-visible:ring-ring/20",
+                status === "stale" && "is-stale opacity-55",
+              )}
               aria-label={t("완성된 폰트 시험 문장")}
               style={{ fontFamily: `"${family}"` }}
               value={specimen}
@@ -345,7 +385,7 @@ export default function FontOutput({
               placeholder={t("여기에 직접 써 보세요.")}
               onChange={(event) => setSpecimen(event.target.value)}
             />
-            <p className="fw-specimen-hint">
+            <p className="m-0 text-xs text-muted-foreground">
               {t("위 문장을 지우고 하고 싶은 말을 직접 써 보세요.")}
             </p>
             {(() => {
@@ -353,42 +393,52 @@ export default function FontOutput({
                 (char) => !/\s/.test(char) && !available.has(char),
               );
               return missing.length ? (
-                <p className="fw-note">
+                <p className="fw-note m-0 text-xs text-warning">
                   {t("폰트에 없는 글자:")} {missing.slice(0, 24).join(" ")}
                 </p>
               ) : null;
             })()}
           </>
         ) : (
-          <p className="fw-note">{t("아직 만든 폰트가 없어요.")}</p>
+          <p className="fw-note m-0 rounded-xl bg-muted px-5 py-8 text-center font-serif text-[15px] text-muted-foreground">
+            {t("아직 만든 폰트가 없어요.")}
+          </p>
         )}
         {status !== "building" && status !== "ready" && (
-          <button type="button" className="fw-primary" onClick={onBuild}>
+          <Button size="lg" className="justify-self-start" onClick={onBuild}>
+            <RefreshCw />
             {status === "stale"
               ? t("바뀐 설정으로 다시 만들기")
               : t("폰트 만들기")}
-          </button>
+          </Button>
         )}
         {error && (
-          <p className="fw-error" role="alert">
+          <p className="fw-error m-0 text-sm text-destructive" role="alert">
             {error}
           </p>
         )}
-      </div>
+      </Panel>
 
       <form
-        className="fw-export-form"
+        data-ui
+        className="fw-export-form grid gap-5 rounded-xl border border-border bg-card p-5 shadow-soft"
         onSubmit={(event) => {
           event.preventDefault();
           start("download");
         }}
       >
-        <div className="fw-names">
-          <label className="fw-field">
-            <span>{t(localName + " 폰트 이름")}</span>
-            <span className="fw-prefixed">
-              <b>{OUTPUT_PREFIX.trim()}</b>
-              <input
+        <div className="fw-names grid gap-4 sm:grid-cols-2 wide:grid-cols-1">
+          <div className="fw-field grid content-start gap-1.5">
+            <Label htmlFor={ids + "-local"} className={fieldLabel}>
+              {t(localName + " 폰트 이름")}
+            </Label>
+            <div className="flex">
+              <span className="inline-flex items-center rounded-l-lg border border-r-0 border-input bg-muted px-3 font-mono text-[13px] font-semibold text-muted-foreground">
+                {OUTPUT_PREFIX.trim()}
+              </span>
+              <Input
+                id={ids + "-local"}
+                className="rounded-l-none"
                 aria-label={t(localName + " 폰트 이름")}
                 maxLength={60}
                 value={korean}
@@ -403,20 +453,26 @@ export default function FontOutput({
                   setKorean(cleanLocalName(event.target.value))
                 }
               />
-            </span>
+            </div>
             {!!korean && !koreanValid && (
-              <small className="fw-error">
+              <small className="fw-error text-xs text-destructive">
                 {script === "ja"
                   ? t("띄어쓰기 없이, 가나나 한자를 한 글자 이상 넣어 주세요.")
                   : t("띄어쓰기 없이, 한글을 한 글자 이상 넣어 주세요.")}
               </small>
             )}
-          </label>
-          <label className="fw-field">
-            <span>{t("영문 폰트 이름")}</span>
-            <span className="fw-prefixed">
-              <b>{OUTPUT_PREFIX.trim()}</b>
-              <input
+          </div>
+          <div className="fw-field grid content-start gap-1.5">
+            <Label htmlFor={ids + "-en"} className={fieldLabel}>
+              {t("영문 폰트 이름")}
+            </Label>
+            <div className="flex">
+              <span className="inline-flex items-center rounded-l-lg border border-r-0 border-input bg-muted px-3 font-mono text-[13px] font-semibold text-muted-foreground">
+                {OUTPUT_PREFIX.trim()}
+              </span>
+              <Input
+                id={ids + "-en"}
+                className="rounded-l-none"
                 aria-label={t("영문 폰트 이름")}
                 maxLength={60}
                 value={english}
@@ -427,58 +483,77 @@ export default function FontOutput({
                   setEnglish(cleanEnglishName(event.target.value))
                 }
               />
-            </span>
+            </div>
             {!!english && !englishValid ? (
-              <small className="fw-error">
+              <small className="fw-error text-xs text-destructive">
                 {t("띄어쓰기 없이 영어·숫자로만 입력해 주세요.")}
               </small>
             ) : (
               !english && (
-                <small>
+                <small className="text-xs text-muted-foreground">
                   {t("비워 두면 ‘{name}’으로 자동으로 넣어요.", {
                     name: autoEnglish,
                   })}
                 </small>
               )
             )}
-          </label>
+          </div>
         </div>
         {purchase ? (
-          <p className="fw-purchased">
+          <p className="fw-purchased m-0 flex gap-2 rounded-lg bg-wash px-3.5 py-3 text-[13px] leading-relaxed text-foreground">
+            <Lock className="mt-0.5 size-4 shrink-0 text-primary" />
             {t(
               "결제한 폰트예요. 이름과 글씨 모양은 결제할 때 그대로이고, 같은 폰트를 몇 번이든 다시 받을 수 있어요.",
             )}
           </p>
         ) : (
-          <div className="fw-name-check">
-            <button
-              type="button"
-              disabled={!names.korean || !koreanValid || checking}
-              onClick={() => runCheck()}
-            >
-              {checking ? t("확인 중…") : t("이름 중복 확인")}
-            </button>
-            {checkedNow &&
-              (checkedNow.available ? (
-                <span className="is-ok" role="status">
-                  {t("사용 가능합니다!")}
-                </span>
-              ) : (
-                <span className="fw-error" role="alert">
-                  {t("이미 있는 이름입니다.")}{" "}
-                  {checkedNow.reason === "reserved"
-                    ? t(
-                        "‘{name}’은(는) 이미 있는 폰트 이름이에요. 다른 이름을 지어 주세요.",
-                        {
+          <div className="fw-name-check grid gap-2">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!names.korean || !koreanValid || checking}
+                onClick={() => runCheck()}
+              >
+                {checking ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <SearchCheck />
+                )}
+                {checking ? t("확인 중…") : t("이름 중복 확인")}
+              </Button>
+              {checkedNow &&
+                (checkedNow.available ? (
+                  <span
+                    className="is-ok inline-flex items-center gap-1 text-[13px] font-semibold text-success"
+                    role="status"
+                  >
+                    <Check className="size-4" strokeWidth={3} />
+                    {t("사용 가능합니다!")}
+                  </span>
+                ) : (
+                  <span
+                    className="fw-error text-[13px] text-destructive"
+                    role="alert"
+                  >
+                    <b className="font-semibold text-destructive">
+                      {t("이미 있는 이름입니다.")}
+                    </b>{" "}
+                    {checkedNow.reason === "reserved"
+                      ? t(
+                          "‘{name}’은(는) 이미 있는 폰트 이름이에요. 다른 이름을 지어 주세요.",
+                          {
+                            name: checkedNow.name,
+                          },
+                        )
+                      : t("‘{name}’은(는) 다른 사용자가 쓰고 있어요.", {
                           name: checkedNow.name,
-                        },
-                      )
-                    : t("‘{name}’은(는) 다른 사용자가 쓰고 있어요.", {
-                        name: checkedNow.name,
-                      })}
-                </span>
-              ))}
-            <small>
+                        })}
+                  </span>
+                ))}
+            </div>
+            <small className="text-xs leading-relaxed text-muted-foreground">
               {t(
                 "띄어쓰기는 자동으로 빠지고, 영문은 소문자로만 들어가요. 내려받을 때도 한 번 더 확인해요.",
               )}
@@ -486,98 +561,142 @@ export default function FontOutput({
           </div>
         )}
 
-        <fieldset className="fw-formats">
-          <legend>{t("파일 형식")}</legend>
-          <details className="fw-format-help">
-            <summary>{t("어떤 형식을 받아야 할까요?")}</summary>
-            <ul>
-              {(
-                [
+        <fieldset data-ui className="fw-formats m-0 grid gap-3 border-0 p-0">
+          <legend className="mb-3 font-mono text-[11px] font-medium tracking-[0.08em] text-dim uppercase">
+            {t("파일 형식")}
+          </legend>
+          <details
+            data-ui
+            className="fw-format-help group rounded-lg border border-divider bg-background/60 [&[open]>summary_svg]:rotate-180"
+          >
+            <summary
+              data-ui
+              className="flex cursor-pointer list-none items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] font-medium text-primary [&::-webkit-details-marker]:hidden"
+            >
+              {t("어떤 형식을 받아야 할까요?")}
+              <ChevronDown className="size-4 transition-transform" />
+            </summary>
+            <div className="grid gap-2.5 border-t border-divider px-3.5 pt-3 pb-4 text-[13px] leading-relaxed text-muted-foreground [&_b]:font-semibold [&_b]:text-foreground">
+              <ul className="m-0 grid list-none gap-2 p-0">
+                {(
                   [
-                    "한글·워드·파워포인트 같은 문서에 쓸 때 → TTF",
-                    "컴퓨터에 설치하는 글꼴 중 가장 널리 호환돼요.",
-                  ],
-                  [
-                    "포토샵·일러스트·인디자인 등 디자인에 쓸 때 → OTF",
-                    "이 앱이 처음 만드는 원본 형식이에요. Mac·Windows 모두 설치돼요.",
-                  ],
-                  [
-                    "아이패드(굿노트·키노트 등)",
-                    "글꼴 설치 앱이나 설정 프로파일로 TTF 또는 OTF를 설치해요.",
-                  ],
-                  [
-                    "웹사이트에 쓸 때 → WOFF2",
-                    "컴퓨터에 설치하는 파일이 아니에요. 웹페이지에 연결해서 쓰는 가벼운 형식이에요.",
-                  ],
-                  ["안드로이드 휴대폰·태블릿", "폰트를 직접 설치할 수 없어요."],
-                ] as const
-              ).map(([head, body]) => (
-                <li key={head}>
-                  <b>{t(head)}</b> {t(body)}
-                </li>
-              ))}
-            </ul>
-            <p>
-              <b>{t("굵기 3종 ZIP")}</b>{" "}
-              {t(
-                "같은 손글씨로 가는·보통·굵은 폰트를 함께 만들어요. 세 개를 모두 설치하면 문서 프로그램의 '굵게(B)' 버튼이 내 손글씨의 굵은 모양으로 바뀌어요. 만드는 데 시간이 조금 더 걸려요.",
-              )}
-            </p>
-            <p>
-              {t(
-                "TTF와 OTF는 글자 모양이 같고 곡선을 저장하는 방식만 달라요. 어느 쪽이 더 무겁거나 고급인 것은 아니니, 둘 중 하나만 설치하세요. 둘 다 설치하면 같은 이름의 글꼴이 겹칠 수 있어요.",
-              )}
-            </p>
+                    [
+                      "한글·워드·파워포인트 같은 문서에 쓸 때 → TTF",
+                      "컴퓨터에 설치하는 글꼴 중 가장 널리 호환돼요.",
+                    ],
+                    [
+                      "포토샵·일러스트·인디자인 등 디자인에 쓸 때 → OTF",
+                      "이 앱이 처음 만드는 원본 형식이에요. Mac·Windows 모두 설치돼요.",
+                    ],
+                    [
+                      "아이패드(굿노트·키노트 등)",
+                      "글꼴 설치 앱이나 설정 프로파일로 TTF 또는 OTF를 설치해요.",
+                    ],
+                    [
+                      "웹사이트에 쓸 때 → WOFF2",
+                      "컴퓨터에 설치하는 파일이 아니에요. 웹페이지에 연결해서 쓰는 가벼운 형식이에요.",
+                    ],
+                    [
+                      "안드로이드 휴대폰·태블릿",
+                      "폰트를 직접 설치할 수 없어요.",
+                    ],
+                  ] as const
+                ).map(([head, body]) => (
+                  <li key={head}>
+                    <b>{t(head)}</b> {t(body)}
+                  </li>
+                ))}
+              </ul>
+              <p className="m-0">
+                <b>{t("굵기 3종 ZIP")}</b>{" "}
+                {t(
+                  "같은 손글씨로 가는·보통·굵은 폰트를 함께 만들어요. 세 개를 모두 설치하면 문서 프로그램의 '굵게(B)' 버튼이 내 손글씨의 굵은 모양으로 바뀌어요. 만드는 데 시간이 조금 더 걸려요.",
+                )}
+              </p>
+              <p className="m-0">
+                {t(
+                  "TTF와 OTF는 글자 모양이 같고 곡선을 저장하는 방식만 달라요. 어느 쪽이 더 무겁거나 고급인 것은 아니니, 둘 중 하나만 설치하세요. 둘 다 설치하면 같은 이름의 글꼴이 겹칠 수 있어요.",
+                )}
+              </p>
+            </div>
           </details>
-          <div className="fw-format-grid">
+          <div className="fw-format-grid grid grid-cols-2 gap-2 sm:grid-cols-4 wide:grid-cols-2">
             {FORMATS.filter((item) => item.id !== "zip").map((item) => (
               <label
                 key={item.id}
-                className={format === item.id ? "is-selected" : ""}
+                data-ui
+                className={cn(formatCard, format === item.id && "is-selected")}
               >
                 <input
                   type="radio"
                   name="format"
+                  className="sr-only"
                   checked={format === item.id}
                   onChange={() => setFormat(item.id)}
                 />
-                <strong>{item.label}</strong>
-                <small>{t(item.note)}</small>
+                <strong className="font-mono text-[15px] font-semibold text-foreground">
+                  {item.label}
+                </strong>
+                <small className="text-[11.5px] text-muted-foreground">
+                  {t(item.note)}
+                </small>
                 {item.id === "ttf" && (
-                  <em className="fw-recommend" aria-label={t("추천")}>
+                  <em
+                    className="absolute -top-2 right-2 rounded-full bg-primary px-2 py-px text-[10px] font-semibold text-primary-foreground not-italic"
+                    aria-label={t("추천")}
+                  >
                     {t("추천!")}
                   </em>
                 )}
               </label>
             ))}
           </div>
-          <div className="fw-format-all">
-            <span>{t("잘 모르겠다면 다 받기 →")}</span>
-            <label className={format === "zip" ? "is-selected" : ""}>
+          {(
+            [
+              [
+                "zip",
+                "잘 모르겠다면 다 받기",
+                "전체 묶음 ZIP",
+                "TTF·OTF·WOFF2·WOFF 모두",
+              ],
+              [
+                "weights",
+                "문서에서 굵게·가늘게도 쓰려면",
+                "굵기 3종 ZIP",
+                "가는(Light)·보통(Regular)·굵은(Bold) TTF·OTF",
+              ],
+            ] as const
+          ).map(([id, hint, label, note]) => (
+            <label
+              key={id}
+              data-ui
+              className={cn(
+                formatCard,
+                "fw-format-pack grid-cols-[1fr_auto] items-center gap-x-3",
+                format === id && "is-selected",
+              )}
+            >
               <input
                 type="radio"
                 name="format"
-                checked={format === "zip"}
-                onChange={() => setFormat("zip")}
+                className="sr-only"
+                checked={format === id}
+                onChange={() => setFormat(id)}
               />
-              <strong>{t("전체 묶음 ZIP")}</strong>
-              <small>{t("TTF·OTF·WOFF2·WOFF 모두")}</small>
+              <span className="grid gap-0.5">
+                <strong className="text-[14px] font-semibold text-foreground">
+                  {t(label)}
+                </strong>
+                <small className="text-[11.5px] text-muted-foreground">
+                  {t(note)}
+                </small>
+              </span>
+              <span className="text-right text-[11.5px] font-medium text-primary max-sm:hidden">
+                {t(hint)}
+              </span>
             </label>
-          </div>
-          <div className="fw-format-all">
-            <span>{t("문서에서 굵게·가늘게도 쓰려면 →")}</span>
-            <label className={format === "weights" ? "is-selected" : ""}>
-              <input
-                type="radio"
-                name="format"
-                checked={format === "weights"}
-                onChange={() => setFormat("weights")}
-              />
-              <strong>{t("굵기 3종 ZIP")}</strong>
-              <small>{t("가는(Light)·보통(Regular)·굵은(Bold) TTF·OTF")}</small>
-            </label>
-          </div>
-          <p className="fw-android">
+          ))}
+          <p className="fw-android m-0 text-xs text-muted-foreground">
             {t(
               "※ 안드로이드 휴대폰·태블릿에서는 폰트를 직접 설치할 수 없어요.",
             )}
@@ -585,9 +704,16 @@ export default function FontOutput({
         </fieldset>
 
         {fallback.total > 0 && (
-          <div className="fw-fallback" role="note">
-            <strong>⚠ {t("쓰지 않은 글자는 견본 글꼴로 대체됩니다")}</strong>
-            <p>
+          <div
+            data-ui
+            className="fw-fallback grid gap-2 rounded-xl border border-warning/40 bg-warning-wash px-4 py-3.5 text-[13px] leading-relaxed"
+            role="note"
+          >
+            <strong className="flex items-center gap-1.5 font-semibold text-foreground">
+              <TriangleAlert className="size-4 text-warning" />
+              {t("쓰지 않은 글자는 견본 글꼴로 대체됩니다")}
+            </strong>
+            <p className="m-0 text-muted-foreground">
               {t(
                 "손글씨로 쓰지 않은 {n}자({groups})는 ‘{font}’ 모양으로 들어가요. 쓴 글자는 모두 내 손글씨로 나와요.",
                 {
@@ -598,8 +724,10 @@ export default function FontOutput({
               )}
             </p>
             {script === "ja" && style && style.samples >= 3 && (
-              <p className="fw-style-rules">
-                <b>{t("내 글씨에서 찾은 필체 규칙")}</b>{" "}
+              <p className="fw-style-rules m-0 rounded-lg bg-card/70 px-3 py-2 text-muted-foreground">
+                <b className="font-semibold text-foreground">
+                  {t("내 글씨에서 찾은 필체 규칙")}
+                </b>{" "}
                 {t(
                   "획 굵기 ×{weight} · 가로획 {rise}° 오름 · 세로획 {lean}° 기울임 · 폭 {width}% · 높이 {height}%",
                   {
@@ -617,60 +745,78 @@ export default function FontOutput({
               </p>
             )}
             {script === "ja" && (!style || style.samples < 3) && (
-              <p className="fw-style-rules">
+              <p className="fw-style-rules m-0 text-muted-foreground">
                 {t(
                   "가나·한자를 3자 이상 쓰면 내 필체 규칙(굵기·기울기·비율)을 찾아 쓰지 않은 한자에 입혀요.",
                 )}
               </p>
             )}
             {onWriteMissing && (
-              <button
+              <Button
                 type="button"
-                className="fw-link"
+                variant="link"
+                className="justify-self-start text-[13px]"
                 onClick={onWriteMissing}
               >
-                {t("쓰지 않은 글자 쓰러 가기 →")}
-              </button>
+                {t("쓰지 않은 글자 쓰러 가기")}
+                <ArrowRight />
+              </Button>
             )}
           </div>
         )}
-        <div className="fw-download-row">
-          <button
-            className="fw-primary fw-download"
+        <div className="fw-download-row grid grid-cols-[1fr_auto] gap-2">
+          <Button
+            size="xl"
+            className="fw-download h-auto min-h-14 min-w-0 py-2.5 leading-snug whitespace-normal data-[blocked]:opacity-60"
             type="submit"
             data-blocked={!canDownload || undefined}
           >
-            {exporting && mode === "download"
-              ? t("파일 준비 중…")
-              : names.korean
-                ? format === "weights"
-                  ? t("{file} 다운로드 ↓", {
-                      file: `${OUTPUT_PREFIX}${names.korean} ${t("굵기3종")}.zip`,
-                    })
-                  : t("{file} 다운로드 ↓", {
-                      file: `${OUTPUT_PREFIX}${names.korean}.${format}`,
-                    })
-                : t("다운로드 ↓")}
-          </button>
-          <button
+            {exporting && mode === "download" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Download />
+            )}
+            <span className="min-w-0 text-left break-all">
+              {exporting && mode === "download"
+                ? t("파일 준비 중…")
+                : names.korean
+                  ? format === "weights"
+                    ? t("{file} 다운로드", {
+                        file: `${OUTPUT_PREFIX}${names.korean} ${t("굵기3종")}.zip`,
+                      })
+                    : t("{file} 다운로드", {
+                        file: `${OUTPUT_PREFIX}${names.korean}.${format}`,
+                      })
+                  : t("다운로드")}
+            </span>
+          </Button>
+          <Button
             type="button"
-            className="fw-secondary fw-share"
+            variant="outline"
+            size="xl"
+            className="fw-share h-auto min-h-14 px-4 data-[blocked]:opacity-60"
             data-blocked={!canDownload || undefined}
             onClick={() => start("share")}
           >
-            {exporting && mode === "share" ? t("준비 중…") : t("공유하기 ↗")}
-          </button>
+            <Share2 />
+            <span className="max-sm:sr-only wide:sr-only">
+              {exporting && mode === "share" ? t("준비 중…") : t("공유하기")}
+            </span>
+          </Button>
         </div>
-        <p className="fw-license">
+        <p className="fw-license m-0 flex gap-2 text-[11.5px] leading-relaxed text-muted-foreground">
+          <BadgeCheck className="mt-px size-3.5 shrink-0 text-primary" />
           {t(
             "라이선스는 모두 만든 사람의 것 — 개인 작업도, 상업적 사용도 자유롭게. 쓰지 않아 견본 글꼴로 채운 글자만 OFL 1.1을 따라요.",
           )}
         </p>
         {status !== "ready" ? (
-          <p className="fw-note">{t("폰트를 만든 뒤에 내려받을 수 있어요.")}</p>
+          <p className="fw-note m-0 text-xs text-muted-foreground">
+            {t("폰트를 만든 뒤에 내려받을 수 있어요.")}
+          </p>
         ) : (
           !names.korean && (
-            <p className="fw-note">
+            <p className="fw-note m-0 text-xs text-muted-foreground">
               {script === "ja"
                 ? t("일본어 폰트 이름을 넣으면 내려받을 수 있어요.")
                 : t("한글 폰트 이름을 넣으면 내려받을 수 있어요.")}
@@ -678,50 +824,52 @@ export default function FontOutput({
           )
         )}
         {exportError && (
-          <p className="fw-error" role="alert">
+          <p className="fw-error m-0 text-sm text-destructive" role="alert">
             {exportError}
           </p>
         )}
         {exportNotice && (
-          <p className="fw-saved" role="status">
-            ✓ {exportNotice}
+          <p
+            className="fw-saved m-0 flex items-center gap-1.5 text-sm font-medium text-success"
+            role="status"
+          >
+            <Check className="size-4" strokeWidth={3} />
+            {exportNotice}
           </p>
         )}
       </form>
 
       {shareFile && (
         <FontDialog title={t("보낼 준비가 됐어요")} onClose={onShareDone}>
-          <p className="output-filename">{shareFile.name}</p>
-          <p>
+          <p className="output-filename m-0 rounded-lg bg-muted px-3 py-2 font-mono text-[13px] break-all text-foreground">
+            {shareFile.name}
+          </p>
+          <p className="m-0">
             {t(
               "아래 버튼을 누르면 카카오톡, 네이버 웍스, 메일 등 이 기기의 앱으로 바로 보낼 수 있어요.",
             )}
           </p>
           {shareError && (
-            <p className="fw-error" role="alert">
+            <p className="fw-error m-0 text-destructive" role="alert">
               {shareError}
             </p>
           )}
-          <div className="font-dialog-actions">
-            <button
+          <DialogFooter className="font-dialog-actions mt-2">
+            <Button
               type="button"
-              className="fw-secondary"
+              variant="outline"
               onClick={() => {
                 setShareError("");
                 onShareDone?.();
               }}
             >
               {t("닫기")}
-            </button>
-            <button
-              type="button"
-              className="fw-primary"
-              autoFocus
-              onClick={share}
-            >
-              {t("공유하기 ↗")}
-            </button>
-          </div>
+            </Button>
+            <Button type="button" autoFocus onClick={share}>
+              <Share2 />
+              {t("공유하기")}
+            </Button>
+          </DialogFooter>
         </FontDialog>
       )}
       {payFor && (
@@ -751,13 +899,13 @@ export default function FontOutput({
           title={t("이 기기에서는 폰트 파일을 바로 공유할 수 없어요")}
           onClose={() => setShareUnsupported(false)}
         >
-          <p>
+          <p className="m-0">
             {t(
               "안드로이드의 크롬·삼성 인터넷 같은 브라우저는 보안을 위해 사진·동영상·PDF 같은 파일만 공유 창으로 보낼 수 있게 막아 두었어요. 폰트({format}) 파일은 이렇게 보내 주세요.",
               { format: format.toUpperCase() },
             )}
           </p>
-          <ol className="fw-steps">
+          <ol className="fw-steps m-0 grid list-decimal gap-1.5 pl-5 text-foreground">
             <li>{t("‘다운로드’로 파일을 기기에 저장해요.")}</li>
             <li>
               {t("카카오톡·네이버 웍스 채팅방에서 ＋(첨부) → 파일을 눌러요.")}
@@ -768,45 +916,51 @@ export default function FontOutput({
               })}
             </li>
           </ol>
-          <div className="font-dialog-actions">
-            <button
+          <DialogFooter className="font-dialog-actions mt-2">
+            <Button
               type="button"
-              className="fw-secondary"
+              variant="outline"
               onClick={() => setShareUnsupported(false)}
             >
               {t("닫기")}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="fw-primary"
               autoFocus
               onClick={() => {
                 setShareUnsupported(false);
                 start("download");
               }}
             >
-              {t("다운로드하기 ↓")}
-            </button>
-          </div>
+              <Download />
+              {t("다운로드하기")}
+            </Button>
+          </DialogFooter>
         </FontDialog>
       )}
       {blocked && (
         <FontDialog
-          title={t("⚠ 아직 내려받을 수 없어요")}
+          title={t("아직 내려받을 수 없어요")}
           onClose={() => setBlocked(false)}
+          showClose
         >
-          <ul className="fw-blockers">
+          <ul className="fw-blockers m-0 grid list-none gap-2 p-0">
             {(reasons.length
               ? reasons
               : [{ text: "잠시 후 다시 눌러 주세요." }]
             ).map((reason) => (
-              <li key={reason.text}>{t(reason.text)}</li>
+              <li
+                key={reason.text}
+                className="flex gap-2 rounded-lg bg-destructive-wash px-3 py-2 text-[13.5px] text-foreground"
+              >
+                <TriangleAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
+                {t(reason.text)}
+              </li>
             ))}
           </ul>
-          <div className="font-dialog-actions">
-            <button
+          <DialogFooter className="font-dialog-actions mt-2">
+            <Button
               type="button"
-              className="fw-primary"
               autoFocus
               onClick={() => {
                 setBlocked(false);
@@ -824,8 +978,8 @@ export default function FontOutput({
               }}
             >
               {t("확인하고 고치기")}
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </FontDialog>
       )}
     </section>

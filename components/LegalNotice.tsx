@@ -246,16 +246,24 @@ export default function LegalNotice({
   const text = TEXTS[lang];
   const Heading = headingLevel === 1 ? "h1" : "h2";
   return (
-    <article className="sg-legal" lang={lang}>
-      <Heading>{text.title}</Heading>
-      <p className="sg-legal-meta">
+    <article
+      data-ui
+      className="sg-legal grid gap-5 text-foreground [&_a]:text-primary"
+      lang={lang}
+    >
+      <Heading className="m-0 font-serif text-[28px] leading-tight font-normal tracking-[-0.02em]">
+        {text.title}
+      </Heading>
+      <p className="sg-legal-meta m-0 font-mono text-[11px] text-dim">
         {UPDATED[lang]} {LEGAL_UPDATED} · v{APP_VERSION} · {MAKER}
       </p>
-      <p>{text.intro}</p>
+      <p className="m-0 font-serif text-[15px] leading-[1.8] text-foreground/85">
+        {text.intro}
+      </p>
       {text.sections.map((section) => (
-        <section key={section.title}>
-          <h3>{section.title}</h3>
-          <ul>
+        <section key={section.title} className="grid gap-2">
+          <h3 className="m-0 text-[15px] font-semibold">{section.title}</h3>
+          <ul className="m-0 grid list-disc gap-1.5 pl-5 text-[14px] leading-relaxed text-muted-foreground marker:text-primary/60">
             {section.items.map((item) => (
               <li key={item}>{item}</li>
             ))}

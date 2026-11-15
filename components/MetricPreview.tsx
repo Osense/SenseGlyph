@@ -1,4 +1,6 @@
 "use client";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useT } from "../lib/i18n";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -224,16 +226,23 @@ export default function MetricPreview({
   }, [text, ready, original, shown, neutral, settings.baseline]);
 
   return (
-    <section className="fw-preview" aria-label={t("실시간 미리보기")}>
-      <label className="fw-preview-input">
-        <span>{t("미리 볼 문장")}</span>
-        <input
+    <section
+      data-ui
+      className="fw-preview grid gap-4 rounded-xl border border-border bg-card p-5 shadow-soft wide:sticky wide:top-0 max-wide:-order-1"
+      aria-label={t("실시간 미리보기")}
+    >
+      <div className="grid gap-1.5">
+        <Label htmlFor="fw-preview-text" className="text-[13px]">
+          {t("미리 볼 문장")}
+        </Label>
+        <Input
+          id="fw-preview-text"
           aria-label={t("미리 볼 문장")}
           maxLength={16}
           value={text}
           onChange={(event) => setText(event.target.value)}
         />
-      </label>
+      </div>
       <figure>
         <figcaption>
           {t("쓴 그대로")}

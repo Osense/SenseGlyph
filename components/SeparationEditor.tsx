@@ -1,4 +1,19 @@
 "use client";
+import {
+  ChevronLeft,
+  ChevronRight,
+  CircleHelp,
+  PenLine,
+  Redo2,
+  RotateCcw,
+  Undo2,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Segmented } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import CanvasStepButtons from "./CanvasStepButtons";
@@ -523,66 +538,85 @@ export default function SeparationEditor({
     <div className="separation-editor sg-sep">
       <div className="sg-sep-main">
         <div className="sg-sep-bar">
-          <div className="sg-sep-char">
-            <button
+          <div data-ui className="sg-sep-char flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
               className="sg-sep-step"
               aria-label="이전 보정 글자"
               disabled={currentIndex <= 0}
               onClick={() => changeChar(-1)}
             >
-              ‹
-            </button>
-            <strong>{char}</strong>
-            <span>
-              {currentIndex + 1}/{chars.length}
+              <ChevronLeft className="size-5" />
+            </Button>
+            <strong className="grid size-12 place-items-center rounded-xl border border-border bg-card font-serif text-[32px] leading-none font-normal shadow-soft">
+              {char}
+            </strong>
+            <span className="grid min-w-12 text-xs text-muted-foreground">
+              <span className="font-mono tabular-nums">
+                {currentIndex + 1}/{chars.length}
+              </span>
               {statuses[char] && statuses[char] !== "auto" && (
-                <em data-status={statuses[char]}>
+                <em
+                  data-status={statuses[char]}
+                  className={cn(
+                    "text-[11.5px] font-semibold not-italic",
+                    statuses[char] === "check"
+                      ? "text-destructive"
+                      : "text-success",
+                  )}
+                >
                   {STATUS_LABEL[statuses[char]]}
                 </em>
               )}
             </span>
-            <button
+            <Button
+              variant="outline"
+              size="icon"
               className="sg-sep-step"
               aria-label="다음 보정 글자"
               disabled={currentIndex >= chars.length - 1}
               onClick={() => changeChar(1)}
             >
-              ›
-            </button>
+              <ChevronRight className="size-5" />
+            </Button>
           </div>
-          <div className="editor-modes" role="group" aria-label="편집 방식">
-            <button
-              className={mode === "lasso" ? "active" : ""}
-              aria-pressed={mode === "lasso"}
-              onClick={() => {
-                setMode("lasso");
-                setZoom(1);
-              }}
-            >
-              선택·이동
-            </button>
-            <button
-              className={mode === "point" ? "active" : ""}
-              aria-pressed={mode === "point"}
-              onClick={() => setMode("point")}
-            >
-              부분 수정
-            </button>
-          </div>
+          <Segmented
+            className="editor-modes"
+            label="편집 방식"
+            value={mode}
+            options={[
+              { id: "lasso", label: "선택·이동" },
+              { id: "point", label: "부분 수정" },
+            ]}
+            onChange={(next) => {
+              setMode(next);
+              if (next === "lasso") setZoom(1);
+            }}
+          />
           <div className="sg-point-tools">
             {mode === "point" && (
               <div className="sg-zoom" role="group" aria-label="편집 칸 확대">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="icon-sm"
                   aria-label="축소"
                   disabled={zoom <= 1}
                   onClick={() => setZoomAt(zoom / 1.5)}
                 >
-                  −
-                </button>
-                <span aria-live="polite">{Math.round(zoom * 100)}%</span>
-                <button
+                  <ZoomOut />
+                </Button>
+                <span
+                  aria-live="polite"
+                  className="font-mono text-xs text-muted-foreground"
+                >
+                  {Math.round(zoom * 100)}%
+                </span>
+                <Button
                   type="button"
+                  variant="outline"
+                  size="icon-sm"
                   aria-label="확대"
                   disabled={zoom >= ZOOM_MAX}
                   onClick={() => {
@@ -598,66 +632,88 @@ export default function SeparationEditor({
                     setZoomAt(zoom * 1.5, target);
                   }}
                 >
-                  +
-                </button>
+                  <ZoomIn />
+                </Button>
                 {zoom > 1 && (
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() => setZoomAt(1, { x: 500, y: 500 })}
                   >
                     맞춤
-                  </button>
+                  </Button>
                 )}
               </div>
             )}
             {mode === "point" && (
-              <label className="point-radius">
-                범위 {radius}
-                <input
+              <div
+                data-ui
+                className="point-radius flex items-center gap-2.5 text-xs text-muted-foreground"
+              >
+                <span className="whitespace-nowrap">
+                  범위{" "}
+                  <b className="font-mono font-semibold text-primary tabular-nums">
+                    {radius}
+                  </b>
+                </span>
+                <Slider
+                  className="w-28"
                   aria-label="부분 수정 범위"
-                  type="range"
-                  min="25"
-                  max="250"
-                  value={radius}
-                  onChange={(e) => setRadius(+e.target.value)}
+                  min={25}
+                  max={250}
+                  value={[radius]}
+                  onValueChange={([value]) => setRadius(value)}
                 />
-              </label>
+              </div>
             )}
           </div>
           <div className="sg-sep-tools">
-            <button
+            <Button
+              variant="outline"
+              size="icon"
               disabled={!past.length}
               onClick={undo}
               aria-label="보정 실행 취소"
               title="실행 취소"
             >
-              ↶
-            </button>
-            <button
+              <Undo2 />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
               disabled={!future.length}
               onClick={redo}
               aria-label="보정 다시 실행"
               title="다시 실행"
             >
-              ↷
-            </button>
-            <button
+              <Redo2 />
+            </Button>
+            <Button
+              variant="outline"
               className="sg-sep-text"
               onClick={() => update({ assignments: {} })}
               title="이 글자의 자모 배정을 처음 자동 결과로 되돌려요"
             >
-              ↺ 되돌리기
-            </button>
-            <button className="sg-sep-text sg-sep-rewrite" onClick={onWrite}>
-              이 글자 다시 쓰기
-            </button>
-            <button
-              className="sg-sep-help"
+              <RotateCcw />
+              되돌리기
+            </Button>
+            <Button
+              variant="outline"
+              className="sg-sep-text sg-sep-rewrite border-primary/50 font-semibold text-primary hover:text-primary"
+              onClick={onWrite}
+            >
+              <PenLine />이 글자 다시 쓰기
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="sg-sep-help text-muted-foreground"
               aria-label="사용법 보기"
               onClick={() => setShowTutorial(true)}
             >
-              ?
-            </button>
+              <CircleHelp />
+            </Button>
           </div>
         </div>
         <div className="sg-sep-canvas">

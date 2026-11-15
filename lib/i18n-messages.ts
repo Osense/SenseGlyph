@@ -594,6 +594,79 @@ export const JA: Record<string, string> = {
   "같은 손글씨를 가늘게 다시 쓰는 중": "同じ手書きを細く書き直し中",
   "같은 손글씨를 굵게 다시 쓰는 중": "同じ手書きを太く書き直し中",
   "굵기 세 가지를 한 가족으로 묶는 중": "3つの太さを1つのファミリーにまとめ中",
+  "내 계정 열기": "アカウントを開く",
+  이메일: "メールアドレス",
+  카카오: "カカオ",
+  "로그인 없이 시작": "ログインなしで開始",
+  회원정보: "会員情報",
+  "내 폰트 라이브러리": "マイフォントライブラリ",
+  "결제 내역": "お支払い履歴",
+  "내 계정": "マイアカウント",
+  이름: "名前",
+  "로그인 방식": "ログイン方法",
+  "이용 등급": "プラン",
+  "베타 (무료 · 모든 기능)": "ベータ（無料・すべての機能）",
+  가입일: "登録日",
+  "계정 저장": "アカウント保存",
+  "준비 중 · 지금은 이 기기에만 저장돼요":
+    "準備中・今はこの端末にだけ保存されます",
+  로그아웃: "ログアウト",
+  "로그아웃해도 이 기기에 쓴 글씨와 프로젝트는 지워지지 않아요.":
+    "ログアウトしても、この端末の文字とプロジェクトは消えません。",
+  "작업 중인 폰트": "作業中のフォント",
+  "아직 프로젝트가 없어요.": "まだプロジェクトがありません。",
+  "새 폰트 시작·삭제는 ‘내 폰트’에서 →":
+    "新しいフォントの開始・削除は「マイフォント」で →",
+  "내보낸 폰트 파일": "書き出したフォントファイル",
+  "아직 내보낸 폰트가 없어요. 폰트 완성 단계에서 내려받으면 여기에 기록돼요.":
+    "まだ書き出したフォントはありません。フォント完成でダウンロードするとここに記録されます。",
+  "파일은 기기에 저장돼 있어요. 다시 받으려면 그 프로젝트를 열고 폰트 완성 → 내보내기를 눌러 주세요.":
+    "ファイルは端末に保存されています。もう一度受け取るには、そのプロジェクトを開いて フォント完成 → 書き出し を押してください。",
+  "기록 지우기": "記録を消す",
+  "베타 기간이라 결제한 내역이 없어요. 아래는 정식 출시 후 보일 화면의 예시예요.":
+    "ベータ期間中のためお支払いはありません。以下は正式リリース後の表示例です。",
+  날짜: "日付",
+  항목: "項目",
+  금액: "金額",
+  상태: "状態",
+  "내 손으로 쓴 한 획이,\n나만의 폰트가 됩니다.":
+    "手で書いた一画が、\nあなただけのフォントに。",
+  로그인: "ログイン",
+  "로그인하면 쓴 글씨를 계정에 저장해 다른 기기에서도 이어서 쓸 수 있어요.":
+    "ログインすると、書いた文字をアカウントに保存して別の端末でも続きを書けます。",
+  비밀번호: "パスワード",
+  또는: "または",
+  "Google로 계속하기": "Google で続ける",
+  "카카오로 계속하기": "カカオで続ける",
+  "로그인 없이 시작하기 →": "ログインせずに始める →",
+  "베타 기간에는 로그인 없이도 모든 기능을 쓸 수 있어요. 계정 저장은 준비 중이라, 지금은 어떤 값을 넣어도 이 기기에서만 들어가져요.":
+    "ベータ期間中はログインなしですべての機能を使えます。アカウント保存は準備中のため、今はどんな値を入れてもこの端末の中だけで入れます。",
+  "138자만 쓰면 11,172자": "138字書けば11,172字",
+  "자모를 나눠 조합해서 현대 한글 전부를 내 글씨로 채워요.":
+    "字母を分けて組み合わせ、現代ハングルすべてをあなたの字で埋めます。",
+  "태블릿과 펜이면 충분해요": "タブレットとペンがあれば十分",
+  "설치도 스캔도 없이, 브라우저에서 바로 써요.":
+    "インストールもスキャンもなしで、ブラウザですぐ書けます。",
+  "삐뚤어도 그럴싸하게": "ゆがんでも、それらしく",
+  "기울기·떨림·자모 균형을 원하는 만큼만 정돈해요.":
+    "傾き・ふるえ・字母のバランスを好きなだけ整えます。",
+  "바로 쓰는 폰트 파일": "すぐ使えるフォントファイル",
+  "TTF·OTF·웹폰트, 굵기 3종까지 한 번에 내보내요.":
+    "TTF・OTF・ウェブフォント、太さ3種までまとめて書き出し。",
+  "만들 글자를 고르면 그 언어의 폰트가 돼요.":
+    "作る文字を選ぶと、その言語のフォントになります。",
+  "글씨는 이 기기 안에서": "文字はこの端末の中で",
+  "쓴 글씨와 폰트는 서버로 보내지 않아요.":
+    "書いた文字とフォントはサーバーに送りません。",
+  "한글 · 日本語 · English": "ハングル・日本語・English",
+  게스트: "ゲスト",
+  "Google 사용자": "Google ユーザー",
+  "카카오 사용자": "カカオユーザー",
+  사용자: "ユーザー",
+  "정식 구매 · 한글": "正式購入・ハングル",
+  "상업용 라이선스": "商用ライセンス",
+  "일본어 팩": "日本語パック",
+  예시: "例",
 };
 export const EN: Record<string, string> = {
   " 폰트 이름": " font name",
@@ -1187,4 +1260,77 @@ export const EN: Record<string, string> = {
   "같은 손글씨를 가늘게 다시 쓰는 중": "Rewriting your handwriting thin",
   "같은 손글씨를 굵게 다시 쓰는 중": "Rewriting your handwriting bold",
   "굵기 세 가지를 한 가족으로 묶는 중": "Tying three weights into one family",
+  "내 계정 열기": "Open my account",
+  이메일: "Email",
+  카카오: "Kakao",
+  "로그인 없이 시작": "Started without login",
+  회원정보: "Profile",
+  "내 폰트 라이브러리": "My font library",
+  "결제 내역": "Payments",
+  "내 계정": "My account",
+  이름: "Name",
+  "로그인 방식": "Sign-in method",
+  "이용 등급": "Plan",
+  "베타 (무료 · 모든 기능)": "Beta (free · all features)",
+  가입일: "Joined",
+  "계정 저장": "Account sync",
+  "준비 중 · 지금은 이 기기에만 저장돼요":
+    "Coming soon · saved on this device only for now",
+  로그아웃: "Sign out",
+  "로그아웃해도 이 기기에 쓴 글씨와 프로젝트는 지워지지 않아요.":
+    "Signing out doesn't delete the handwriting and projects on this device.",
+  "작업 중인 폰트": "Fonts in progress",
+  "아직 프로젝트가 없어요.": "No projects yet.",
+  "새 폰트 시작·삭제는 ‘내 폰트’에서 →":
+    "Start or delete fonts in “My fonts” →",
+  "내보낸 폰트 파일": "Exported font files",
+  "아직 내보낸 폰트가 없어요. 폰트 완성 단계에서 내려받으면 여기에 기록돼요.":
+    "No exported fonts yet. Downloads from the Finish step are recorded here.",
+  "파일은 기기에 저장돼 있어요. 다시 받으려면 그 프로젝트를 열고 폰트 완성 → 내보내기를 눌러 주세요.":
+    "Files are saved on your device. To get one again, open its project and go to Finish → Export.",
+  "기록 지우기": "Clear history",
+  "베타 기간이라 결제한 내역이 없어요. 아래는 정식 출시 후 보일 화면의 예시예요.":
+    "No payments during the beta. Below is an example of what this screen will show after launch.",
+  날짜: "Date",
+  항목: "Item",
+  금액: "Amount",
+  상태: "Status",
+  "내 손으로 쓴 한 획이,\n나만의 폰트가 됩니다.":
+    "Every stroke you write\nbecomes your own font.",
+  로그인: "Sign in",
+  "로그인하면 쓴 글씨를 계정에 저장해 다른 기기에서도 이어서 쓸 수 있어요.":
+    "Sign in to save your handwriting to your account and continue on other devices.",
+  비밀번호: "Password",
+  또는: "or",
+  "Google로 계속하기": "Continue with Google",
+  "카카오로 계속하기": "Continue with Kakao",
+  "로그인 없이 시작하기 →": "Start without signing in →",
+  "베타 기간에는 로그인 없이도 모든 기능을 쓸 수 있어요. 계정 저장은 준비 중이라, 지금은 어떤 값을 넣어도 이 기기에서만 들어가져요.":
+    "During the beta every feature works without an account. Account sync is coming, so for now any details just let you in on this device.",
+  "138자만 쓰면 11,172자": "Write 138, get 11,172",
+  "자모를 나눠 조합해서 현대 한글 전부를 내 글씨로 채워요.":
+    "Jamo are split and recombined to fill every modern Hangul syllable in your hand.",
+  "태블릿과 펜이면 충분해요": "A tablet and a pen are enough",
+  "설치도 스캔도 없이, 브라우저에서 바로 써요.":
+    "No installs, no scanning — write right in the browser.",
+  "삐뚤어도 그럴싸하게": "Wobbly in, tidy out",
+  "기울기·떨림·자모 균형을 원하는 만큼만 정돈해요.":
+    "Tidy slant, wobble and jamo balance as much as you like.",
+  "바로 쓰는 폰트 파일": "Ready-to-use font files",
+  "TTF·OTF·웹폰트, 굵기 3종까지 한 번에 내보내요.":
+    "Export TTF, OTF, web fonts and three weights at once.",
+  "만들 글자를 고르면 그 언어의 폰트가 돼요.":
+    "Pick a script and get a font for that language.",
+  "글씨는 이 기기 안에서": "Your handwriting stays on this device",
+  "쓴 글씨와 폰트는 서버로 보내지 않아요.":
+    "Handwriting and fonts are never uploaded.",
+  "한글 · 日本語 · English": "Hangul · 日本語 · English",
+  게스트: "Guest",
+  "Google 사용자": "Google user",
+  "카카오 사용자": "Kakao user",
+  사용자: "User",
+  "정식 구매 · 한글": "Full purchase · Hangul",
+  "상업용 라이선스": "Commercial license",
+  "일본어 팩": "Japanese pack",
+  예시: "Sample",
 };

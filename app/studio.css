@@ -3422,3 +3422,345 @@ button {
   color: var(--accent);
   font-weight: 600;
 }
+
+/* 첫 화면 로그인(목업) */
+.sg-login {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  overflow: auto;
+  background: var(--paper);
+  color: var(--ink);
+}
+.sg-login-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  padding: 44px 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 440px minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  column-gap: 0;
+  row-gap: 28px;
+}
+.sg-login-hero {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  white-space: pre-line;
+  font-size: clamp(24px, 3vw, 40px);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  max-width: 14em;
+  opacity: 0.9;
+}
+.sg-login-benefits {
+  display: contents;
+  list-style: none;
+}
+.sg-login-benefits li:nth-child(-n + 3) {
+  grid-column: 1;
+}
+.sg-login-benefits li:nth-child(n + 4) {
+  grid-column: 3;
+}
+.sg-login-benefits li:nth-child(1),
+.sg-login-benefits li:nth-child(4) {
+  grid-row: 2;
+  align-self: start;
+}
+.sg-login-benefits li:nth-child(2),
+.sg-login-benefits li:nth-child(5) {
+  grid-row: 2;
+  align-self: center;
+}
+.sg-login-benefits li:nth-child(3),
+.sg-login-benefits li:nth-child(6) {
+  grid-row: 2;
+  align-self: end;
+}
+.sg-login-benefits li {
+  display: grid;
+  gap: 4px;
+  max-width: 300px;
+  margin-right: 24px;
+  padding-top: 10px;
+  border-top: 2px solid var(--accent);
+  opacity: 0.85;
+}
+.sg-login-benefits strong {
+  font-size: 15px;
+}
+.sg-login-benefits span {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.sg-login-glyphs {
+  position: absolute;
+  right: -2vw;
+  top: 4vh;
+  font-size: 22vw;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--accent);
+  opacity: 0.07;
+  white-space: nowrap;
+}
+.sg-login-card {
+  position: relative;
+  width: min(380px, 100%);
+  display: grid;
+  gap: 10px;
+  padding: 26px 26px 18px;
+  background: var(--sheet);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.14);
+}
+.sg-login-brand {
+  font-size: 13px;
+  color: var(--muted);
+}
+.sg-login-brand b {
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+.sg-login-brand span {
+  font-style: italic;
+}
+.sg-login-card h1 {
+  margin: 2px 0 0;
+  font-size: 24px;
+}
+.sg-login-sub,
+.sg-login-note,
+.sg-login-credit {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.sg-login-credit {
+  text-align: center;
+  margin-top: 4px;
+}
+.sg-login-card label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.sg-login-card input {
+  font: inherit;
+  font-size: 15px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.sg-login-card button {
+  font: inherit;
+  font-size: 14px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.sg-login-card .sg-login-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+.sg-login-card .sg-login-guest {
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-weight: 700;
+  padding: 6px;
+}
+.sg-login-or {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.sg-login-or::before,
+.sg-login-or::after {
+  content: "";
+  border-top: 1px solid var(--line);
+}
+.sg-login-benefits li:nth-child(n + 4) {
+  margin: 0 0 0 auto;
+  width: 100%;
+}
+@media (max-width: 1000px) {
+  .sg-login-bg {
+    padding: 28px;
+    display: block;
+  }
+  .sg-login-benefits {
+    display: none;
+  }
+}
+
+/* 프로필 */
+.sg-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+.sg-avatar.is-large {
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+}
+.sg-account {
+  max-width: 560px;
+}
+.sg-account-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 14px;
+}
+.sg-account-head div {
+  display: grid;
+}
+.sg-account-head small {
+  color: var(--muted);
+}
+.sg-account-tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 14px;
+}
+.sg-account-tabs button {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.sg-account-tabs button[aria-selected="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+  font-weight: 700;
+}
+.sg-account-body h3 {
+  font-size: 13px;
+  margin: 14px 0 6px;
+}
+.sg-account-info {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  font-size: 13px;
+  margin: 12px 0;
+}
+.sg-account-info dt {
+  color: var(--muted);
+}
+.sg-account-info dd {
+  margin: 0;
+}
+.sg-account-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.sg-account-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.sg-account-list li div {
+  display: grid;
+  min-width: 0;
+}
+.sg-account-list strong {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sg-account-list small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.sg-account-list button,
+.sg-account-logout {
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--sheet);
+  color: var(--ink);
+  cursor: pointer;
+}
+.sg-account-logout {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.sg-account-link {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--accent);
+  padding: 8px 0;
+  cursor: pointer;
+}
+.sg-account-badge {
+  font-size: 12px;
+  background: var(--active-wash);
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+.sg-account-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.sg-account-table th,
+.sg-account-table td {
+  text-align: left;
+  padding: 7px 6px;
+  border-bottom: 1px solid var(--line);
+}
+.sg-account-table th {
+  color: var(--muted);
+  font-weight: 600;
+}
+.sg-account-table tr.is-sample td {
+  color: var(--muted);
+}

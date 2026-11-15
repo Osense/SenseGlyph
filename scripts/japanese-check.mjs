@@ -18,6 +18,13 @@ const context = await browser.newContext({
   acceptDownloads: true,
 });
 const page = await context.newPage();
+// 로그인 화면(목업)은 건너뛴다
+await page.addInitScript(() =>
+  localStorage.setItem(
+    "senseglyph-session",
+    JSON.stringify({ name: "test", email: "", provider: "guest", since: 1 }),
+  ),
+);
 const errors = [];
 page.on("pageerror", (error) => errors.push(error.message));
 await page.goto(BASE + "/?step=0");
@@ -108,11 +115,7 @@ await stroke([
 await page.click('.sg-lists button:has-text("필체 한자")');
 await page.waitForTimeout(200);
 const kanji = await page.locator(".sg-char").innerText();
-check(
-  "한자 목록은 필체 한자는 永부터",
-  kanji === "永",
-  kanji,
-);
+check("한자 목록은 필체 한자는 永부터", kanji === "永", kanji);
 await stroke([
   [150, 500],
   [850, 490],

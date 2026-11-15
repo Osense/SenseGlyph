@@ -20,6 +20,7 @@ const KO: { title: string; intro: string; sections: Section[] } = {
         "쓴 글씨, 만든 폰트, 프로젝트 설정은 모두 이 기기(브라우저 저장소 또는 앱 저장소)에만 저장돼요. 서버로 보내지 않아요.",
         "폰트를 만드는 계산도 이 기기 안에서 해요.",
         "지우려면 ‘내 폰트’에서 프로젝트를 삭제하거나, 브라우저의 사이트 데이터를 지우거나, 앱을 삭제하면 돼요.",
+        "로그인 화면(계정 기능 준비 중)에 넣은 이메일은 이 기기에만 저장되고 어디로도 보내지 않아요. 비밀번호는 저장하지 않아요.",
       ],
     },
     {
@@ -81,6 +82,7 @@ const JA: typeof KO = {
         "書いた文字、作ったフォント、プロジェクトの設定は、すべてこの端末（ブラウザまたはアプリの保存領域）にだけ保存されます。サーバーには送りません。",
         "フォントを作る計算も、この端末の中で行います。",
         "消すときは「マイフォント」でプロジェクトを削除するか、ブラウザのサイトデータを消去するか、アプリを削除してください。",
+        "ログイン画面（アカウント機能は準備中）で入力したメールアドレスはこの端末にだけ保存され、どこにも送りません。パスワードは保存しません。",
       ],
     },
     {
@@ -142,6 +144,7 @@ const EN: typeof KO = {
         "Your handwriting, the fonts you make, and project settings are stored only on this device (browser or app storage). Nothing is uploaded to a server.",
         "Fonts are built on this device as well.",
         "To delete them, remove the project in “My fonts”, clear this site’s data in your browser, or uninstall the app.",
+        "An email typed on the sign-in screen (accounts are coming soon) is kept only on this device and sent nowhere. Passwords are never stored.",
       ],
     },
     {

@@ -4,6 +4,7 @@ import FontOutput from "./FontOutput";
 import WorkProgress from "./WorkProgress";
 import { useT } from "../lib/i18n";
 import { countExport } from "../lib/analytics";
+import { recordExport } from "../lib/account";
 import { OUTPUT_PREFIX, type OutputNames } from "../lib/font/output-names";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { charsetFor, HANGUL, isExtraEntry, JA_PUNCT } from "../data/charset";
@@ -511,6 +512,13 @@ export default function FontWorkshop({
     const type = zipped ? "application/zip" : "font/" + format;
     const save = (buffer: ArrayBuffer) => {
       countExport();
+      recordExport({
+        file: filename + "." + ext,
+        format,
+        script,
+        projectId: project.id,
+        projectName: project.name,
+      });
       // 안드로이드 앱: 기기 저장소에 저장하거나 안드로이드 공유 창을 바로 연다.
       if (isNativeApp()) {
         const name = filename + "." + ext;

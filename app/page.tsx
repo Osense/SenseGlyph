@@ -46,6 +46,9 @@ import JourneySetup from "../components/JourneySetup";
 import { characterGuide } from "../lib/character-guide";
 import { useLang, useT, type UiLang } from "../lib/i18n";
 import LegalNotice from "../components/LegalNotice";
+import LoginScreen from "../components/LoginScreen";
+import AccountPanel from "../components/AccountPanel";
+import { useAccount } from "../lib/account";
 import {
   countingDisabled,
   countVisit,
@@ -160,6 +163,7 @@ export default function Page() {
     [tool, setTool] = useState<"pen" | "eraser">("pen"),
     [modal, setModal] = useState(false),
     [legalOpen, setLegalOpen] = useState(false),
+    [accountOpen, setAccountOpen] = useState(false),
     [noCount, setNoCount] = useState(false),
     [toolSheet, setToolSheet] = useState(false),
     [tipsOpen, setTipsOpen] = useState(false),
@@ -173,7 +177,9 @@ export default function Page() {
   const t = useT();
   const lang = useLang((state) => state.lang);
   const uiChoice = useUiChoice();
+  const session = useAccount((state) => state.session);
   useEffect(() => {
+    useAccount.getState().load();
     useLang.getState().detect();
     setNoCount(countingDisabled());
     countVisit();
@@ -524,6 +530,8 @@ export default function Page() {
       if (
         modal ||
         projectsOpen ||
+        accountOpen ||
+        session === null ||
         toolSheet ||
         tipsOpen ||
         step !== 2 ||
@@ -555,6 +563,8 @@ export default function Page() {
     char,
     modal,
     projectsOpen,
+    accountOpen,
+    session,
     toolSheet,
     tipsOpen,
     busy,
@@ -769,6 +779,18 @@ export default function Page() {
             aria-label={t("설정 열기")}
           >
             ⚙
+          </button>
+          <button
+            className="sg-top-button sg-icon sg-profile-button"
+            onClick={() => setAccountOpen(true)}
+            data-ink-locked={busy || undefined}
+            disabled={busy}
+            aria-label={t("내 계정 열기")}
+            title={t(session?.name ?? "게스트")}
+          >
+            <span className="sg-avatar" aria-hidden="true">
+              {(session?.name ?? "?").slice(0, 1).toUpperCase()}
+            </span>
           </button>
         </div>
       </header>
@@ -1476,6 +1498,15 @@ export default function Page() {
           }}
         />
       )}
+      {accountOpen && (
+        <AccountPanel
+          currentId={project.id}
+          onOpenProject={(id) => transitionProject(id, false)}
+          onManageProjects={() => setProjectsOpen(true)}
+          onClose={() => setAccountOpen(false)}
+        />
+      )}
+      {session === null && <LoginScreen />}
       {projectsOpen && (
         <ProjectManager
           current={project}
@@ -1631,8 +1662,7 @@ export default function Page() {
             </p>
             <p className="version">
               {t("{maker} 제작", { maker: MAKER })} · {t(APP_NAME)} v
-              {APP_VERSION}{" "}
-              ·{" "}
+              {APP_VERSION} ·{" "}
               {t("{n}가지 견본 · 모든 획은 벡터로 보관됩니다.", {
                 n: REFERENCE_FONTS.length,
               })}
@@ -1672,8 +1702,9 @@ function useUiChoice() {
   const [value, setValue] = useState<UiLang | "auto">("auto");
   useEffect(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem("hanhoek-ui") ?? "{}")
-        .uiLang;
+      const saved = JSON.parse(
+        localStorage.getItem("hanhoek-ui") ?? "{}",
+      ).uiLang;
       setValue(saved ?? "auto");
     } catch {}
   }, [lang]);

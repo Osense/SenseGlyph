@@ -24,6 +24,13 @@ for (const [label, viewport] of [
     locale: "ko-KR",
   });
   const page = await context.newPage();
+  // 로그인 화면(목업)은 건너뛴다
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      "senseglyph-session",
+      JSON.stringify({ name: "test", email: "", provider: "guest", since: 1 }),
+    ),
+  );
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(BASE + "/?step=2");
   await page.waitForSelector(".pad-sheet");
@@ -81,6 +88,13 @@ const context = await browser.newContext({
   acceptDownloads: true,
 });
 const page = await context.newPage();
+// 로그인 화면(목업)은 건너뛴다
+await page.addInitScript(() =>
+  localStorage.setItem(
+    "senseglyph-session",
+    JSON.stringify({ name: "test", email: "", provider: "guest", since: 1 }),
+  ),
+);
 page.on("pageerror", (error) => errors.push(error.message));
 await page.goto(BASE + "/?step=2");
 await page.waitForSelector(".input-canvas");

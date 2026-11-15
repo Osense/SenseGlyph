@@ -25,9 +25,6 @@ await page.addInitScript(() =>
     JSON.stringify({ name: "test", email: "", provider: "guest", since: 1 }),
   ),
 );
-await page.addInitScript(() =>
-  sessionStorage.setItem("senseglyph-unlocked", "1"),
-);
 const errors = [];
 page.on("pageerror", (error) => errors.push(error.message));
 await page.goto(BASE + "/?step=0");
@@ -135,9 +132,12 @@ check("일본어 폰트 생성 완료", true);
 await page.fill('[aria-label="일본어 폰트 이름"]', "わたしの字");
 await page.fill('[aria-label="영문 폰트 이름"]', "MyHand");
 await page.screenshot({ path: "artifacts/ja-output.png", fullPage: true });
+await page.click(".fw-download");
+await page.waitForSelector(".sg-pay");
+await page.fill("#sg-pay-code", "권오현");
 const [download] = await Promise.all([
   page.waitForEvent("download", { timeout: 180000 }),
-  page.click(".fw-download"),
+  page.click('.sg-pay-code button[type="submit"]'),
 ]);
 const buffer = readFileSync(await download.path());
 const font = opentype.parse(

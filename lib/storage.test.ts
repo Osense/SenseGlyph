@@ -32,3 +32,11 @@ it("rejects unsupported schema and invalid pressure/settings", () => {
   p.settings.sampleOpacity = 10;
   expect(() => parseProject(JSON.stringify(p))).toThrow();
 });
+it("keeps a valid purchase record and rejects a broken one", () => {
+  const purchase = { at: 1, local: "내글씨", english: "myhand", script: "ko" };
+  const ok = parseProject(JSON.stringify({ ...newProject(), purchase }));
+  expect(ok.purchase?.english).toBe("myhand");
+  expect(() =>
+    parseProject(JSON.stringify({ ...newProject(), purchase: { at: "x" } })),
+  ).toThrow();
+});

@@ -4,9 +4,6 @@
 import { useEffect, useState } from "react";
 import { useT } from "../lib/i18n";
 
-/** 별 모양이 돌아가는 작업 표시(이모지 아님) */
-const SPIN = ["·", "✢", "✳", "✶", "✻", "✽", "✻", "✶", "✳", "✢"];
-
 const BUILD_LINES = [
   "획 끝을 다듬는 중",
   "자모끼리 인사시키는 중",
@@ -62,7 +59,7 @@ export default function WorkProgress({
     const timer = setInterval(() => {
       setTick((v) => v + 1);
       setSeconds(Math.floor((Date.now() - started) / 1000));
-    }, 120);
+    }, 500);
     return () => clearInterval(timer);
   }, []);
   const lines =
@@ -73,8 +70,8 @@ export default function WorkProgress({
         : script === "ja"
           ? [...BUILD_LINES_JA, ...BUILD_LINES.slice(5)]
           : BUILD_LINES;
-  // 문구는 약 2초마다 바뀐다(120ms × 16)
-  const line = lines[Math.floor(tick / 16) % lines.length];
+  // 문구는 약 2.5초마다 바뀐다(500ms × 5)
+  const line = lines[Math.floor(tick / 5) % lines.length];
   return (
     <div className="sg-work-backdrop">
       <section
@@ -99,7 +96,7 @@ export default function WorkProgress({
           <span style={{ width: (percent ?? 100) + "%" }} />
         </div>
         <p className="sg-work-line" id="sg-work-line">
-          <b aria-hidden="true">{SPIN[tick % SPIN.length]}</b> {t(line)}…{" "}
+          {t(line)}…{" "}
           <small>({t("{n}초", { n: seconds })})</small>
         </p>
         {step && <p className="sg-work-step">{t(step)}</p>}

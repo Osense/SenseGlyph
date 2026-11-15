@@ -21,6 +21,7 @@ import {
   saveProject,
   parseProject,
   startProject,
+  duplicateProject,
   switchProject,
 } from "../lib/storage";
 import { useStudio } from "../lib/store";
@@ -794,6 +795,36 @@ export default function Page() {
           </button>
         </div>
       </header>
+      {project.purchase && (
+        <div className="sg-locked-bar" role="status">
+          <span>
+            <b>{t("결제한 폰트예요.")}</b>{" "}
+            {t(
+              "글씨와 정돈은 더 고칠 수 없고, 같은 폰트만 다시 받을 수 있어요.",
+            )}
+          </span>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={async () => {
+              const active = useStudio.getState().project;
+              if (!active) return;
+              const copy = await duplicateProject(
+                active,
+                t("{name} 복사본", { name: active.name }),
+              );
+              setProject(copy);
+              notify(
+                t(
+                  "새 프로젝트로 복제했어요. 여기서 고친 뒤 다시 결제해 내려받을 수 있어요.",
+                ),
+              );
+            }}
+          >
+            {t("새 프로젝트로 복제해서 고치기")}
+          </button>
+        </div>
+      )}
 
       {step < 2 && (
         <JourneySetup
@@ -937,6 +968,7 @@ export default function Page() {
               </div>
               <div
                 className="sg-pad-area"
+                data-locked={project.purchase ? "" : undefined}
                 ref={padArea}
                 style={
                   (s.writingSize

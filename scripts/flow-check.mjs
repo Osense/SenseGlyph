@@ -377,6 +377,21 @@ await page.waitForTimeout(300);
 const shared = await page.evaluate(() => window.__shared ?? "");
 check("공유 창으로 폰트 파일 전달", /\.ttf:\d{4,}/.test(shared), shared);
 await page.screenshot({ path: "artifacts/flow-export.png", fullPage: true });
+// 결제 후에는 잠기고, 고치려면 새 프로젝트로 복제한다.
+check("결제 후 잠금 안내", await page.locator(".sg-locked-bar").isVisible());
+check(
+  "결제 후 이름 고정",
+  await page
+    .locator('[aria-label="한글 폰트 이름"]')
+    .evaluate((el) => el.readOnly),
+);
+check(
+  "결제한 폰트는 결제창 없이 다시 받기",
+  await page.locator(".fw-purchased").isVisible(),
+);
+await page.click(".sg-locked-bar button");
+await page.waitForTimeout(500);
+check("복제하면 잠금 해제", !(await page.locator(".sg-locked-bar").count()));
 check("브라우저 오류 없음", !errors.length, errors.join(" | "));
 await browser.close();
 writeFileSync("artifacts/flow-results.json", JSON.stringify(results, null, 2));

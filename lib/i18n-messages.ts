@@ -349,7 +349,7 @@ export const JA: Record<string, string> = {
   이전: "前へ",
   "이전 글자": "前の文字",
   "이제 글자 써보기": "文字を書いてみる",
-  "이제 써 볼게요 ✎": "書いてみます ✎",
+  "이제 써 볼게요": "書いてみます",
   일본어: "日本語",
   "일본어 문장 기호": "日本語の記号",
   "일본어 폰트 이름에 띄어쓰기는 하지 마세요! (예: わたしの字)":
@@ -705,6 +705,21 @@ export const JA: Record<string, string> = {
   토스페이: "Toss Pay",
   원: "ウォン",
   "정식 구매 · 일본어": "正式購入・日本語",
+  "결제한 폰트예요.": "購入済みのフォントです。",
+  "글씨와 정돈은 더 고칠 수 없고, 같은 폰트만 다시 받을 수 있어요.":
+    "文字と整えはもう変更できず、同じフォントだけを再ダウンロードできます。",
+  "{name} 복사본": "{name} のコピー",
+  "새 프로젝트로 복제했어요. 여기서 고친 뒤 다시 결제해 내려받을 수 있어요.":
+    "新しいプロジェクトに複製しました。ここで直してから、もう一度購入してダウンロードできます。",
+  "새 프로젝트로 복제해서 고치기": "新しいプロジェクトに複製して直す",
+  "결제한 폰트예요. 이름과 글씨 모양은 결제할 때 그대로이고, 같은 폰트를 몇 번이든 다시 받을 수 있어요.":
+    "購入済みのフォントです。名前と文字の形は購入時のままで、同じフォントを何度でも再ダウンロードできます。",
+  "결제 후에는 이 폰트를 수정할 수 없어요.":
+    "購入後はこのフォントを変更できません。",
+  "글씨·정돈·이름이 결제한 그대로 고정되고, 같은 폰트는 언제든 다시 받을 수 있어요. 고치고 싶으면 새 프로젝트로 복제해서 다시 만들어야 해요.":
+    "文字・整え・名前は購入時のまま固定され、同じフォントはいつでも再ダウンロードできます。直したい場合は新しいプロジェクトに複製して作り直してください。",
+  "주문 내용과 결제 후 수정 불가를 확인했고, 디지털 상품 특성상 내려받은 뒤에는 청약 철회가 제한되는 데 동의합니다.":
+    "注文内容と購入後は変更できないことを確認し、デジタル商品のためダウンロード後はキャンセルできないことに同意します。",
 };
 export const EN: Record<string, string> = {
   " 폰트 이름": " font name",
@@ -1056,7 +1071,7 @@ export const EN: Record<string, string> = {
   이전: "Prev",
   "이전 글자": "Previous character",
   "이제 글자 써보기": "Start writing",
-  "이제 써 볼게요 ✎": "Let's write ✎",
+  "이제 써 볼게요": "Let's write",
   일본어: "Japanese",
   "일본어 문장 기호": "Japanese punctuation",
   "일본어 폰트 이름에 띄어쓰기는 하지 마세요! (예: わたしの字)":
@@ -1408,4 +1423,19 @@ export const EN: Record<string, string> = {
   토스페이: "Toss Pay",
   원: " KRW",
   "정식 구매 · 일본어": "Full purchase · Japanese",
+  "결제한 폰트예요.": "This font has been purchased.",
+  "글씨와 정돈은 더 고칠 수 없고, 같은 폰트만 다시 받을 수 있어요.":
+    "Handwriting and refinements are locked; you can re-download the same font.",
+  "{name} 복사본": "{name} copy",
+  "새 프로젝트로 복제했어요. 여기서 고친 뒤 다시 결제해 내려받을 수 있어요.":
+    "Duplicated into a new project. Edit it here and purchase again to download.",
+  "새 프로젝트로 복제해서 고치기": "Duplicate to edit",
+  "결제한 폰트예요. 이름과 글씨 모양은 결제할 때 그대로이고, 같은 폰트를 몇 번이든 다시 받을 수 있어요.":
+    "Purchased font. The name and shapes stay as purchased, and you can re-download it any time.",
+  "결제 후에는 이 폰트를 수정할 수 없어요.":
+    "After purchase this font can't be edited.",
+  "글씨·정돈·이름이 결제한 그대로 고정되고, 같은 폰트는 언제든 다시 받을 수 있어요. 고치고 싶으면 새 프로젝트로 복제해서 다시 만들어야 해요.":
+    "Handwriting, refinements and name are fixed as purchased, and the same font can be re-downloaded any time. To change it, duplicate into a new project and make it again.",
+  "주문 내용과 결제 후 수정 불가를 확인했고, 디지털 상품 특성상 내려받은 뒤에는 청약 철회가 제한되는 데 동의합니다.":
+    "I have checked the order and that it can't be edited after purchase, and agree that as a digital product it can't be cancelled after download.",
 };

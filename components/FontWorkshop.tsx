@@ -3,6 +3,7 @@
 import FontOutput from "./FontOutput";
 import WorkProgress from "./WorkProgress";
 import { useT } from "../lib/i18n";
+import { useStudio } from "../lib/store";
 import { countExport } from "../lib/analytics";
 import { recordExport } from "../lib/account";
 import { OUTPUT_PREFIX, type OutputNames } from "../lib/font/output-names";
@@ -702,6 +703,7 @@ export default function FontWorkshop({
       <div className="guided-workshop journey-panel sg-sep-page">
         <section
           className="font-workshop fw fw-sep"
+          data-locked={project.purchase ? "" : undefined}
           ref={root}
           aria-labelledby="fw-title"
         >
@@ -829,6 +831,7 @@ export default function FontWorkshop({
     <div className="guided-workshop journey-panel">
       <section
         className="font-workshop fw"
+        data-locked={project.purchase ? "" : undefined}
         ref={root}
         aria-labelledby="fw-title"
       >
@@ -1168,6 +1171,10 @@ export default function FontWorkshop({
               onWriteMissing={onWritePremium}
               script={script}
               style={result?.stats.style}
+              purchase={project.purchase}
+              onPurchased={(purchase) =>
+                useStudio.getState().markPurchased(purchase)
+              }
             />
             <footer className="fw-actions">
               <button

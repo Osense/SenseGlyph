@@ -27,7 +27,8 @@ main.studio.journey > :not(.sg-topbar, .toast, .modal-backdrop) {
   flex: 1 1 auto;
   min-height: 0;
 }
-main.studio.journey > .sg-strip {
+main.studio.journey > .sg-strip,
+main.studio.journey > .sg-locked-bar {
   flex: 0 0 auto;
 }
 .journey .setup-screen,
@@ -3382,7 +3383,6 @@ button {
 }
 .sg-work-line {
   margin: 4px 0 0;
-  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   font-size: 13px;
   min-height: 2.6em;
 }
@@ -3945,4 +3945,55 @@ button {
   margin: 0;
   font-size: 11px;
   color: var(--muted);
+}
+
+/* 결제한(잠긴) 프로젝트 */
+.sg-locked-bar {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 8px 24px;
+  padding: 8px 8px 8px 14px;
+  border-radius: 12px;
+  background: var(--paper);
+  border: 1px solid var(--accent);
+  font-size: 13px;
+}
+.sg-locked-bar button {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+.sg-pad-area[data-locked] {
+  pointer-events: none;
+  opacity: 0.6;
+}
+.fw[data-locked] .fw-controls,
+.fw[data-locked] .sg-sep-workspace,
+.fw[data-locked] .fw-more {
+  pointer-events: none;
+  opacity: 0.55;
+}
+.fw-purchased,
+.sg-pay-lock {
+  margin: 8px 0 4px;
+  font-size: 12px;
+  line-height: 1.55;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--active-wash);
+}
+.sg-pay-lock {
+  margin: 0;
 }

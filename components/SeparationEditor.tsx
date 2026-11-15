@@ -649,7 +649,7 @@ export default function SeparationEditor({
               ↺ 되돌리기
             </button>
             <button className="sg-sep-text sg-sep-rewrite" onClick={onWrite}>
-              ✎ 이 글자 다시 쓰기
+              이 글자 다시 쓰기
             </button>
             <button
               className="sg-sep-help"

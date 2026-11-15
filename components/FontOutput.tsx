@@ -2,7 +2,7 @@
 
 import { isNativeApp } from "../lib/native";
 import { romanizeName } from "../lib/font/romanize";
-import { isUnlocked } from "../lib/payment";
+import type { Purchase } from "../lib/types";
 import PaymentDialog from "./PaymentDialog";
 import {
   checkFontName,
@@ -176,7 +176,12 @@ export default function FontOutput({
   onWriteMissing,
   script = "ko",
   style,
+  purchase,
+  onPurchased,
 }: {
+  /** 결제한 프로젝트: 이름은 결제할 때 그대로, 결제창 없이 다시 받기 */
+  purchase?: Purchase;
+  onPurchased?: (purchase: Purchase) => void;
   script?: "ko" | "ja";
   /** 쓴 글자에서 찾은 필체 규칙(일본어) */
   style?: InferredStyle;
@@ -204,8 +209,8 @@ export default function FontOutput({
   onWriteMissing?: () => void;
 }) {
   const t = useT();
-  const [korean, setKorean] = useState("");
-  const [english, setEnglish] = useState("");
+  const [korean, setKorean] = useState(purchase?.local ?? "");
+  const [english, setEnglish] = useState(purchase?.english ?? "");
   const [format, setFormat] = useState<ExportFormat>("ttf");
   const [specimen, setSpecimen] = useState(
     script === "ja" ? SPECIMEN_JA : SPECIMEN,
@@ -265,15 +270,18 @@ export default function FontOutput({
       setBlocked(true);
       return;
     }
-    const result = checkedNow ?? (await runCheck());
-    if (!result?.available) return;
+    // 결제한 폰트는 이미 확인한 이름 그대로 다시 받는다.
+    if (!purchase) {
+      const result = checkedNow ?? (await runCheck());
+      if (!result?.available) return;
+    }
     // 안드로이드 크롬 등은 글꼴·압축 파일 공유를 막아 둡니다. 미리 확인하고 안내합니다.
     if (next === "share" && !canShareFormat(format)) {
       setShareUnsupported(true);
       return;
     }
     // 결제(목업): 이 창에서 결제나 코드 확인을 한 번 통과하면 다시 묻지 않는다.
-    if (!isUnlocked()) {
+    if (!purchase) {
       setPayFor(next);
       return;
     }
@@ -390,6 +398,7 @@ export default function FontOutput({
                     : t("여기에 이름을 넣어주세요!")
                 }
                 aria-invalid={(!!korean && !koreanValid) || undefined}
+                readOnly={!!purchase}
                 onChange={(event) =>
                   setKorean(cleanLocalName(event.target.value))
                 }
@@ -413,6 +422,7 @@ export default function FontOutput({
                 value={english}
                 placeholder={autoEnglish}
                 aria-invalid={(!!english && !englishValid) || undefined}
+                readOnly={!!purchase}
                 onChange={(event) =>
                   setEnglish(cleanEnglishName(event.target.value))
                 }
@@ -433,40 +443,48 @@ export default function FontOutput({
             )}
           </label>
         </div>
-        <div className="fw-name-check">
-          <button
-            type="button"
-            disabled={!names.korean || !koreanValid || checking}
-            onClick={() => runCheck()}
-          >
-            {checking ? t("확인 중…") : t("이름 중복 확인")}
-          </button>
-          {checkedNow &&
-            (checkedNow.available ? (
-              <span className="is-ok" role="status">
-                {t("사용 가능합니다!")}
-              </span>
-            ) : (
-              <span className="fw-error" role="alert">
-                {t("이미 있는 이름입니다.")}{" "}
-                {checkedNow.reason === "reserved"
-                  ? t(
-                      "‘{name}’은(는) 이미 있는 폰트 이름이에요. 다른 이름을 지어 주세요.",
-                      {
-                        name: checkedNow.name,
-                      },
-                    )
-                  : t("‘{name}’은(는) 다른 사용자가 쓰고 있어요.", {
-                      name: checkedNow.name,
-                    })}
-              </span>
-            ))}
-          <small>
+        {purchase ? (
+          <p className="fw-purchased">
             {t(
-              "띄어쓰기는 자동으로 빠지고, 영문은 소문자로만 들어가요. 내려받을 때도 한 번 더 확인해요.",
+              "결제한 폰트예요. 이름과 글씨 모양은 결제할 때 그대로이고, 같은 폰트를 몇 번이든 다시 받을 수 있어요.",
             )}
-          </small>
-        </div>
+          </p>
+        ) : (
+          <div className="fw-name-check">
+            <button
+              type="button"
+              disabled={!names.korean || !koreanValid || checking}
+              onClick={() => runCheck()}
+            >
+              {checking ? t("확인 중…") : t("이름 중복 확인")}
+            </button>
+            {checkedNow &&
+              (checkedNow.available ? (
+                <span className="is-ok" role="status">
+                  {t("사용 가능합니다!")}
+                </span>
+              ) : (
+                <span className="fw-error" role="alert">
+                  {t("이미 있는 이름입니다.")}{" "}
+                  {checkedNow.reason === "reserved"
+                    ? t(
+                        "‘{name}’은(는) 이미 있는 폰트 이름이에요. 다른 이름을 지어 주세요.",
+                        {
+                          name: checkedNow.name,
+                        },
+                      )
+                    : t("‘{name}’은(는) 다른 사용자가 쓰고 있어요.", {
+                        name: checkedNow.name,
+                      })}
+                </span>
+              ))}
+            <small>
+              {t(
+                "띄어쓰기는 자동으로 빠지고, 영문은 소문자로만 들어가요. 내려받을 때도 한 번 더 확인해요.",
+              )}
+            </small>
+          </div>
+        )}
 
         <fieldset className="fw-formats">
           <legend>{t("파일 형식")}</legend>
@@ -712,6 +730,12 @@ export default function FontOutput({
           onPaid={() => {
             const next = payFor;
             setPayFor(null);
+            onPurchased?.({
+              at: Date.now(),
+              local: names.korean,
+              english: names.english,
+              script,
+            });
             setMode(next);
             onDownload(format, names, next);
           }}

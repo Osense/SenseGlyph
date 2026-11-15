@@ -79,4 +79,14 @@ export interface FontProject {
   schemaVersion: 1;
   // Optional extension: existing Phase 1 backups remain valid.
   fontPreparation?: import("./font/types").FontPreparation;
+  /** 결제(또는 코드)로 내보낸 프로젝트: 글씨·정돈·이름을 더는 바꿀 수 없고, 같은 폰트만 다시 받을 수 있다.
+   * 고치려면 새 프로젝트로 복제한다. (나중에 서버 결제 기록과 대조) */
+  purchase?: Purchase;
+}
+export interface Purchase {
+  at: number;
+  /** 결제할 때 정한 폰트 이름(현지어·영문) — 다시 받을 때도 이 이름 그대로 */
+  local: string;
+  english: string;
+  script: WritingScript;
 }

@@ -87,6 +87,12 @@ export default function PaymentDialog({
             <span>{t("부가세 포함 · 한 번 결제로 다시 받기 무제한")}</span>
           </div>
         </div>
+        <p className="sg-pay-lock">
+          <b>{t("결제 후에는 이 폰트를 수정할 수 없어요.")}</b>{" "}
+          {t(
+            "글씨·정돈·이름이 결제한 그대로 고정되고, 같은 폰트는 언제든 다시 받을 수 있어요. 고치고 싶으면 새 프로젝트로 복제해서 다시 만들어야 해요.",
+          )}
+        </p>
         <fieldset className="sg-pay-methods">
           <legend>{t("결제 수단")}</legend>
           {METHODS.map((m) => (
@@ -111,7 +117,7 @@ export default function PaymentDialog({
             onChange={(event) => setAgree(event.target.checked)}
           />
           {t(
-            "주문 내용을 확인했고, 디지털 상품 특성상 내려받은 뒤에는 청약 철회가 제한되는 데 동의합니다.",
+            "주문 내용과 결제 후 수정 불가를 확인했고, 디지털 상품 특성상 내려받은 뒤에는 청약 철회가 제한되는 데 동의합니다.",
           )}
         </label>
         <button

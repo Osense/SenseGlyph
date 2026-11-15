@@ -214,7 +214,7 @@ export default function WritingTips({
           art: <Art kind={tip.art} />,
         };
       })}
-      doneLabel={t("이제 써 볼게요 ✎")}
+      doneLabel={t("이제 써 볼게요")}
       skipLabel={t("건너뛰고 바로 쓰기")}
       onClose={onClose}
     />

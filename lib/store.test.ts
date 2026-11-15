@@ -43,3 +43,12 @@ it("restores all original vectors after reset and eraser splits", () => {
     original,
   ]);
 });
+it("locks a purchased project against edits", () => {
+  const s = useStudio.getState();
+  s.commit("겨", "hangul-syllable", [stroke("a")]);
+  s.markPurchased({ at: 1, local: "내글씨", english: "myhand", script: "ko" });
+  s.commit("겨", "hangul-syllable", [stroke("b")]);
+  s.undo("겨");
+  expect(useStudio.getState().project?.samples["겨"].strokes[0].id).toBe("a");
+  expect(useStudio.getState().project?.purchase?.local).toBe("내글씨");
+});

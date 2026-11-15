@@ -60,6 +60,32 @@ export async function startProject(
   await tx.done;
   return next;
 }
+/** 결제한 프로젝트를 고치고 싶을 때: 글씨·설정·정돈을 그대로 복사한 새 프로젝트(결제 기록 없음)로 옮긴다. */
+export async function duplicateProject(current: FontProject, name: string) {
+  const db = await database();
+  const tx = db.transaction(["projects", "meta"], "readwrite");
+  const projects = (await tx.objectStore("projects").getAll()) as FontProject[];
+  const base = name.trim().slice(0, 72) || current.name + " 복사본";
+  let unique = base,
+    number = 2;
+  while (projects.some((p) => p.name === unique))
+    unique = base + " (" + number++ + ")";
+  const fresh = newProject();
+  const { purchase: _purchase, ...rest } = structuredClone(current);
+  void _purchase;
+  const next: FontProject = {
+    ...rest,
+    id: fresh.id,
+    name: unique,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+  await tx.objectStore("projects").put(current);
+  await tx.objectStore("projects").put(next);
+  await tx.objectStore("meta").put(next.id, "active");
+  await tx.done;
+  return next;
+}
 export async function switchProject(current: FontProject, id: string) {
   const db = await database();
   const tx = db.transaction(["projects", "meta"], "readwrite");
@@ -135,6 +161,14 @@ export function parseProject(text: string): FontProject {
     !REFERENCE_FONTS.some((font) => font.id === s.referenceFont)
   )
     throw new Error("견본 글꼴 설정 오류");
+  if (
+    p.purchase !== undefined &&
+    (!record(p.purchase) ||
+      typeof p.purchase.local !== "string" ||
+      typeof p.purchase.english !== "string" ||
+      typeof p.purchase.at !== "number")
+  )
+    throw new Error("결제 기록 오류");
   if (p.fontPreparation !== undefined && !validPreparation(p.fontPreparation))
     throw new Error("폰트 제작 설정이 올바르지 않습니다.");
   if (

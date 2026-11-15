@@ -110,6 +110,29 @@ export default function SeparationEditor({
   const [selection, setSelection] = useState<string[]>([]),
     [mode, setMode] = useState<"lasso" | "point">("lasso"),
     [radius, setRadius] = useState(100);
+  // 부분 수정 확대: 보이는 범위(정사각형, em). 1배면 0,0,1000.
+  const [zoom, setZoom] = useState(1),
+    [focus, setFocus] = useState({ x: 500, y: 500 });
+  const viewSize = 1000 / zoom;
+  const view = {
+    x: Math.max(0, Math.min(1000 - viewSize, focus.x - viewSize / 2)),
+    y: Math.max(0, Math.min(1000 - viewSize, focus.y - viewSize / 2)),
+    size: viewSize,
+  };
+  const ZOOM_MAX = 4;
+  const setZoomAt = (next: number, at?: { x: number; y: number }) => {
+    const z = Math.max(1, Math.min(ZOOM_MAX, next));
+    setZoom(z);
+    if (at) setFocus(at);
+  };
+  // 두 손가락 벌리기·오므리기로 확대, 두 손가락으로 끌어 옮기기
+  const touches = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{
+    distance: number;
+    zoom: number;
+    middle: { x: number; y: number };
+    focus: { x: number; y: number };
+  } | null>(null);
   const [draft, setDraft] = useState<Stroke[] | null>(null),
     [lasso, setLasso] = useState<LassoPoint[] | null>(null),
     [error, setError] = useState("");
@@ -180,6 +203,8 @@ export default function SeparationEditor({
     setDraft(null);
     setLasso(null);
     setError("");
+    setZoom(1);
+    setFocus({ x: 500, y: 500 });
     setPast([]);
     setFuture([]);
     gesture.current = null;
@@ -237,12 +262,17 @@ export default function SeparationEditor({
       },
     });
   };
-  const point = (event: ReactPointerEvent<SVGSVGElement>) =>
-    pixelToEm(
+  const point = (event: { clientX: number; clientY: number }) => {
+    const p = pixelToEm(
       event.clientX,
       event.clientY,
       svg.current!.getBoundingClientRect(),
     );
+    return {
+      x: view.x + (p.x / 1000) * view.size,
+      y: view.y + (p.y / 1000) * view.size,
+    };
+  };
   const preview = (g: Gesture, end: { x: number; y: number }) =>
     g.kind === "move"
       ? moveStrokes(g.base, g.ids, end.x - g.start.x, end.y - g.start.y)
@@ -255,6 +285,29 @@ export default function SeparationEditor({
           radius,
         );
   const down = (event: ReactPointerEvent<SVGSVGElement>) => {
+    if (mode === "point" && event.pointerType === "touch") {
+      touches.current.set(event.pointerId, {
+        x: event.clientX,
+        y: event.clientY,
+      });
+      if (touches.current.size === 2) {
+        // 두 번째 손가락: 고치던 것을 취소하고 확대로 바꾼다.
+        if (gesture.current) {
+          gesture.current = null;
+          setDraft(null);
+        }
+        const [a, b] = [...touches.current.values()];
+        pinch.current = {
+          distance: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+          zoom,
+          middle: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+          focus: { x: view.x + view.size / 2, y: view.y + view.size / 2 },
+        };
+        svg.current!.setPointerCapture(event.pointerId);
+        event.preventDefault();
+        return;
+      }
+    }
     if (
       gesture.current ||
       (event.pointerType === "mouse" && event.button !== 0)
@@ -305,6 +358,30 @@ export default function SeparationEditor({
     event.preventDefault();
   };
   const move = (event: ReactPointerEvent<SVGSVGElement>) => {
+    if (touches.current.has(event.pointerId)) {
+      touches.current.set(event.pointerId, {
+        x: event.clientX,
+        y: event.clientY,
+      });
+      const p = pinch.current;
+      if (p && touches.current.size >= 2) {
+        const [a, b] = [...touches.current.values()];
+        const distance = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+        const next = Math.max(
+          1,
+          Math.min(ZOOM_MAX, (p.zoom * distance) / p.distance),
+        );
+        const rect = svg.current!.getBoundingClientRect();
+        const perPixel = 1000 / next / rect.width;
+        const middle = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        setZoom(next);
+        setFocus({
+          x: p.focus.x - (middle.x - p.middle.x) * perPixel,
+          y: p.focus.y - (middle.y - p.middle.y) * perPixel,
+        });
+        return;
+      }
+    }
     const g = gesture.current;
     if (!g || g.id !== event.pointerId) return;
     g.current = point(event);
@@ -328,6 +405,10 @@ export default function SeparationEditor({
     } else setDraft(preview(g, g.current));
   };
   const finish = (event: ReactPointerEvent<SVGSVGElement>, cancel = false) => {
+    if (touches.current.delete(event.pointerId) && pinch.current) {
+      if (touches.current.size < 2) pinch.current = null;
+      return;
+    }
     const g = gesture.current;
     if (!g || g.id !== event.pointerId) return;
     gesture.current = null;
@@ -473,7 +554,10 @@ export default function SeparationEditor({
             <button
               className={mode === "lasso" ? "active" : ""}
               aria-pressed={mode === "lasso"}
-              onClick={() => setMode("lasso")}
+              onClick={() => {
+                setMode("lasso");
+                setZoom(1);
+              }}
             >
               선택·이동
             </button>
@@ -484,6 +568,61 @@ export default function SeparationEditor({
             >
               부분 수정
             </button>
+          </div>
+          <div className="sg-point-tools">
+            {mode === "point" && (
+              <div className="sg-zoom" role="group" aria-label="편집 칸 확대">
+                <button
+                  type="button"
+                  aria-label="축소"
+                  disabled={zoom <= 1}
+                  onClick={() => setZoomAt(zoom / 1.5)}
+                >
+                  −
+                </button>
+                <span aria-live="polite">{Math.round(zoom * 100)}%</span>
+                <button
+                  type="button"
+                  aria-label="확대"
+                  disabled={zoom >= ZOOM_MAX}
+                  onClick={() => {
+                    // 고른 획이 있으면 그 획을 가운데로 확대
+                    const target = bounds
+                      ? {
+                          x: bounds.x + bounds.width / 2,
+                          y: bounds.y + bounds.height / 2,
+                        }
+                      : zoom === 1
+                        ? { x: 500, y: 500 }
+                        : undefined;
+                    setZoomAt(zoom * 1.5, target);
+                  }}
+                >
+                  +
+                </button>
+                {zoom > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setZoomAt(1, { x: 500, y: 500 })}
+                  >
+                    맞춤
+                  </button>
+                )}
+              </div>
+            )}
+            {mode === "point" && (
+              <label className="point-radius">
+                범위 {radius}
+                <input
+                  aria-label="부분 수정 범위"
+                  type="range"
+                  min="25"
+                  max="250"
+                  value={radius}
+                  onChange={(e) => setRadius(+e.target.value)}
+                />
+              </label>
+            )}
           </div>
           <div className="sg-sep-tools">
             <button
@@ -521,34 +660,24 @@ export default function SeparationEditor({
             </button>
           </div>
         </div>
-        {(mode === "point" || error) && (
-          <div className="sg-sep-sub">
-            {mode === "point" && (
-              <label className="point-radius">
-                부분 수정 범위 {radius} em
-                <input
-                  aria-label="부분 수정 범위"
-                  type="range"
-                  min="25"
-                  max="250"
-                  value={radius}
-                  onChange={(e) => setRadius(+e.target.value)}
-                />
-              </label>
-            )}
-            {error && (
-              <p className="font-error" role="alert">
-                {error}
-              </p>
-            )}
-          </div>
-        )}
         <div className="sg-sep-canvas">
           <div className="separation-canvas-frame">
             {showTutorial && tutorial}
-            {!selection.length && !showTutorial && (
+            {error && (
+              <p className="font-error sg-sep-error" role="alert">
+                {error}
+              </p>
+            )}
+            {!showTutorial && mode === "lasso" && !selection.length && (
               <p className="sg-sep-hint" aria-hidden="true">
                 획을 둘러싸거나 눌러서 고른 뒤 초성·중성·종성을 눌러요
+              </p>
+            )}
+            {!showTutorial && mode === "point" && !draft && (
+              <p className="sg-sep-hint" aria-hidden="true">
+                {zoom > 1
+                  ? "획의 고칠 곳을 끌어 모양을 바꿔요 · 두 손가락으로 옮기거나 오므려 줄여요"
+                  : "획의 고칠 곳을 끌어 모양을 바꿔요 · 두 손가락으로 벌리거나 + 를 눌러 크게 볼 수 있어요"}
               </p>
             )}
             <CanvasStepButtons
@@ -562,8 +691,9 @@ export default function SeparationEditor({
             />
             <svg
               ref={svg}
-              viewBox="0 0 1000 1000"
+              viewBox={`${view.x} ${view.y} ${view.size} ${view.size}`}
               className="separation-svg editable"
+              data-zoom={zoom > 1 ? zoom.toFixed(1) : undefined}
               aria-label={char + " 자모 분리 화면"}
               onPointerDown={down}
               onPointerMove={move}
@@ -723,7 +853,7 @@ export default function SeparationEditor({
                   );
                 })}
             </svg>
-            {bounds && !lasso && !draft && (
+            {bounds && !lasso && !draft && mode === "lasso" && (
               <div className="separation-assignment-overlay">
                 <div
                   className="quick-assign"
@@ -731,8 +861,8 @@ export default function SeparationEditor({
                   aria-label={`선택한 획 한 번에 배정 (${selection.length}획)`}
                   style={
                     {
-                      "--selection-center": `${(bounds.x + bounds.width / 2) / 10}%`,
-                      "--selection-top": `${(bounds.y - 10) / 10}%`,
+                      "--selection-center": `${Math.max(8, Math.min(92, ((bounds.x + bounds.width / 2 - view.x) / view.size) * 100))}%`,
+                      "--selection-top": `${Math.max(9, ((bounds.y - 10 - view.y) / view.size) * 100)}%`,
                     } as React.CSSProperties
                   }
                 >

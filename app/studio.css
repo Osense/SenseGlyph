@@ -3051,3 +3051,121 @@ button {
 .sg-sep-main > * {
   grid-column: 1;
 }
+
+/* 부분 수정: 편집 칸 확대 */
+.sg-sep-main > .sg-sep-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 14px;
+}
+.sg-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.sg-zoom button {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--sheet);
+  color: var(--ink);
+  font-size: 15px;
+}
+.sg-zoom span {
+  min-width: 44px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--muted);
+}
+.sg-tool-q {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
+}
+/* 부분 수정 도구(확대·범위)는 위쪽 막대 가운데에: 편집 칸 크기도, 획 위도 가리지 않는다. */
+.sg-point-tools {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 14px;
+  min-width: 0;
+}
+.sg-point-tools:empty {
+  display: none;
+}
+.sg-point-tools .point-radius {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.sg-point-tools .point-radius input {
+  width: 120px;
+}
+.sg-sep-error {
+  position: absolute;
+  left: 50%;
+  bottom: 52px;
+  z-index: 5;
+  transform: translateX(-50%);
+  max-width: 90%;
+  padding: 8px 12px;
+  border-radius: 9px;
+  background: var(--danger-wash);
+  pointer-events: none;
+}
+.sg-point-tools {
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+.sg-point-tools .point-radius input {
+  width: 88px;
+}
+.sg-zoom button {
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0 8px;
+}
+.sg-point-tools {
+  height: 46px;
+}
+.sg-point-tools > *,
+.sg-point-tools .point-radius {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  min-height: 0;
+}
+/* 가로 1024 안팎(아이패드 가로)에서 부분 수정 도구가 한 줄에 들어가도록 줄인다(편집 칸 크기 유지). */
+@media (min-width: 900px) and (max-width: 1120px) {
+  .sg-point-tools .sg-zoom span,
+  .sg-sep-char > span {
+    display: none;
+  }
+  .sg-point-tools .point-radius {
+    font-size: 0;
+  }
+  .sg-point-tools .point-radius input {
+    width: 72px;
+  }
+  .sg-point-tools {
+    gap: 6px;
+  }
+}

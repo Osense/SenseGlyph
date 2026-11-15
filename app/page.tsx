@@ -740,7 +740,7 @@ export default function Page() {
                 disabled={busy}
                 onClick={() => setTipsOpen(true)}
               >
-                <i aria-hidden="true">💡</i>
+                <i aria-hidden="true" className="sg-tool-q">?</i>
                 <span>쓰기 팁</span>
               </button>
             </div>

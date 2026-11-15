@@ -1,7 +1,13 @@
 // 손글씨로 쓰지 않은 글자를 견본 글꼴의 모양으로 채웁니다.
 // 쓴 글자와 조합 글자는 절대 덮어쓰지 않고, 비어 있는 글자에만 씁니다.
 import opentype from "opentype.js";
-import { CHARSET, RETIRED_SPECIAL_SYMBOLS } from "../../data/charset";
+import {
+  charsetFor,
+  JA_FALLBACK_EXTRA,
+  RETIRED_SPECIAL_SYMBOLS,
+} from "../../data/charset";
+import type { WritingScript } from "../types";
+import { fullwidthSource, isEmBoxedChar } from "./layout";
 import { METRICS } from "../../config/metrics";
 import { categoryForChar } from "../safety";
 import type { LayoutPlan } from "./layout";
@@ -12,16 +18,37 @@ export interface FallbackSource {
   load: () => opentype.Font | null;
 }
 
-/** 폰트를 채울 대상: 앱에서 쓰는 모든 글자 + 현대 한글 11,172자 */
-export function fallbackTargets(): string[] {
+/** 폰트를 채울 대상: 앱에서 쓰는 모든 글자 + (한글) 현대 한글 11,172자 / (일본어) 나머지 상용한자·전각 기호 */
+export function fallbackTargets(script: WritingScript = "ko"): string[] {
   const chars = new Set(
-    CHARSET.map(({ char }) => char).filter(
-      (char) => !RETIRED_SPECIAL_SYMBOLS.has(char),
-    ),
+    charsetFor(script)
+      .map(({ char }) => char)
+      .filter((char) => !RETIRED_SPECIAL_SYMBOLS.has(char)),
   );
-  for (let code = 0xac00; code <= 0xd7a3; code++)
-    chars.add(String.fromCharCode(code));
+  if (script === "ja") {
+    for (const char of JA_FALLBACK_EXTRA) chars.add(char);
+    for (let code = 0xff01; code <= 0xff5e; code++)
+      chars.add(String.fromCharCode(code));
+  } else
+    for (let code = 0xac00; code <= 0xd7a3; code++)
+      chars.add(String.fromCharCode(code));
   return [...chars];
+}
+
+const cjkBox = new WeakMap<opentype.Font, { size: number; cy: number }>();
+/** 견본 글꼴의 '国' 크기와 세로 중심: 가나·한자를 네모 칸째로 옮길 기준 */
+function referenceCjkBox(font: opentype.Font) {
+  let box = cjkBox.get(font);
+  if (box) return box;
+  const glyph =
+    font.charToGlyphIndex("国") > 0 ? font.charToGlyph("国") : undefined;
+  const b = glyph?.getBoundingBox();
+  box =
+    b && b.y2 > b.y1
+      ? { size: Math.max(b.x2 - b.x1, b.y2 - b.y1), cy: (b.y1 + b.y2) / 2 }
+      : { size: font.unitsPerEm * 0.88, cy: font.unitsPerEm * 0.38 };
+  cjkBox.set(font, box);
+  return box;
 }
 
 const hangulSize = new WeakMap<opentype.Font, number>();
@@ -71,6 +98,39 @@ export function fallbackGlyph(
     const glyph = font.charToGlyph(char);
     const box = glyph.getBoundingBox();
     if (!glyph.path.commands.length || !(box.x2 > box.x1)) continue;
+    if (isEmBoxedChar(char, plan.script) || fullwidthSource(char)) {
+      // 가나·한자·전각 기호: 글꼴의 네모 칸 그대로(작은 가나·、。 자리 유지), 칸 가운데에.
+      const ref = referenceCjkBox(font);
+      const k = plan.bodySize / ref.size;
+      const square = Math.round(plan.bodySize + plan.sideBearing * 2);
+      const half = (glyph.advanceWidth ?? font.unitsPerEm) / 2;
+      const tx = (x: number) => Math.round(square / 2 + (x - half) * k);
+      const ty = (y: number) => Math.round((y - ref.cy) * k + (baseline - 500));
+      const path = new opentype.Path();
+      for (const c of glyph.path.commands) {
+        if (c.type === "M") path.moveTo(tx(c.x), ty(c.y));
+        else if (c.type === "L") path.lineTo(tx(c.x), ty(c.y));
+        else if (c.type === "Q")
+          path.quadraticCurveTo(tx(c.x1), ty(c.y1), tx(c.x), ty(c.y));
+        else if (c.type === "C")
+          path.curveTo(
+            tx(c.x1),
+            ty(c.y1),
+            tx(c.x2),
+            ty(c.y2),
+            tx(c.x),
+            ty(c.y),
+          );
+        else if (c.type === "Z") path.close();
+      }
+      return {
+        path,
+        advanceWidth: square,
+        top: ty(box.y2),
+        bottom: ty(box.y1),
+        source: source.name,
+      };
+    }
     const k = plan.bodySize / referenceHangulSize(font);
     const hangul = categoryForChar(char).startsWith("hangul");
     const centerY = (box.y1 + box.y2) / 2;

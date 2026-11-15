@@ -27,3 +27,9 @@ npm run android:apk
 - 출시용은 업로드 키(keystore)를 만들어 `./gradlew bundleRelease` 로 AAB 를 만들고 서명합니다.
   키 파일과 비밀번호는 잃어버리면 앱을 업데이트할 수 없으니 레포가 아닌 안전한 곳에 보관하세요.
 - 버전: `android/app/build.gradle` 의 `versionCode`(정수, 올릴 때마다 +1)·`versionName`(0.2.32).
+
+## 개인정보처리방침 주소 (Play 스토어 등록용)
+
+- https://osense.github.io/SenseGlyph/privacy/ — 한국어·일본어·영어. 앱 안에서는 설정 → 개인정보·이용 안내.
+- 방문 집계는 `lib/analytics.ts`(Abacus 카운터, 쿠키 없음, 설정에서 끌 수 있음). 수집 범위를 바꾸면 `components/LegalNotice.tsx` 안내도 함께 고친다.
+- 누적 숫자 확인: `https://abacus.jasoncameron.dev/get/osense-senseglyph/web-visits` (`web-visitors`, `web-exports`, 앱은 `android-…`).

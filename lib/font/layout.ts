@@ -1,5 +1,7 @@
 import { METRICS } from "../../config/metrics";
-import { categoryForChar, DIAMOND_RADIUS } from "../safety";
+import { categoryForChar, DIAMOND_RADIUS, isEmBoxed } from "../safety";
+import { JA_PUNCT } from "../../data/charset";
+import type { WritingScript } from "../types";
 import polygonClipping, {
   type MultiPolygon,
   type Ring,
@@ -31,7 +33,22 @@ export interface LayoutPlan {
   spaceWidth: number;
   /** 0~1. 작게 쓴 한글을 보통 크기 쪽으로 키우는 정도(손글씨 정돈의 '크기 고르게'). */
   sizeEvening: number;
+  /** 만들 글자 */
+  script: WritingScript;
+  /** 가나·한자: 쓰기 칸을 통째로 키우는 배율(칸 안 위치를 그대로 지킨다) */
+  emScale: number;
 }
+/** 전각 영숫자·기호(！？Ａ１…)는 반각 글자의 손글씨로 만든다. */
+export const fullwidthSource = (char: string) => {
+  const code = char.codePointAt(0)!;
+  return code >= 0xff01 && code <= 0xff5e
+    ? String.fromCharCode(code - 0xfee0)
+    : null;
+};
+/** 칸 안 위치를 지키는 글자인가(일본어 가나·한자·문장 기호) */
+export const isEmBoxedChar = (char: string, script: WritingScript) =>
+  isEmBoxed(categoryForChar(char)) ||
+  (script === "ja" && JA_PUNCT.includes(char));
 export interface LaidOutGlyph {
   contours: Contours;
   advanceWidth: number;
@@ -195,6 +212,7 @@ export function createLayoutPlan(
   direct: Map<string, Contours>,
   settings: FontBuildSettings,
   sizeEvening = 0,
+  script: WritingScript = "ko",
 ): LayoutPlan {
   const target = bodySize(settings),
     measurements = [...direct].flatMap(([char, paths]) => {
@@ -206,6 +224,21 @@ export function createLayoutPlan(
     .map((item) => Math.max(item.bounds.width, item.bounds.height))
     .filter((size) => size > 40);
   const typicalHangulSize = median(hangul, DIAMOND_RADIUS - 22);
+  const sizeOf = (test: (category: string) => boolean) =>
+    measurements
+      .filter((item) => test(categoryForChar(item.char)))
+      .map((item) => Math.max(item.bounds.width, item.bounds.height))
+      .filter((size) => size > 40);
+  // 한자가 3자 이상이면 한자 크기, 아니면 가나 크기(가나는 한자보다 조금 작게 쓰므로 0.9로 나눔)
+  const kanji = sizeOf((c) => c === "kanji"),
+    kana = sizeOf((c) => c === "hiragana" || c === "katakana");
+  const typicalCjk =
+    kanji.length >= 3
+      ? median(kanji, 0)
+      : kana.length
+        ? median(kana, 0) / 0.9
+        : typicalHangulSize;
+  const emScale = Math.max(0.5, Math.min(8, target / typicalCjk));
   const hangulScale = Math.max(0.5, Math.min(8, target / typicalHangulSize));
   const capHeight = target * 0.8;
   const capitals = measurements
@@ -260,6 +293,8 @@ export function createLayoutPlan(
       Math.round(target * 0.42 + settings.letterSpacing),
     ),
     sizeEvening: Math.max(0, Math.min(1, sizeEvening)),
+    script,
+    emScale,
   };
 }
 
@@ -272,6 +307,41 @@ export function layoutGlyph(
   plan: LayoutPlan,
   reference: Contours = source,
 ): LaidOutGlyph {
+  const wide = fullwidthSource(char);
+  if (wide) {
+    // 전각: 반각 손글씨를 같은 크기로 두고 네모 칸 가운데에 놓는다.
+    const half = layoutGlyph(wide, source, plan, reference);
+    const square = Math.round(plan.bodySize + plan.sideBearing * 2);
+    const dx = Math.round((square - half.advanceWidth) / 2);
+    const contours = half.contours.map((ring) =>
+      ring.map(([x, y]) => [x + dx, y]),
+    );
+    const moved = inkBounds(contours);
+    return {
+      contours,
+      advanceWidth: square,
+      bounds: moved,
+      leftSideBearing: moved?.left ?? 0,
+    };
+  }
+  if (isEmBoxedChar(char, plan.script)) {
+    // 가나·한자: 쓰기 칸(0~1000)을 통째로 같은 배율로 옮긴다. 작은 가나·、。의 자리가 그대로 남는다.
+    const square = Math.round(plan.bodySize + plan.sideBearing * 2);
+    const k = plan.emScale;
+    const contours = source.map((ring) =>
+      ring.map(([x, y]) => [
+        Math.round(square / 2 + (x - 500) * k),
+        Math.round(500 + (y - 500) * k),
+      ]),
+    );
+    const placed = inkBounds(contours);
+    return {
+      contours,
+      advanceWidth: square,
+      bounds: placed,
+      leftSideBearing: placed?.left ?? 0,
+    };
+  }
   const bounds = inkBounds(reference);
   if (!bounds)
     return {

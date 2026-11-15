@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "../lib/i18n";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
@@ -24,6 +25,7 @@ export default function TipDeck({
   skipLabel: string;
   onClose: () => void;
 }) {
+  const t = useT();
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const primary = useRef<HTMLButtonElement>(null);
@@ -73,7 +75,11 @@ export default function TipDeck({
           </h2>
           <p>{tip.body}</p>
         </div>
-        <div className="sg-tips-dots" role="tablist" aria-label="안내 고르기">
+        <div
+          className="sg-tips-dots"
+          role="tablist"
+          aria-label={t("안내 고르기")}
+        >
           {tips.map((item, i) => (
             <button
               key={item.id}
@@ -90,7 +96,7 @@ export default function TipDeck({
             disabled={index === 0}
             onClick={() => go(index - 1)}
           >
-            ← 이전
+            {t("← 이전")}
           </button>
           {last ? (
             <button ref={primary} className="fw-primary" onClick={onClose}>
@@ -102,7 +108,7 @@ export default function TipDeck({
               className="fw-primary"
               onClick={() => go(index + 1)}
             >
-              다음 →
+              {t("다음 →")}
             </button>
           )}
         </div>

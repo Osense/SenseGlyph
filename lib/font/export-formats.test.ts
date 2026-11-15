@@ -21,8 +21,12 @@ it("exports four valid fonts with the output names and original Hangul coverage"
     names: { korean: "새글씨", english: "NewHandwriting" },
   });
   const files = unzipSync(new Uint8Array(zip));
-  expect(Object.keys(files)).toEqual(
-    ["ttf", "otf", "woff", "woff2"].map((ext) => "OSNS 새글씨." + ext),
+  expect(Object.keys(files)).toEqual([
+    ...["ttf", "otf", "woff", "woff2"].map((ext) => "OSNS 새글씨." + ext),
+    "LICENSE.txt",
+  ]);
+  expect(new TextDecoder().decode(files["LICENSE.txt"])).toContain(
+    "SIL OPEN FONT LICENSE Version 1.1",
   );
   expect(opentype.parse(original.buffer).names.fontFamily).toMatchObject({
     en: "My Handwriting",

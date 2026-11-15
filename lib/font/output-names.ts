@@ -2,9 +2,19 @@ import { replaceSfntTables, sfntTable } from "./cmap";
 import { isEnglishFontName } from "./names";
 
 export interface OutputNames {
+  /** 현지 이름(한글 폰트면 한국어, 일본어 폰트면 일본어) */
   korean: string;
   english: string;
+  script?: "ko" | "ja";
 }
+const JAPANESE = /[\u3040-\u30ff\u4e00-\u9fff]/;
+export const isLocalOutputName = (name: string, script: "ko" | "ja" = "ko") =>
+  script === "ja"
+    ? JAPANESE.test(name) &&
+      !/\s/.test(name) &&
+      !/[<>:"/\\|?*\x00-\x1f]/.test(name) &&
+      !name.endsWith(".")
+    : isKoreanOutputName(name);
 
 export const OUTPUT_PREFIX = "OSNS ";
 export const isKoreanOutputName = (name: string) =>
@@ -34,10 +44,10 @@ export function nameOutputFont(
   if (
     korean.length > 60 ||
     english.length > 60 ||
-    !isKoreanOutputName(korean) ||
+    !isLocalOutputName(korean, names.script) ||
     !isEnglishOutputName(english)
   )
-    throw new Error("한글과 영문 폰트 이름을 확인해 주세요.");
+    throw new Error("폰트 이름(현지어·영문)을 확인해 주세요.");
 
   const family = {
     korean: OUTPUT_PREFIX + korean,
@@ -84,7 +94,7 @@ export function nameOutputFont(
   }
   for (const [language, name] of [
     [0x0409, family.english],
-    [0x0412, family.korean],
+    [names.script === "ja" ? 0x0411 : 0x0412, family.korean],
   ] as const) {
     for (const [id, value] of [
       [1, legacyFamily(name)],

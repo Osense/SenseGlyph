@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "../lib/i18n";
 
 export interface CanvasNavigation {
   onPrevious: () => void;
@@ -15,13 +16,14 @@ export default function CanvasStepButtons({
   navigation: CanvasNavigation;
   context: string;
 }) {
+  const t = useT();
   return (
     <>
       <button
         type="button"
         className="canvas-step-button canvas-step-previous"
-        aria-label={`이전 ${context} 글자`}
-        title="이전 글자"
+        aria-label={t("이전 글자")}
+        title={t("이전 글자")}
         data-ink-locked={
           (navigation.inkLocked && !navigation.previousDisabled) || undefined
         }
@@ -29,13 +31,13 @@ export default function CanvasStepButtons({
         onClick={navigation.onPrevious}
       >
         <span aria-hidden="true">‹</span>
-        <small>이전</small>
+        <small>{t("이전")}</small>
       </button>
       <button
         type="button"
         className="canvas-step-button canvas-step-next"
-        aria-label={`다음 ${context} 글자`}
-        title="다음 글자"
+        aria-label={t("다음 글자")}
+        title={t("다음 글자")}
         data-ink-locked={
           (navigation.inkLocked && !navigation.nextDisabled) || undefined
         }
@@ -43,7 +45,7 @@ export default function CanvasStepButtons({
         onClick={navigation.onNext}
       >
         <span aria-hidden="true">›</span>
-        <small>다음</small>
+        <small>{t("다음")}</small>
       </button>
     </>
   );

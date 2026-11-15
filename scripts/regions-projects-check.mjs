@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 const browser = await chromium.launch({ headless: true }),
   context = await browser.newContext({
+    locale: "ko-KR",
     viewport: { width: 1366, height: 900 },
     acceptDownloads: true,
   }),

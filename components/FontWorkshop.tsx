@@ -1,9 +1,11 @@
 "use client";
 
 import FontOutput from "./FontOutput";
+import { useT } from "../lib/i18n";
+import { countExport } from "../lib/analytics";
 import { OUTPUT_PREFIX, type OutputNames } from "../lib/font/output-names";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CHARSET, HANGUL, isPremiumCategory } from "../data/charset";
+import { charsetFor, HANGUL, isExtraEntry, JA_PUNCT } from "../data/charset";
 import { fallbackTargets } from "../lib/font/fallback";
 import { BASE_PATH } from "../lib/base-path";
 import { referenceFont } from "../lib/reference-fonts";
@@ -36,7 +38,7 @@ import {
   type SeparationStatus,
 } from "../lib/font/separation-status";
 import { bodySize } from "../lib/font/layout";
-import type { FontProject } from "../lib/types";
+import type { FontProject, WritingScript } from "../lib/types";
 import type {
   BuildRequest,
   FontPreparation,
@@ -56,12 +58,16 @@ type GeneratedFont = {
 let lastGeneratedFont: GeneratedFont | null = null;
 
 /** 쓰지 않은 글자를 채울 견본: 고른 견본 → 특수기호 보조 글꼴 → Noto Sans KR */
-function fallbackFontUrls(referenceId?: string) {
+function fallbackFontUrls(referenceId?: string, script: WritingScript = "ko") {
   const url = (file: string) =>
     new URL(BASE_PATH + "/fonts/" + file, window.location.href).href;
-  const chosen = referenceFont(referenceId);
+  const chosen = referenceFont(referenceId, script);
   return [
     { name: chosen.name, url: url(chosen.file) },
+    // 일본어 견본에 없는 글자는 Klee One으로
+    ...(script === "ja" && chosen.id !== "ja-klee"
+      ? [{ name: "Klee One", url: url("KleeOne-Regular.woff2") }]
+      : []),
     { name: "특수기호 보조", url: url("SpecialSymbolsFallback.ttf") },
     { name: "Noto Sans KR", url: url("NotoSansKR.ttf") },
   ];
@@ -99,6 +105,7 @@ interface Props {
   onClose: () => void;
   onWrite: (char: string) => void;
   onWritePremium?: () => void;
+  onLegal?: () => void;
 }
 
 export default function FontWorkshop({
@@ -107,10 +114,14 @@ export default function FontWorkshop({
   onClose,
   onWrite,
   onWritePremium,
+  onLegal,
   initialChar,
   stage,
   onStageChange: setStage,
 }: Props) {
+  const t = useT();
+  const script = project.settings.script ?? "ko";
+  const firstChar = charsetFor(script)[0].char;
   const defaults = useMemo(
     () => defaultPreparation(project.name),
     [project.id, project.name],
@@ -295,7 +306,7 @@ export default function FontWorkshop({
     resetResult();
     setBuilding(true);
     setProgress(0);
-    setMessage("폰트 생성을 시작합니다");
+    setMessage(t("폰트 생성을 시작합니다"));
     const request: BuildRequest = {
       project,
       preparation: {
@@ -306,7 +317,7 @@ export default function FontWorkshop({
           englishFamilyName: "OSNS Preview",
         },
       },
-      fallbackFonts: fallbackFontUrls(project.settings.referenceFont),
+      fallbackFonts: fallbackFontUrls(project.settings.referenceFont, script),
     };
     const token = generation.current;
     const handle = buildFontParallel(
@@ -343,7 +354,9 @@ export default function FontWorkshop({
           setBuilding(false);
         } catch {
           if (token === generation.current) {
-            setError("폰트 미리보기를 불러오지 못했어요. 다시 만들어 주세요.");
+            setError(
+              t("폰트 미리보기를 불러오지 못했어요. 다시 만들어 주세요."),
+            );
             setBuilding(false);
           }
         }
@@ -351,7 +364,7 @@ export default function FontWorkshop({
       (failure: Error) => {
         if (token !== generation.current) return;
         worker.current = null;
-        setError(failure.message || "폰트를 만드는 중 문제가 생겼어요.");
+        setError(t(failure.message || "폰트를 만드는 중 문제가 생겼어요."));
         setBuilding(false);
       },
     );
@@ -386,32 +399,54 @@ export default function FontWorkshop({
 
   const fallback = useMemo(() => {
     const covered = new Set(report.available);
-    const missing = fallbackTargets().filter((char) => !covered.has(char));
+    const missing = fallbackTargets(script).filter(
+      (char) => !covered.has(char),
+    );
     const count = (test: (char: string) => boolean) =>
       missing.filter(test).length;
-    const category = new Map(CHARSET.map((e) => [e.char, e.category]));
-    const groups = [
-      ["한글", count((c) => /^[가-힣]$/.test(c))],
-      [
-        "영문·숫자",
-        count((c) =>
-          ["latin-upper", "latin-lower", "digit"].includes(category.get(c)!),
-        ),
-      ],
-      ["기호", count((c) => category.get(c) === "ascii-symbol")],
-      [
-        "특수문자",
-        count((c) => !!category.get(c) && isPremiumCategory(category.get(c)!)),
-      ],
-    ] as const;
+    const entries = charsetFor(script);
+    const category = new Map(entries.map((e) => [e.char, e.category]));
+    const extra = new Set(
+      entries.filter((e) => isExtraEntry(script, e)).map((e) => e.char),
+    );
+    const latin = (c: string) =>
+      ["latin-upper", "latin-lower", "digit"].includes(category.get(c)!);
+    const groups =
+      script === "ja"
+        ? ([
+            [
+              "가나",
+              count((c) => ["hiragana", "katakana"].includes(category.get(c)!)),
+            ],
+            ["한자", count((c) => /^[\u4e00-\u9fff]$/.test(c))],
+            ["영문·숫자", count(latin)],
+            [
+              "기호",
+              count(
+                (c) =>
+                  category.get(c) === "ascii-symbol" ||
+                  JA_PUNCT.includes(c) ||
+                  /^[\uff01-\uff5e]$/.test(c),
+              ),
+            ],
+            ["특수문자", count((c) => category.get(c) === "special-symbol")],
+          ] as const)
+        : ([
+            ["한글", count((c) => /^[가-힣]$/.test(c))],
+            ["영문·숫자", count(latin)],
+            ["기호", count((c) => category.get(c) === "ascii-symbol")],
+            ["특수문자", count((c) => extra.has(c))],
+          ] as const);
     return {
       total: missing.length,
       groups: groups
         .filter(([, n]) => n > 0)
-        .map(([label, n]) => `${label} ${n.toLocaleString()}자`),
-      fontName: referenceFont(project.settings.referenceFont).name,
+        .map(([label, n]) =>
+          t("{label} {n}자", { label: t(label), n: n.toLocaleString() }),
+        ),
+      fontName: referenceFont(project.settings.referenceFont, script).name,
     };
-  }, [report, project.settings.referenceFont]);
+  }, [report, project.settings.referenceFont, script]);
   const [shareFile, setShareFile] = useState<File | null>(null);
   const weightsJob = useRef<BuildHandle | null>(null);
   useEffect(() => () => weightsJob.current?.cancel(), []);
@@ -428,22 +463,30 @@ export default function FontWorkshop({
     const ext = zipped ? "zip" : format;
     const type = zipped ? "application/zip" : "font/" + format;
     const save = (buffer: ArrayBuffer) => {
+      countExport();
       // 안드로이드 앱: 기기 저장소에 저장하거나 안드로이드 공유 창을 바로 연다.
       if (isNativeApp()) {
         const name = filename + "." + ext;
         const job =
           mode === "share"
             ? shareFromDevice(name, buffer).then(() => "")
-            : saveToDevice(name, buffer).then(
-                (place) => `'${place}' 폴더에 ${name} 파일을 저장했어요.`,
+            : saveToDevice(name, buffer).then((place) =>
+                t("'{place}' 폴더에 {name} 파일을 저장했어요.", {
+                  place,
+                  name,
+                }),
               );
         job.then(
           (notice) => setExportNotice(notice),
           () =>
             setExportError(
               mode === "share"
-                ? "공유 창을 열지 못했어요. 내려받은 뒤 메신저에서 파일을 첨부해 주세요."
-                : "기기에 저장하지 못했어요. 저장 공간과 권한을 확인해 주세요.",
+                ? t(
+                    "공유 창을 열지 못했어요. 내려받은 뒤 메신저에서 파일을 첨부해 주세요.",
+                  )
+                : t(
+                    "기기에 저장하지 못했어요. 저장 공간과 권한을 확인해 주세요.",
+                  ),
             ),
         );
         return;
@@ -489,7 +532,7 @@ export default function FontWorkshop({
         };
         converter.onerror = () => {
           if (exportWorker.current === converter)
-            fail("파일 변환에 실패했어요. 다시 시도해 주세요.");
+            fail(t("파일 변환에 실패했어요. 다시 시도해 주세요."));
         };
         const request: ConversionRequest = {
           ttf: result.ttf,
@@ -501,7 +544,7 @@ export default function FontWorkshop({
         };
         converter.postMessage(request);
       } catch {
-        fail("파일 변환을 시작하지 못했어요. 다시 시도해 주세요.");
+        fail(t("파일 변환을 시작하지 못했어요. 다시 시도해 주세요."));
       }
     };
     if (format !== "weights") {
@@ -528,7 +571,10 @@ export default function FontWorkshop({
           },
           (value) =>
             setExportNotice(
-              `${label} 폰트를 만들고 있어요… ${Math.round(from + value / 2)}%`,
+              t("{label} 폰트를 만들고 있어요… {p}%", {
+                label: t(label),
+                p: Math.round(from + value / 2),
+              }),
             ),
         );
         weightsJob.current = handle;
@@ -547,7 +593,7 @@ export default function FontWorkshop({
       } catch {
         weightsJob.current = null;
         setExportNotice("");
-        fail("굵기 3종 폰트를 만들지 못했어요. 다시 시도해 주세요.");
+        fail(t("굵기 3종 폰트를 만들지 못했어요. 다시 시도해 주세요."));
       }
     })();
   };
@@ -557,7 +603,7 @@ export default function FontWorkshop({
   const customDetail = !!view.correctionDetail;
 
   const missingSlots =
-    report.missingSlots.length > 0 ? (
+    script === "ko" && report.missingSlots.length > 0 ? (
       <details className="fw-missing">
         <summary>
           자모 자리 {report.missingSlots.length}개가 비어 있어 한글{" "}
@@ -587,7 +633,7 @@ export default function FontWorkshop({
       </details>
     ) : null;
 
-  if (stage === "separation")
+  if (stage === "separation" && script === "ko")
     return (
       <div className="guided-workshop journey-panel sg-sep-page">
         <section
@@ -596,14 +642,18 @@ export default function FontWorkshop({
           aria-labelledby="fw-title"
         >
           <h1 id="fw-title" className="sg-visually-hidden" tabIndex={-1}>
-            자모 나누기
+            {t("자모 나누기")}
           </h1>
           <div className="fw-sep-top">
             <button type="button" className="fw-secondary" onClick={onClose}>
-              ← 글자 쓰기
+              {t("← 글자 쓰기")}
             </button>
             {writtenHangul.length > 0 && (
-              <div className="fw-segment" role="group" aria-label="보여줄 글자">
+              <div
+                className="fw-segment"
+                role="group"
+                aria-label={t("보여줄 글자")}
+              >
                 <button
                   type="button"
                   aria-pressed={listMode === "all"}
@@ -633,7 +683,7 @@ export default function FontWorkshop({
                 setStage("build");
               }}
             >
-              폰트 다듬기 →
+              {t("폰트 다듬기 →")}
             </button>
           </div>
           {writtenHangul.length > 0 && (
@@ -663,13 +713,13 @@ export default function FontWorkshop({
             />
           ) : (
             <div className="fw-empty">
-              아직 쓴 한글이 없어요.
+              {t("아직 쓴 한글이 없어요.")}
               <button
                 type="button"
                 className="fw-primary"
                 onClick={() => onWrite(HANGUL[0])}
               >
-                한글 쓰러 가기 →
+                {t("한글 쓰러 가기 →")}
               </button>
             </div>
           )}
@@ -693,11 +743,11 @@ export default function FontWorkshop({
   ) => (
     <label className="fw-slider">
       <span>
-        {label} <b>{shown}</b>
+        {t(label)} <b>{shown}</b>
       </span>
       <input
         type="range"
-        aria-label={label}
+        aria-label={t(label)}
         min={min}
         max={max}
         step={step}
@@ -707,7 +757,7 @@ export default function FontWorkshop({
         onKeyUp={flushDraft}
         onBlur={flushDraft}
       />
-      {note && <small>{note}</small>}
+      {note && <small>{t(note)}</small>}
     </label>
   );
 
@@ -720,18 +770,22 @@ export default function FontWorkshop({
       >
         <header className="fw-head">
           <div>
-            <span className="step-kicker">05 / 폰트 완성</span>
+            <span className="step-kicker">
+              {script === "ja" ? "04" : "05"} / {t("폰트 완성")}
+            </span>
             <h1 id="fw-title" tabIndex={-1}>
-              {finishStep === "refine" ? "폰트를 다듬어요" : "폰트를 내보내요"}
+              {finishStep === "refine"
+                ? t("폰트를 다듬어요")
+                : t("폰트를 내보내요")}
             </h1>
           </div>
-          <nav className="fw-tabs" aria-label="폰트 완성 순서">
+          <nav className="fw-tabs" aria-label={t("폰트 완성 순서")}>
             <button
               type="button"
               aria-current={finishStep === "refine" ? "step" : undefined}
               onClick={() => setFinishStep("refine")}
             >
-              <span>1</span> 다듬기
+              <span>1</span> {t("다듬기")}
             </button>
             <button
               type="button"
@@ -739,20 +793,20 @@ export default function FontWorkshop({
               disabled={!report.direct}
               onClick={() => setFinishStep("export")}
             >
-              <span>2</span> 내보내기
+              <span>2</span> {t("내보내기")}
             </button>
           </nav>
         </header>
 
         {!report.direct ? (
           <div className="fw-empty">
-            한 글자 이상 쓰면 폰트를 만들 수 있어요.
+            {t("한 글자 이상 쓰면 폰트를 만들 수 있어요.")}
             <button
               type="button"
               className="fw-primary"
-              onClick={() => onWrite(HANGUL[0])}
+              onClick={() => onWrite(firstChar)}
             >
-              첫 글자 쓰러 가기 →
+              {t("첫 글자 쓰러 가기 →")}
             </button>
           </div>
         ) : finishStep === "refine" ? (
@@ -761,19 +815,20 @@ export default function FontWorkshop({
               <div className="fw-controls">
                 <section className="fw-card" aria-labelledby="fw-correction">
                   <div className="fw-card-head">
-                    <h3 id="fw-correction">손글씨 정돈</h3>
+                    <h3 id="fw-correction">{t("손글씨 정돈")}</h3>
                     {customDetail && (
-                      <span className="fw-badge">고급 설정 사용 중</span>
+                      <span className="fw-badge">{t("고급 설정 사용 중")}</span>
                     )}
                   </div>
                   <p className="fw-help">
-                    0%는 쓴 획 그대로예요. 올릴수록 자모 배치와 기울기를 견본
-                    글꼴 쪽으로 정돈하지만, 내 글씨의 획과 개성은 남겨요.
+                    {t(
+                      "0%는 쓴 획 그대로예요. 올릴수록 자모 배치와 기울기를 견본 글꼴 쪽으로 정돈하지만, 내 글씨의 획과 개성은 남겨요.",
+                    )}
                   </p>
                   <div
                     className="fw-segment"
                     role="group"
-                    aria-label="정돈 단계"
+                    aria-label={t("정돈 단계")}
                   >
                     {PRESETS.map((preset) => (
                       <button
@@ -791,7 +846,7 @@ export default function FontWorkshop({
                           })
                         }
                       >
-                        {preset.label}
+                        {t(preset.label)}
                       </button>
                     ))}
                   </div>
@@ -815,10 +870,14 @@ export default function FontWorkshop({
                     className="fw-advanced"
                     open={customDetail || undefined}
                   >
-                    <summary>고급 설정 · 항목별로 조절</summary>
-                    {CORRECTION_KEYS.map((key) =>
+                    <summary>{t("고급 설정 · 항목별로 조절")}</summary>
+                    {CORRECTION_KEYS.filter(
+                      (key) => script === "ko" || key !== "layout",
+                    ).map((key) =>
                       slider(
-                        DETAIL_LABELS[key].label,
+                        key === "layout" && script === "ja"
+                          ? DETAIL_LABELS[key].label
+                          : DETAIL_LABELS[key].label,
                         detail[key],
                         0,
                         100,
@@ -844,13 +903,13 @@ export default function FontWorkshop({
                           })
                         }
                       >
-                        정돈 강도에 맞춰 되돌리기
+                        {t("정돈 강도에 맞춰 되돌리기")}
                       </button>
                     )}
                   </details>
                 </section>
                 <section className="fw-card" aria-labelledby="fw-size">
-                  <h3 id="fw-size">크기와 간격</h3>
+                  <h3 id="fw-size">{t("크기와 간격")}</h3>
                   {slider(
                     "글자 크기",
                     bodySize(view),
@@ -883,7 +942,7 @@ export default function FontWorkshop({
                   )}
                 </section>
                 <section className="fw-card" aria-labelledby="fw-stroke">
-                  <h3 id="fw-stroke">획</h3>
+                  <h3 id="fw-stroke">{t("획")}</h3>
                   {slider(
                     "획 굵기",
                     view.strokeWeight ?? 100,
@@ -895,11 +954,11 @@ export default function FontWorkshop({
                     5,
                   )}
                   <div className="fw-field-row">
-                    <span>획 끝</span>
+                    <span>{t("획 끝")}</span>
                     <div
                       className="fw-segment"
                       role="group"
-                      aria-label="획 끝 모양"
+                      aria-label={t("획 끝 모양")}
                     >
                       {(
                         [
@@ -916,7 +975,7 @@ export default function FontWorkshop({
                           }
                           onClick={() => settings({ strokeFinish: value })}
                         >
-                          {label}
+                          {t(label)}
                         </button>
                       ))}
                     </div>
@@ -938,7 +997,7 @@ export default function FontWorkshop({
                       })
                     }
                   >
-                    모든 다듬기 설정 처음으로
+                    {t("모든 다듬기 설정 처음으로")}
                   </button>
                 </section>
               </div>
@@ -949,28 +1008,32 @@ export default function FontWorkshop({
               />
             </div>
             {missingSlots}
-            <details className="fw-more">
-              <summary>
-                원본 손글씨 찾기 · 어떤 글자의 자모가 쓰였는지 보기
-              </summary>
-              <HandwritingSearch
-                project={project}
-                preparation={prep}
-                onSeparate={(char) => {
-                  setSelected(char);
-                  setListMode("all");
-                  setStage("separation");
-                }}
-                onWrite={onWrite}
-              />
-            </details>
+            {script === "ko" && (
+              <details className="fw-more">
+                <summary>
+                  {t("원본 손글씨 찾기 · 어떤 글자의 자모가 쓰였는지 보기")}
+                </summary>
+                <HandwritingSearch
+                  project={project}
+                  preparation={prep}
+                  onSeparate={(char) => {
+                    setSelected(char);
+                    setListMode("all");
+                    setStage("separation");
+                  }}
+                  onWrite={onWrite}
+                />
+              </details>
+            )}
             <footer className="fw-actions">
               <button
                 type="button"
                 className="fw-secondary"
-                onClick={() => setStage("separation")}
+                onClick={() =>
+                  script === "ja" ? onClose() : setStage("separation")
+                }
               >
-                ← 자모 나누기
+                {script === "ja" ? t("← 글자 쓰기") : t("← 자모 나누기")}
               </button>
               <button
                 type="button"
@@ -980,7 +1043,7 @@ export default function FontWorkshop({
                   build();
                 }}
               >
-                폰트 만들기 →
+                {t("폰트 만들기 →")}
               </button>
             </footer>
           </>
@@ -1013,6 +1076,7 @@ export default function FontWorkshop({
               onShareDone={() => setShareFile(null)}
               fallback={fallback}
               onWriteMissing={onWritePremium}
+              script={script}
             />
             <footer className="fw-actions">
               <button
@@ -1020,13 +1084,23 @@ export default function FontWorkshop({
                 className="fw-secondary"
                 onClick={() => setFinishStep("refine")}
               >
-                ← 다듬기
+                {t("← 다듬기")}
               </button>
               <span className="fw-note">
-                손글씨와 폰트는 이 기기 안에서만 만들어져요.
+                {t("손글씨와 폰트는 이 기기 안에서만 만들어져요.")}{" "}
+                {onLegal && (
+                  <button
+                    type="button"
+                    className="sg-link-button"
+                    onClick={onLegal}
+                  >
+                    {t("개인정보·이용 안내")}
+                  </button>
+                )}
               </span>
               <span className="sg-credit">
-                <b>{MAKER}</b> 제작 · {APP_NAME} v{APP_VERSION}
+                {t("{maker} 제작", { maker: MAKER })} · {t(APP_NAME)} v
+                {APP_VERSION}
               </span>
             </footer>
           </>

@@ -10,6 +10,7 @@ import {
 import {
   createLayoutPlan,
   createStrokeRenderer,
+  fullwidthSource,
   layoutGlyph,
   strokeContours,
   type Contours,
@@ -46,13 +47,21 @@ export function fontLayout(
   const references = new Map<string, Contours>(
     [...direct].map(([char, strokes]) => [char, strokeContours(strokes)]),
   );
-  const plan = createLayoutPlan(references, settings, sizeEvening);
+  const script = project.settings.script ?? "ko";
+  const plan = createLayoutPlan(references, settings, sizeEvening, script);
   const render = createStrokeRenderer(settings);
-  const strokesFor = (char: string) =>
-    direct.get(char) ??
-    (/^[가-힣]$/.test(char)
+  const strokesFor = (char: string) => {
+    const own = direct.get(char);
+    if (own) return own;
+    if (script === "ja") {
+      // 전각 영숫자·기호는 반각 손글씨로
+      const half = fullwidthSource(char);
+      return half ? (direct.get(half) ?? null) : null;
+    }
+    return /^[가-힣]$/.test(char)
       ? composeGlyph(char, handwriting.library, handwriting.pools)
-      : null);
+      : null;
+  };
   const glyph = (char: string): (LaidOutGlyph & { direct: boolean }) | null => {
     const strokes = strokesFor(char);
     if (!strokes?.length) return null;
@@ -61,7 +70,9 @@ export function fontLayout(
         char,
         render(strokes),
         plan,
-        references.get(char) ?? strokeContours(strokes),
+        references.get(char) ??
+          references.get(fullwidthSource(char) ?? "") ??
+          strokeContours(strokes),
       ),
       direct: direct.has(char),
     };

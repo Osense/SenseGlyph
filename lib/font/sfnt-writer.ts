@@ -1,3 +1,4 @@
+import { LICENSE_SHORT, LICENSE_URL } from "./license-notice";
 // TrueType(glyf)·OpenType(CFF)·WOFF 파일을 직접 쓰는 가벼운 작성기.
 // opentype.js 의 toArrayBuffer 는 1만 1천 자 폰트에서 전체 시간의 85%를 차지해
 // (PC 9초, 태블릿 30초 이상) 필요한 표만 형식 문서대로 바로 씁니다.
@@ -27,6 +28,8 @@ export interface OutlineGlyph {
 export interface FontInfo {
   familyEnglish: string;
   familyKorean: string;
+  /** 현지 이름의 언어(기본 한국어 0x0412, 일본어 0x0411) */
+  localLanguage?: number;
   postScriptName: string;
   uniqueID: string;
   version: string; // "Version 1.500"
@@ -552,9 +555,12 @@ const UNICODE_RANGES: [number, number, number][] = [
   [0x2600, 0x26ff, 46],
   [0x2700, 0x27bf, 47],
   [0x3000, 0x303f, 48],
+  [0x3040, 0x309f, 49],
+  [0x30a0, 0x30ff, 50],
   [0x3130, 0x318f, 52],
   [0x3200, 0x32ff, 54],
   [0x3300, 0x33ff, 55],
+  [0x4e00, 0x9fff, 59],
   [0xac00, 0xd7af, 56],
   [0xff00, 0xffef, 68],
 ];
@@ -574,12 +580,14 @@ function nameTable(info: FontInfo) {
     [4, info.familyEnglish],
     [5, info.version],
     [6, info.postScriptName],
+    [13, LICENSE_SHORT],
+    [14, LICENSE_URL],
     [16, info.familyEnglish],
     [17, "Regular"],
   ];
   for (const [id, s] of en) records.push([0x0409, id, utf16(s)]);
   for (const id of [1, 4, 16])
-    records.push([0x0412, id, utf16(info.familyKorean)]);
+    records.push([info.localLanguage ?? 0x0412, id, utf16(info.familyKorean)]);
   records.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   const w = new Writer(512);
   w.u16(0);
@@ -741,6 +749,7 @@ export function writeFonts(
     return i >= 0 ? boxes[i]?.yMax : undefined;
   };
   const hasHangul = codes.some((c) => c >= 0xac00 && c <= 0xd7a3);
+  const hasKana = codes.some((c) => c >= 0x3041 && c <= 0x30ff);
   const os2 = (() => {
     const w = new Writer(96);
     w.u16(4);
@@ -765,7 +774,8 @@ export function writeFonts(
     w.i16(0);
     w.u16(Math.max(0, bbox.yMax));
     w.u16(Math.max(0, -bbox.yMin));
-    w.u32(hasHangul ? 1 | (1 << 19) : 1);
+    // 코드 페이지: 1252 Latin 1 + 949 한국어(19번) / 932 일본어(17번)
+    w.u32(1 | (hasHangul ? 1 << 19 : 0) | (hasKana ? 1 << 17 : 0));
     w.u32(0);
     w.i16(Math.round(heightOf("x") ?? 400));
     w.i16(Math.round(heightOf("H") ?? info.ascender));

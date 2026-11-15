@@ -9,17 +9,43 @@ export function isSymbolCategory(category: CharCategory) {
   return (
     category === "ascii-symbol" ||
     category === "korean-punct" ||
-    category === "special-symbol"
+    category === "special-symbol" ||
+    category === "ja-punct"
   );
 }
 export function safetyBounds(category: CharCategory = "hangul-syllable") {
   if (isSymbolCategory(category)) return SAFETY_PROFILES.symbol;
-  return category.startsWith("hangul")
+  return category.startsWith("hangul") || isCjkCategory(category)
     ? SAFETY_PROFILES.hangul
     : SAFETY_PROFILES.latin;
 }
+/** 가나·한자: 네모 칸 하나를 다 쓰는 글자(전각) */
+export function isCjkCategory(category: CharCategory) {
+  return (
+    category === "hiragana" || category === "katakana" || category === "kanji"
+  );
+}
+/** 네모 칸 전체를 쓰는 글자(영문 기준선 안내 대신 칸 안내를 쓰는 글자) */
+export function isBoxedCategory(category: CharCategory) {
+  return (
+    category.startsWith("hangul") ||
+    isCjkCategory(category) ||
+    category === "ja-punct"
+  );
+}
+/** 일본어처럼 칸 안의 위치를 그대로 지키는 글자(작은 가나 ぁ, 、。 등) */
+export function isEmBoxed(category: CharCategory) {
+  return isCjkCategory(category) || category === "ja-punct";
+}
 export function categoryForChar(char: string): CharCategory {
   if (/^[가-힣]$/.test(char)) return "hangul-syllable";
+  if (/^[\u3041-\u309f]$/.test(char)) return "hiragana";
+  if (/^[\u30a0-\u30ff]$/.test(char))
+    return char === "・" ? "ja-punct" : "katakana";
+  if (/^[\u4e00-\u9fff\u3400-\u4dbf]$/.test(char)) return "kanji";
+  // 「」…는 한글 문장 기호와 같이 쓰므로 여기서는 제외(일본어 폰트에서는 배치 단계가 따로 판단).
+  if (/^[\u3001-\u3003\u3005\u3008-\u300b\u300e-\u3011\u301c]$/.test(char))
+    return "ja-punct";
   if (/^[ㄱ-ㅣ]$/.test(char)) return "hangul-jamo";
   if (/^[a-z]$/.test(char)) return "latin-lower";
   if (/^[A-Z]$/.test(char)) return "latin-upper";

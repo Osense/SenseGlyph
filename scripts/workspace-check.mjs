@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({
+  locale: "ko-KR",
   viewport: { width: 1366, height: 768 },
   hasTouch: true,
   acceptDownloads: true,

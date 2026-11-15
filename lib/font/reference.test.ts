@@ -1,7 +1,7 @@
 import { it, expect } from "vitest";
 import { HANGUL } from "../../data/charset";
 import { defaultSettings } from "../defaults";
-import { REFERENCE_FONTS } from "../reference-fonts";
+import { referenceFontsFor } from "../reference-fonts";
 import {
   referenceGuide,
   referencePart,
@@ -10,7 +10,7 @@ import {
 import { decompose } from "../hangul";
 import type { Stroke } from "../types";
 it("provides glyph- and font-specific ink-derived guides for all writing samples", () => {
-  for (const font of REFERENCE_FONTS)
+  for (const font of referenceFontsFor("ko"))
     for (const char of HANGUL) {
       const guide = referenceGuide(char, {
         ...defaultSettings(),

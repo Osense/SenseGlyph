@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "../lib/i18n";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { hasCorrection, correctionAmounts } from "../lib/font/beautify";
@@ -13,6 +14,7 @@ import type { FontPreparation } from "../lib/font/types";
 
 /** 쓴 글자와 조합 글자가 섞이도록 고른 기본 문장 */
 export const PREVIEW_SENTENCE = "다람쥐 헌 쳇바퀴에 타고파";
+export const PREVIEW_SENTENCE_JA = "いろはにほへと、ちりぬるを。";
 
 const WIDTH = 760,
   HEIGHT = 150;
@@ -39,7 +41,10 @@ export default function MetricPreview({
   /** 슬라이더를 움직이는 중이라 아직 반영 전인 값이 있을 때 */
   pending?: boolean;
 }) {
-  const [text, setText] = useState(PREVIEW_SENTENCE);
+  const t = useT();
+  const [text, setText] = useState(
+    project.settings.script === "ja" ? PREVIEW_SENTENCE_JA : PREVIEW_SENTENCE,
+  );
   const [ready, setReady] = useState(0);
   const before = useRef<HTMLCanvasElement>(null),
     after = useRef<HTMLCanvasElement>(null);
@@ -218,11 +223,11 @@ export default function MetricPreview({
   }, [text, ready, original, shown, neutral, settings.baseline]);
 
   return (
-    <section className="fw-preview" aria-label="실시간 미리보기">
+    <section className="fw-preview" aria-label={t("실시간 미리보기")}>
       <label className="fw-preview-input">
-        <span>미리 볼 문장</span>
+        <span>{t("미리 볼 문장")}</span>
         <input
-          aria-label="미리 볼 문장"
+          aria-label={t("미리 볼 문장")}
           maxLength={16}
           value={text}
           onChange={(event) => setText(event.target.value)}
@@ -230,14 +235,17 @@ export default function MetricPreview({
       </label>
       <figure>
         <figcaption>
-          쓴 그대로
-          <small> · 고치지 않은 원본 (연한 글자는 자모를 모아 만든 글자)</small>
+          {t("쓴 그대로")}
+          <small>
+            {" · "}
+            {t("고치지 않은 원본 (연한 글자는 자모를 모아 만든 글자)")}
+          </small>
         </figcaption>
         <canvas
           ref={before}
           width={WIDTH}
           height={HEIGHT}
-          aria-label="쓴 그대로의 손글씨 미리보기"
+          aria-label={t("쓴 그대로의 손글씨 미리보기")}
         />
       </figure>
       <figure
@@ -249,12 +257,12 @@ export default function MetricPreview({
       >
         <figcaption>
           {hasCorrection(amounts)
-            ? "정돈 후 · 폰트에 들어갈 모습"
-            : "폰트에 들어갈 모습"}
+            ? t("정돈 후 · 폰트에 들어갈 모습")
+            : t("폰트에 들어갈 모습")}
           {busy && (
             <span className="fw-preview-busy" role="status">
               <i aria-hidden="true" />
-              {correcting ? "정돈 결과 계산 중…" : "반영 중…"}
+              {correcting ? t("정돈 결과 계산 중…") : t("반영 중…")}
             </span>
           )}
         </figcaption>
@@ -262,7 +270,7 @@ export default function MetricPreview({
           ref={after}
           width={WIDTH}
           height={HEIGHT}
-          aria-label="폰트에 들어갈 손글씨 미리보기"
+          aria-label={t("폰트에 들어갈 손글씨 미리보기")}
           data-hangul-scale={shown.plan.hangulScale}
           data-body-size={shown.plan.bodySize}
         />
@@ -270,7 +278,7 @@ export default function MetricPreview({
       {missing.length > 0 && (
         <p className="fw-note">
           연한 글자({[...new Set(missing)].join(" ")})는 아직 만들 수 없어요.
-          자모 자리가 비어 있거나 쓰지 않은 글자예요.
+          {t("자모 자리가 비어 있거나 쓰지 않은 글자예요.")}
         </p>
       )}
     </section>

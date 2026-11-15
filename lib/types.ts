@@ -29,7 +29,13 @@ export type CharCategory =
   | "latin-lower"
   | "hangul-jamo"
   | "korean-punct"
-  | "special-symbol";
+  | "special-symbol"
+  | "hiragana"
+  | "katakana"
+  | "kanji"
+  | "ja-punct";
+/** 만들 글자(폰트 언어). 없으면 한글. */
+export type WritingScript = "ko" | "ja";
 export interface GlyphSample {
   needsReview?: boolean;
   rewritePending?: boolean;
@@ -41,6 +47,8 @@ export interface GlyphSample {
 }
 export type WritingPreset = "xs" | "s" | "m" | "fill";
 export interface ProjectSettings {
+  /** 만들 글자: 한글(기본) · 일본어. 프로젝트마다 하나. */
+  script?: WritingScript;
   /** 고급: 쓰기 칸 크기를 px로 직접 지정. 있으면 writingPreset보다 우선합니다. */
   writingSize?: number;
   /** 쓰기 칸 크기 단계: 더 작게 · 작게 · 보통 · 채우기(기본) */

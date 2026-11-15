@@ -115,8 +115,13 @@ function validate({
 
 function entriesFor(pipeline: ReturnType<typeof fontPipeline>) {
   const chars = new Set(pipeline.direct.keys());
-  for (let code = 0xac00; code <= 0xd7a3; code++)
-    chars.add(String.fromCharCode(code));
+  if (pipeline.plan.script === "ja")
+    // 일본어: 전각 영숫자·기호(！？Ａ１…)를 반각 손글씨로 채운다.
+    for (let code = 0xff01; code <= 0xff5e; code++)
+      chars.add(String.fromCharCode(code));
+  else
+    for (let code = 0xac00; code <= 0xd7a3; code++)
+      chars.add(String.fromCharCode(code));
   return [...chars].sort((a, b) => a.codePointAt(0)! - b.codePointAt(0)!);
 }
 
@@ -273,7 +278,7 @@ export function assembleFont(
     progress(88, "쓰지 않은 글자를 견본 글꼴로 채우고 있어요");
     const have = new Set(characters);
     const loaded = new Map<FallbackSource, opentype.Font | null>();
-    for (const char of fallbackTargets()) {
+    for (const char of fallbackTargets(layout.script)) {
       if (have.has(char)) continue;
       const glyph = fallbackGlyph(
         char,
@@ -302,6 +307,7 @@ export function assembleFont(
     {
       familyEnglish: englishName,
       familyKorean: options.familyName.trim(),
+      localLanguage: layout.script === "ja" ? 0x0411 : 0x0412,
       postScriptName,
       uniqueID: internalName + "-1.500-" + project.updatedAt,
       version: "Version 1.500",

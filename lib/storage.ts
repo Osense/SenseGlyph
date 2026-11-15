@@ -1,6 +1,6 @@
 import { openDB } from "idb";
 import type { BrushParams, FontProject } from "./types";
-import { CHARSET, RETIRED_SPECIAL_SYMBOLS } from "../data/charset";
+import { CHARSET, JA_CHARSET, RETIRED_SPECIAL_SYMBOLS } from "../data/charset";
 import { validPreparation } from "./font/validate";
 import { REFERENCE_FONTS } from "./reference-fonts";
 import { newProject, defaultSettings } from "./defaults";
@@ -35,7 +35,11 @@ export async function listProjects() {
       count: Object.values(p.samples).filter((s) => s.strokes.length).length,
     }));
 }
-export async function startProject(current: FontProject, name: string) {
+export async function startProject(
+  current: FontProject,
+  name: string,
+  settings: Partial<FontProject["settings"]> = {},
+) {
   const db = await database();
   const tx = db.transaction(["projects", "meta"], "readwrite");
   const projects = (await tx.objectStore("projects").getAll()) as FontProject[];
@@ -44,7 +48,12 @@ export async function startProject(current: FontProject, name: string) {
     number = 2;
   while (current.name === unique || projects.some((p) => p.name === unique))
     unique = base + " (" + number++ + ")";
-  const next = { ...newProject(), name: unique };
+  const fresh = newProject();
+  const next = {
+    ...fresh,
+    name: unique,
+    settings: { ...fresh.settings, ...settings },
+  };
   await tx.objectStore("projects").put(current);
   await tx.objectStore("projects").put(next);
   await tx.objectStore("meta").put(next.id, "active");
@@ -119,6 +128,8 @@ export function parseProject(text: string): FontProject {
     !["xs", "s", "m", "fill"].includes(String(s.writingPreset))
   )
     throw new Error("쓰기 칸 크기 설정 오류");
+  if (s.script !== undefined && !["ko", "ja"].includes(String(s.script)))
+    throw new Error("만들 글자 설정 오류");
   if (
     s.referenceFont !== undefined &&
     !REFERENCE_FONTS.some((font) => font.id === s.referenceFont)
@@ -165,14 +176,16 @@ export function parseProject(text: string): FontProject {
       typeof g.rewritePending !== "boolean"
     )
       throw new Error("다시 작성 표시 데이터 오류");
-    const category = RETIRED_SPECIAL_SYMBOLS.has(char)
-      ? "special-symbol"
-      : CHARSET.find((c) => c.char === char)?.category;
+    const known = RETIRED_SPECIAL_SYMBOLS.has(char)
+      ? ["special-symbol"]
+      : [...CHARSET, ...JA_CHARSET]
+          .filter((c) => c.char === char)
+          .map((c) => c.category as string);
     if (
-      !category ||
+      !known.length ||
       !record(g) ||
       g.char !== char ||
-      g.category !== category ||
+      !known.includes(String(g.category)) ||
       !finite(g.updatedAt) ||
       !["empty", "done", "skipped"].includes(String(g.status)) ||
       !Array.isArray(g.strokes)

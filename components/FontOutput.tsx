@@ -1,10 +1,11 @@
 "use client";
 
 import { isNativeApp } from "../lib/native";
+import { useT } from "../lib/i18n";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { ExportFormat } from "../lib/font/export-formats";
 import {
-  isKoreanOutputName,
+  isLocalOutputName,
   isEnglishOutputName,
   OUTPUT_PREFIX,
   type OutputNames,
@@ -45,6 +46,9 @@ export function FontDialog({
 const SPECIMEN = `"세상에 당신만의 모양으로 이야기를 건넬 수 있게 되었어요!"
 'Hello, world!' (2026) ~ #1 & 100%? @_@ [OK]
 여기에 직접 써 보세요.`;
+const SPECIMEN_JA = `「あなただけの形で、物語を届けられるようになりました。」
+'Hello, world!' (2026) ~ #1 & 100%? @_@ [OK]
+ここに書いてみてください。`;
 const FORMATS: { id: ExportFormat; label: string; note: string }[] = [
   { id: "zip", label: "전체 묶음 ZIP", note: "모든 형식" },
   { id: "ttf", label: "TTF", note: "설치용 · 문서" },
@@ -82,7 +86,9 @@ function blockers(
   korean: string,
   english: string,
   exporting: boolean,
+  script: "ko" | "ja" = "ko",
 ) {
+  const local = script === "ja" ? "일본어" : "한글";
   const list: { text: string; field?: "korean" | "english" }[] = [];
   if (status === "building")
     list.push({ text: "폰트를 만드는 중이에요. 잠시만 기다려 주세요!" });
@@ -91,21 +97,31 @@ function blockers(
       text: "설정이 바뀌었어요. 위의 ‘바뀐 설정으로 다시 만들기’를 먼저 눌러 주세요!",
     });
   if (!korean)
-    list.push({ text: "한글 폰트 이름을 넣어주세요!", field: "korean" });
+    list.push({ text: `${local} 폰트 이름을 넣어주세요!`, field: "korean" });
   else {
     if (/\s/.test(korean))
       list.push({
-        text: "한글 폰트 이름에 띄어쓰기는 하지 마세요! (예: 나의손글씨)",
+        text:
+          script === "ja"
+            ? "일본어 폰트 이름에 띄어쓰기는 하지 마세요! (예: わたしの字)"
+            : "한글 폰트 이름에 띄어쓰기는 하지 마세요! (예: 나의손글씨)",
         field: "korean",
       });
-    if (!/[가-힣]/.test(korean))
+    if (
+      script === "ja"
+        ? !/[\u3040-\u30ff\u4e00-\u9fff]/.test(korean)
+        : !/[가-힣]/.test(korean)
+    )
       list.push({
-        text: "한글 폰트 이름에는 한글이 한 글자 이상 들어가야 해요!",
+        text:
+          script === "ja"
+            ? "일본어 폰트 이름에는 가나나 한자가 한 글자 이상 들어가야 해요!"
+            : "한글 폰트 이름에는 한글이 한 글자 이상 들어가야 해요!",
         field: "korean",
       });
     if (/[<>:"/\\|?*\x00-\x1f]/.test(korean) || korean.endsWith("."))
       list.push({
-        text: '한글 폰트 이름에 < > : " / \\ | ? * 기호나 끝의 마침표는 쓸 수 없어요!',
+        text: `${local} 폰트 이름에 < > : " / \\ | ? * 기호나 끝의 마침표는 쓸 수 없어요!`,
         field: "korean",
       });
   }
@@ -148,7 +164,9 @@ export default function FontOutput({
   onShareDone,
   fallback,
   onWriteMissing,
+  script = "ko",
 }: {
+  script?: "ko" | "ja";
   family?: string;
   characters: string[];
   status: "empty" | "building" | "stale" | "ready";
@@ -172,15 +190,20 @@ export default function FontOutput({
   fallback: { total: number; groups: string[]; fontName: string };
   onWriteMissing?: () => void;
 }) {
+  const t = useT();
   const [korean, setKorean] = useState("");
   const [english, setEnglish] = useState("");
   const [format, setFormat] = useState<ExportFormat>("ttf");
-  const [specimen, setSpecimen] = useState(SPECIMEN);
+  const [specimen, setSpecimen] = useState(
+    script === "ja" ? SPECIMEN_JA : SPECIMEN,
+  );
   const names = {
     korean: korean.trim().normalize("NFC"),
     english: english.trim(),
+    script,
   };
-  const koreanValid = isKoreanOutputName(names.korean);
+  const localName = script === "ja" ? "일본어" : "한글";
+  const koreanValid = isLocalOutputName(names.korean, script);
   const englishValid = isEnglishOutputName(names.english);
   const available = new Set(characters);
   const canDownload =
@@ -189,7 +212,13 @@ export default function FontOutput({
     koreanValid &&
     englishValid &&
     exporting === null;
-  const reasons = blockers(status, korean.trim(), english.trim(), !!exporting);
+  const reasons = blockers(
+    status,
+    korean.trim(),
+    english.trim(),
+    !!exporting,
+    script,
+  );
   const [blocked, setBlocked] = useState(false);
   const [mode, setMode] = useState<"download" | "share">("download");
   const [shareUnsupported, setShareUnsupported] = useState(false);
@@ -213,27 +242,31 @@ export default function FontOutput({
       await navigator.share({
         files: [shareFile],
         title: shareFile.name,
-        text: "내 손글씨로 만든 폰트예요.",
+        text: t("내 손글씨로 만든 폰트예요."),
       });
       onShareDone?.();
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       setShareError(
-        "공유 창을 열지 못했어요. 다운로드한 뒤 메신저에서 파일을 첨부해 주세요.",
+        t(
+          "공유 창을 열지 못했어요. 다운로드한 뒤 메신저에서 파일을 첨부해 주세요.",
+        ),
       );
     }
   };
 
   return (
-    <section className="fw-export" aria-label="폰트 내보내기">
+    <section className="fw-export" aria-label={t("폰트 내보내기")}>
       <div className="fw-specimen-card">
         <div className="fw-card-head">
-          <h3>내 손글씨 폰트로 써 보기</h3>
+          <h3>{t("내 손글씨 폰트로 써 보기")}</h3>
           {status === "ready" && (
-            <span className="fw-badge is-ok">최신 설정으로 만든 폰트</span>
+            <span className="fw-badge is-ok">
+              {t("최신 설정으로 만든 폰트")}
+            </span>
           )}
           {status === "stale" && (
-            <span className="fw-badge is-warn">설정이 바뀌었어요</span>
+            <span className="fw-badge is-warn">{t("설정이 바뀌었어요")}</span>
           )}
         </div>
         {status === "building" ? (
@@ -242,9 +275,9 @@ export default function FontOutput({
             <progress
               max={100}
               value={progress}
-              aria-label="폰트 생성 진행률"
+              aria-label={t("폰트 생성 진행률")}
             />
-            <span>{message || "폰트를 만들고 있어요"}</span>
+            <span>{t(message || "폰트를 만들고 있어요")}</span>
           </div>
         ) : family ? (
           <>
@@ -252,15 +285,15 @@ export default function FontOutput({
               className={
                 "fw-specimen" + (status === "stale" ? " is-stale" : "")
               }
-              aria-label="완성된 폰트 시험 문장"
+              aria-label={t("완성된 폰트 시험 문장")}
               style={{ fontFamily: `"${family}"` }}
               value={specimen}
               rows={4}
-              placeholder="여기에 직접 써 보세요."
+              placeholder={t("여기에 직접 써 보세요.")}
               onChange={(event) => setSpecimen(event.target.value)}
             />
             <p className="fw-specimen-hint">
-              위 문장을 지우고 하고 싶은 말을 직접 써 보세요.
+              {t("위 문장을 지우고 하고 싶은 말을 직접 써 보세요.")}
             </p>
             {(() => {
               const missing = [...new Set(specimen)].filter(
@@ -268,17 +301,19 @@ export default function FontOutput({
               );
               return missing.length ? (
                 <p className="fw-note">
-                  폰트에 없는 글자: {missing.slice(0, 24).join(" ")}
+                  {t("폰트에 없는 글자:")} {missing.slice(0, 24).join(" ")}
                 </p>
               ) : null;
             })()}
           </>
         ) : (
-          <p className="fw-note">아직 만든 폰트가 없어요.</p>
+          <p className="fw-note">{t("아직 만든 폰트가 없어요.")}</p>
         )}
         {status !== "building" && status !== "ready" && (
           <button type="button" className="fw-primary" onClick={onBuild}>
-            {status === "stale" ? "바뀐 설정으로 다시 만들기" : "폰트 만들기"}
+            {status === "stale"
+              ? t("바뀐 설정으로 다시 만들기")
+              : t("폰트 만들기")}
           </button>
         )}
         {error && (
@@ -297,30 +332,36 @@ export default function FontOutput({
       >
         <div className="fw-names">
           <label className="fw-field">
-            <span>한글 폰트 이름</span>
+            <span>{t(localName + " 폰트 이름")}</span>
             <span className="fw-prefixed">
               <b>{OUTPUT_PREFIX.trim()}</b>
               <input
-                aria-label="한글 폰트 이름"
+                aria-label={t(localName + " 폰트 이름")}
                 maxLength={60}
                 value={korean}
-                placeholder="여기에 이름을 넣어주세요!"
+                placeholder={
+                  script === "ja"
+                    ? "ここに名前を入れてください"
+                    : t("여기에 이름을 넣어주세요!")
+                }
                 aria-invalid={(!!korean && !koreanValid) || undefined}
                 onChange={(event) => setKorean(event.target.value)}
               />
             </span>
             {!!korean && !koreanValid && (
               <small className="fw-error">
-                띄어쓰기 없이, 한글을 한 글자 이상 넣어 주세요.
+                {script === "ja"
+                  ? t("띄어쓰기 없이, 가나나 한자를 한 글자 이상 넣어 주세요.")
+                  : t("띄어쓰기 없이, 한글을 한 글자 이상 넣어 주세요.")}
               </small>
             )}
           </label>
           <label className="fw-field">
-            <span>영문 폰트 이름</span>
+            <span>{t("영문 폰트 이름")}</span>
             <span className="fw-prefixed">
               <b>{OUTPUT_PREFIX.trim()}</b>
               <input
-                aria-label="영문 폰트 이름"
+                aria-label={t("영문 폰트 이름")}
                 maxLength={60}
                 value={english}
                 placeholder="Type a name here!"
@@ -330,47 +371,53 @@ export default function FontOutput({
             </span>
             {!!english && !englishValid && (
               <small className="fw-error">
-                띄어쓰기 없이 영어·숫자로만 입력해 주세요.
+                {t("띄어쓰기 없이 영어·숫자로만 입력해 주세요.")}
               </small>
             )}
           </label>
         </div>
 
         <fieldset className="fw-formats">
-          <legend>파일 형식</legend>
+          <legend>{t("파일 형식")}</legend>
           <details className="fw-format-help">
-            <summary>어떤 형식을 받아야 할까요?</summary>
+            <summary>{t("어떤 형식을 받아야 할까요?")}</summary>
             <ul>
-              <li>
-                <b>한글·워드·파워포인트 같은 문서에 쓸 때 → TTF</b> 컴퓨터에
-                설치하는 글꼴 중 가장 널리 호환돼요.
-              </li>
-              <li>
-                <b>포토샵·일러스트·인디자인 등 디자인에 쓸 때 → OTF</b> 이 앱이
-                처음 만드는 원본 형식이에요. Mac·Windows 모두 설치돼요.
-              </li>
-              <li>
-                <b>아이패드(굿노트·키노트 등)</b> 글꼴 설치 앱이나 설정
-                프로파일로 TTF 또는 OTF를 설치해요.
-              </li>
-              <li>
-                <b>웹사이트에 쓸 때 → WOFF2</b> 컴퓨터에 설치하는 파일이
-                아니에요. 웹페이지에 연결해서 쓰는 가벼운 형식이에요.
-              </li>
-              <li>
-                <b>안드로이드 휴대폰·태블릿</b> 폰트를 직접 설치할 수 없어요.
-              </li>
+              {(
+                [
+                  [
+                    "한글·워드·파워포인트 같은 문서에 쓸 때 → TTF",
+                    "컴퓨터에 설치하는 글꼴 중 가장 널리 호환돼요.",
+                  ],
+                  [
+                    "포토샵·일러스트·인디자인 등 디자인에 쓸 때 → OTF",
+                    "이 앱이 처음 만드는 원본 형식이에요. Mac·Windows 모두 설치돼요.",
+                  ],
+                  [
+                    "아이패드(굿노트·키노트 등)",
+                    "글꼴 설치 앱이나 설정 프로파일로 TTF 또는 OTF를 설치해요.",
+                  ],
+                  [
+                    "웹사이트에 쓸 때 → WOFF2",
+                    "컴퓨터에 설치하는 파일이 아니에요. 웹페이지에 연결해서 쓰는 가벼운 형식이에요.",
+                  ],
+                  ["안드로이드 휴대폰·태블릿", "폰트를 직접 설치할 수 없어요."],
+                ] as const
+              ).map(([head, body]) => (
+                <li key={head}>
+                  <b>{t(head)}</b> {t(body)}
+                </li>
+              ))}
             </ul>
             <p>
-              <b>굵기 3종 ZIP</b>은 같은 손글씨로 가는·보통·굵은 폰트를 함께
-              만들어요. 세 개를 모두 설치하면 문서 프로그램의 '굵게(B)' 버튼이
-              내 손글씨의 굵은 모양으로 바뀌어요. 만드는 데 시간이 조금 더
-              걸려요.
+              <b>{t("굵기 3종 ZIP")}</b>{" "}
+              {t(
+                "같은 손글씨로 가는·보통·굵은 폰트를 함께 만들어요. 세 개를 모두 설치하면 문서 프로그램의 '굵게(B)' 버튼이 내 손글씨의 굵은 모양으로 바뀌어요. 만드는 데 시간이 조금 더 걸려요.",
+              )}
             </p>
             <p>
-              TTF와 OTF는 글자 모양이 같고 곡선을 저장하는 방식만 달라요. 어느
-              쪽이 더 무겁거나 고급인 것은 아니니, <b>둘 중 하나만</b>{" "}
-              설치하세요. 둘 다 설치하면 같은 이름의 글꼴이 겹칠 수 있어요.
+              {t(
+                "TTF와 OTF는 글자 모양이 같고 곡선을 저장하는 방식만 달라요. 어느 쪽이 더 무겁거나 고급인 것은 아니니, 둘 중 하나만 설치하세요. 둘 다 설치하면 같은 이름의 글꼴이 겹칠 수 있어요.",
+              )}
             </p>
           </details>
           <div className="fw-format-grid">
@@ -386,17 +433,17 @@ export default function FontOutput({
                   onChange={() => setFormat(item.id)}
                 />
                 <strong>{item.label}</strong>
-                <small>{item.note}</small>
+                <small>{t(item.note)}</small>
                 {item.id === "ttf" && (
-                  <em className="fw-recommend" aria-label="추천">
-                    추천!
+                  <em className="fw-recommend" aria-label={t("추천")}>
+                    {t("추천!")}
                   </em>
                 )}
               </label>
             ))}
           </div>
           <div className="fw-format-all">
-            <span>잘 모르겠다면 다 받기 →</span>
+            <span>{t("잘 모르겠다면 다 받기 →")}</span>
             <label className={format === "zip" ? "is-selected" : ""}>
               <input
                 type="radio"
@@ -404,12 +451,12 @@ export default function FontOutput({
                 checked={format === "zip"}
                 onChange={() => setFormat("zip")}
               />
-              <strong>전체 묶음 ZIP</strong>
-              <small>TTF·OTF·WOFF2·WOFF 모두</small>
+              <strong>{t("전체 묶음 ZIP")}</strong>
+              <small>{t("TTF·OTF·WOFF2·WOFF 모두")}</small>
             </label>
           </div>
           <div className="fw-format-all">
-            <span>문서에서 굵게·가늘게도 쓰려면 →</span>
+            <span>{t("문서에서 굵게·가늘게도 쓰려면 →")}</span>
             <label className={format === "weights" ? "is-selected" : ""}>
               <input
                 type="radio"
@@ -417,22 +464,29 @@ export default function FontOutput({
                 checked={format === "weights"}
                 onChange={() => setFormat("weights")}
               />
-              <strong>굵기 3종 ZIP</strong>
-              <small>가는(Light)·보통(Regular)·굵은(Bold) TTF·OTF</small>
+              <strong>{t("굵기 3종 ZIP")}</strong>
+              <small>{t("가는(Light)·보통(Regular)·굵은(Bold) TTF·OTF")}</small>
             </label>
           </div>
           <p className="fw-android">
-            ※ 안드로이드 휴대폰·태블릿에서는 폰트를 직접 설치할 수 없어요.
+            {t(
+              "※ 안드로이드 휴대폰·태블릿에서는 폰트를 직접 설치할 수 없어요.",
+            )}
           </p>
         </fieldset>
 
         {fallback.total > 0 && (
           <div className="fw-fallback" role="note">
-            <strong>⚠ 쓰지 않은 글자는 견본 글꼴로 대체됩니다</strong>
+            <strong>⚠ {t("쓰지 않은 글자는 견본 글꼴로 대체됩니다")}</strong>
             <p>
-              손글씨로 쓰지 않은 {fallback.total.toLocaleString()}자(
-              {fallback.groups.join(" · ")})는 ‘{fallback.fontName}’ 모양으로
-              들어가요. 쓴 글자는 모두 내 손글씨로 나와요.
+              {t(
+                "손글씨로 쓰지 않은 {n}자({groups})는 ‘{font}’ 모양으로 들어가요. 쓴 글자는 모두 내 손글씨로 나와요.",
+                {
+                  n: fallback.total.toLocaleString(),
+                  groups: fallback.groups.join(" · "),
+                  font: t(fallback.fontName),
+                },
+              )}
             </p>
             {onWriteMissing && (
               <button
@@ -440,7 +494,7 @@ export default function FontOutput({
                 className="fw-link"
                 onClick={onWriteMissing}
               >
-                쓰지 않은 글자 쓰러 가기 →
+                {t("쓰지 않은 글자 쓰러 가기 →")}
               </button>
             )}
           </div>
@@ -452,12 +506,16 @@ export default function FontOutput({
             data-blocked={!canDownload || undefined}
           >
             {exporting && mode === "download"
-              ? "파일 준비 중…"
+              ? t("파일 준비 중…")
               : names.korean
                 ? format === "weights"
-                  ? `${OUTPUT_PREFIX}${names.korean} 굵기3종.zip 다운로드 ↓`
-                  : `${OUTPUT_PREFIX}${names.korean}.${format} 다운로드 ↓`
-                : "다운로드 ↓"}
+                  ? t("{file} 다운로드 ↓", {
+                      file: `${OUTPUT_PREFIX}${names.korean} ${t("굵기3종")}.zip`,
+                    })
+                  : t("{file} 다운로드 ↓", {
+                      file: `${OUTPUT_PREFIX}${names.korean}.${format}`,
+                    })
+                : t("다운로드 ↓")}
           </button>
           <button
             type="button"
@@ -465,15 +523,17 @@ export default function FontOutput({
             data-blocked={!canDownload || undefined}
             onClick={() => start("share")}
           >
-            {exporting && mode === "share" ? "준비 중…" : "공유하기 ↗"}
+            {exporting && mode === "share" ? t("준비 중…") : t("공유하기 ↗")}
           </button>
         </div>
         {status !== "ready" ? (
-          <p className="fw-note">폰트를 만든 뒤에 내려받을 수 있어요.</p>
+          <p className="fw-note">{t("폰트를 만든 뒤에 내려받을 수 있어요.")}</p>
         ) : (
           (!names.korean || !names.english) && (
             <p className="fw-note">
-              한글·영문 폰트 이름을 넣으면 내려받을 수 있어요.
+              {script === "ja"
+                ? t("일본어·영문 폰트 이름을 넣으면 내려받을 수 있어요.")
+                : t("한글·영문 폰트 이름을 넣으면 내려받을 수 있어요.")}
             </p>
           )
         )}
@@ -490,11 +550,12 @@ export default function FontOutput({
       </form>
 
       {shareFile && (
-        <FontDialog title="보낼 준비가 됐어요" onClose={onShareDone}>
+        <FontDialog title={t("보낼 준비가 됐어요")} onClose={onShareDone}>
           <p className="output-filename">{shareFile.name}</p>
           <p>
-            아래 버튼을 누르면 카카오톡, 네이버 웍스, 메일 등 이 기기의 앱으로
-            바로 보낼 수 있어요.
+            {t(
+              "아래 버튼을 누르면 카카오톡, 네이버 웍스, 메일 등 이 기기의 앱으로 바로 보낼 수 있어요.",
+            )}
           </p>
           {shareError && (
             <p className="fw-error" role="alert">
@@ -510,7 +571,7 @@ export default function FontOutput({
                 onShareDone?.();
               }}
             >
-              닫기
+              {t("닫기")}
             </button>
             <button
               type="button"
@@ -518,28 +579,31 @@ export default function FontOutput({
               autoFocus
               onClick={share}
             >
-              공유하기 ↗
+              {t("공유하기 ↗")}
             </button>
           </div>
         </FontDialog>
       )}
       {shareUnsupported && (
         <FontDialog
-          title="이 기기에서는 폰트 파일을 바로 공유할 수 없어요"
+          title={t("이 기기에서는 폰트 파일을 바로 공유할 수 없어요")}
           onClose={() => setShareUnsupported(false)}
         >
           <p>
-            안드로이드의 크롬·삼성 인터넷 같은 브라우저는 보안을 위해
-            사진·동영상·PDF 같은 파일만 공유 창으로 보낼 수 있게 막아 두었어요.
-            폰트(
-            {format.toUpperCase()}) 파일은 이렇게 보내 주세요.
+            {t(
+              "안드로이드의 크롬·삼성 인터넷 같은 브라우저는 보안을 위해 사진·동영상·PDF 같은 파일만 공유 창으로 보낼 수 있게 막아 두었어요. 폰트({format}) 파일은 이렇게 보내 주세요.",
+              { format: format.toUpperCase() },
+            )}
           </p>
           <ol className="fw-steps">
-            <li>‘다운로드’로 파일을 기기에 저장해요.</li>
-            <li>카카오톡·네이버 웍스 채팅방에서 ＋(첨부) → 파일을 눌러요.</li>
+            <li>{t("‘다운로드’로 파일을 기기에 저장해요.")}</li>
             <li>
-              ‘다운로드’ 폴더에서 {OUTPUT_PREFIX.trim()} 폰트 파일을 골라
-              보내요.
+              {t("카카오톡·네이버 웍스 채팅방에서 ＋(첨부) → 파일을 눌러요.")}
+            </li>
+            <li>
+              {t("‘다운로드’ 폴더에서 {prefix} 폰트 파일을 골라 보내요.", {
+                prefix: OUTPUT_PREFIX.trim(),
+              })}
             </li>
           </ol>
           <div className="font-dialog-actions">
@@ -548,7 +612,7 @@ export default function FontOutput({
               className="fw-secondary"
               onClick={() => setShareUnsupported(false)}
             >
-              닫기
+              {t("닫기")}
             </button>
             <button
               type="button"
@@ -559,14 +623,14 @@ export default function FontOutput({
                 start("download");
               }}
             >
-              다운로드하기 ↓
+              {t("다운로드하기 ↓")}
             </button>
           </div>
         </FontDialog>
       )}
       {blocked && (
         <FontDialog
-          title="⚠ 아직 내려받을 수 없어요"
+          title={t("⚠ 아직 내려받을 수 없어요")}
           onClose={() => setBlocked(false)}
         >
           <ul className="fw-blockers">
@@ -574,7 +638,7 @@ export default function FontOutput({
               ? reasons
               : [{ text: "잠시 후 다시 눌러 주세요." }]
             ).map((reason) => (
-              <li key={reason.text}>{reason.text}</li>
+              <li key={reason.text}>{t(reason.text)}</li>
             ))}
           </ul>
           <div className="font-dialog-actions">
@@ -590,14 +654,14 @@ export default function FontOutput({
                     () =>
                       document
                         .querySelector<HTMLInputElement>(
-                          `[aria-label="${field === "korean" ? "한글" : "영문"} 폰트 이름"]`,
+                          `[aria-label="${t((field === "korean" ? localName : "영문") + " 폰트 이름")}"]`,
                         )
                         ?.focus(),
                     50,
                   );
               }}
             >
-              확인하고 고치기
+              {t("확인하고 고치기")}
             </button>
           </div>
         </FontDialog>

@@ -1,10 +1,13 @@
-import { SPECIAL_SYMBOLS } from "../data/charset";
+import { JA_PUNCT, SPECIAL_SYMBOLS } from "../data/charset";
+import { t } from "./i18n";
 import { METRICS } from "../config/metrics";
 import type { CharCategory, ProjectSettings } from "./types";
 import { referenceStack } from "./reference-fonts";
 import { referenceFit, referenceUsesFallback } from "./font/reference";
 import {
   categoryForChar,
+  isBoxedCategory,
+  isEmBoxed,
   isSymbolCategory,
   safetyBounds,
   sampleFontSize,
@@ -15,7 +18,7 @@ export function drawGrid(
   category: CharCategory,
   dark: boolean,
 ) {
-  const latin = !category.startsWith("hangul"),
+  const latin = !isBoxedCategory(category),
     box = safetyBounds(category);
   ctx.clearRect(0, 0, 1000, 1000);
   ctx.strokeStyle = dark ? "#4e5556" : "#d7d8d1";
@@ -40,8 +43,8 @@ export function drawGrid(
     ctx.font = "17px sans-serif";
     ctx.fillText(
       isSymbolCategory(category)
-        ? "아래쪽 문장부호 영역"
-        : "디센더 영역 · g j p q y",
+        ? t("아래쪽 문장부호 영역")
+        : t("디센더 영역 · g j p q y"),
       box.left + 14,
       METRICS.baseline + 30,
     );
@@ -54,9 +57,11 @@ export function drawGrid(
   ctx.fillText(
     latin
       ? isSymbolCategory(category)
-        ? "기호 안전영역"
-        : "영문·숫자 안전영역"
-      : "한글 안전영역",
+        ? t("기호 안전영역")
+        : t("영문·숫자 안전영역")
+      : category.startsWith("hangul")
+        ? t("한글 안전영역")
+        : t("글자 안전영역"),
     box.left + 8,
     Math.max(25, box.top - 12),
   );
@@ -109,6 +114,28 @@ export function drawSample(
   const family = referenceUsesFallback(char, settings?.referenceFont)
     ? '"Noto Sans KR"'
     : referenceStack(settings?.referenceFont);
+  // 가나·한자·일본어 문장 기호: 글꼴의 네모 칸을 그대로 옮겨 작은 가나와 、。의 자리를 지킨다.
+  const category = categoryForChar(char);
+  if (
+    isEmBoxed(category) ||
+    (settings?.script === "ja" && JA_PUNCT.includes(char))
+  ) {
+    ctx.font = "800px " + family;
+    const probe = ctx.measureText("国");
+    const height =
+      probe.actualBoundingBoxAscent + probe.actualBoundingBoxDescent || 800;
+    const size = (800 * 780) / height;
+    ctx.font = size + "px " + family;
+    const ref = ctx.measureText("国"),
+      mine = ctx.measureText(char);
+    ctx.fillText(
+      char,
+      500 - mine.width / 2,
+      500 + (ref.actualBoundingBoxAscent - ref.actualBoundingBoxDescent) / 2,
+    );
+    ctx.globalAlpha = 1;
+    return;
+  }
   ctx.font = "840px " + family;
   let m = ctx.measureText(char);
   const w = m.actualBoundingBoxLeft + m.actualBoundingBoxRight,

@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "../lib/i18n";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import type {
@@ -13,7 +14,7 @@ import { drawGrid, drawSample } from "../lib/drawing";
 import { useStudio } from "../lib/store";
 import { referenceUsesFallback } from "../lib/font/reference";
 import { loadReferenceFont, referenceStack } from "../lib/reference-fonts";
-import { strokesAreSafe } from "../lib/safety";
+import { isBoxedCategory, strokesAreSafe } from "../lib/safety";
 import CanvasStepButtons, { type CanvasNavigation } from "./CanvasStepButtons";
 let penDetectedThisSession = false;
 interface Props {
@@ -38,6 +39,7 @@ export default function WritingPad({
   practice = false,
   navigation,
 }: Props) {
+  const t = useT();
   // SPEC 해석: 진행 중 획을 확정 잉크와 분리하기 위해 4개의 canvas를 쓴다.
   const wrap = useRef<HTMLDivElement>(null),
     grid = useRef<HTMLCanvasElement>(null),
@@ -69,7 +71,7 @@ export default function WritingPad({
     if (practice) setPracticeStrokes(value);
     else saveStroke(letter, kind, value);
   };
-  const latin = !category.startsWith("hangul");
+  const latin = !isBoxedCategory(category);
   const showOutside = !!navigation && settings.sampleMode === "outside";
   useEffect(() => {
     // The layout may hand the pad a non-square box (e.g. width-driven but
@@ -133,7 +135,7 @@ export default function WritingPad({
       })
       .catch(() => {
         if (alive)
-          setWarning("견본 글꼴을 불러오지 못했습니다. 다시 선택해 주세요.");
+          setWarning(t("견본 글꼴을 불러오지 못했습니다. 다시 선택해 주세요."));
       });
     return () => {
       alive = false;
@@ -188,7 +190,7 @@ export default function WritingPad({
     committed.current = strokes;
     setWarning(
       !practice && !strokesAreSafe(strokes, category)
-        ? "점선 밖으로 나간 획이 있어요. 폰트에는 칸 안으로 줄여서 넣어요."
+        ? t("점선 밖으로 나간 획이 있어요. 폰트에는 칸 안으로 줄여서 넣어요.")
         : "",
     );
     latestRender.current = render;
@@ -309,7 +311,7 @@ export default function WritingPad({
     <div
       className={showOutside ? "pad has-outside-sample" : "pad"}
       ref={wrap}
-      aria-label={char + " 쓰기 칸"}
+      aria-label={t("{char} 쓰기 칸", { char })}
       style={
         showOutside
           ? ({ "--sample-rail": `${sampleRail || 76}px` } as CSSProperties)
@@ -320,7 +322,7 @@ export default function WritingPad({
         <div className="writing-rail-sample">
           <span
             className="writing-rail-character"
-            aria-label={"견본 " + char}
+            aria-label={t("견본") + " " + char}
             style={{
               fontFamily: referenceUsesFallback(char, settings.referenceFont)
                 ? '"Noto Sans KR"'
@@ -329,7 +331,7 @@ export default function WritingPad({
           >
             {char}
           </span>
-          <small>위 글자를 써주세요.</small>
+          <small>{t("위 글자를 써주세요.")}</small>
         </div>
       )}
       {navigation && (
@@ -356,7 +358,7 @@ export default function WritingPad({
       {warning && (
         <div className="pad-warning" role="status">
           {warning}
-          <button onClick={() => setWarning("")}>확인</button>
+          <button onClick={() => setWarning("")}>{t("확인")}</button>
         </div>
       )}
     </div>

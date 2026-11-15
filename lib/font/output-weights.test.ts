@@ -64,10 +64,11 @@ it("packs three weights into one zip", async () => {
     bold: pair,
   });
   const files = Object.keys(unzipSync(new Uint8Array(zip))).sort();
-  expect(files).toEqual(
-    ["Bold", "Light", "Regular"].flatMap((s) => [
+  expect(files).toEqual([
+    "LICENSE.txt",
+    ...["Bold", "Light", "Regular"].flatMap((s) => [
       `OSNS 내손글씨-${s}.otf`,
       `OSNS 내손글씨-${s}.ttf`,
     ]),
-  );
+  ]);
 }, 60_000);

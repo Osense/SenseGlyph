@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "../lib/i18n";
 import { useEffect, useRef, useState } from "react";
 import { deleteProject, listProjects } from "../lib/storage";
 import type { FontProject } from "../lib/types";
@@ -11,6 +12,7 @@ export default function ProjectManager({
   onClose: () => void;
   onTransition: (idOrName: string, create: boolean) => Promise<void>;
 }) {
+  const t = useT();
   const [projects, setProjects] = useState<
       Awaited<ReturnType<typeof listProjects>>
     >([]),
@@ -33,7 +35,7 @@ export default function ProjectManager({
       ]),
     );
   useEffect(() => {
-    refresh().catch(() => setError("프로젝트 목록을 불러오지 못했어요."));
+    refresh().catch(() => setError(t("프로젝트 목록을 불러오지 못했어요.")));
     const before = document.activeElement as HTMLElement | null;
     root.current?.querySelector<HTMLInputElement>("input")?.focus();
     return () => before?.focus();
@@ -47,7 +49,7 @@ export default function ProjectManager({
       setError(
         e instanceof Error
           ? e.message
-          : "저장하지 못했어요. 다시 시도해주세요.",
+          : t("저장하지 못했어요. 다시 시도해주세요."),
       );
     } finally {
       setBusy(false);
@@ -87,11 +89,11 @@ export default function ProjectManager({
       >
         <header>
           <div>
-            <span className="step-kicker">나의 작업 보관함</span>
-            <h2 id="projects-title">새로운 글씨를 시작할까요?</h2>
+            <span className="step-kicker">{t("나의 작업 보관함")}</span>
+            <h2 id="projects-title">{t("새로운 글씨를 시작할까요?")}</h2>
           </div>
           <button
-            aria-label="프로젝트 관리 닫기"
+            aria-label={t("프로젝트 관리 닫기")}
             disabled={busy}
             onClick={onClose}
           >
@@ -99,8 +101,9 @@ export default function ProjectManager({
           </button>
         </header>
         <p>
-          지금 작업은 그대로 보관해요. 새 프로젝트로 시작하고, 아래 목록에서
-          언제든 다시 열 수 있어요.
+          {t(
+            "지금 작업은 그대로 보관해요. 새 프로젝트로 시작하고, 아래 목록에서 언제든 다시 열 수 있어요.",
+          )}
         </p>
         <form
           onSubmit={(e) => {
@@ -109,9 +112,9 @@ export default function ProjectManager({
           }}
         >
           <label>
-            새 프로젝트 이름
+            {t("새 프로젝트 이름")}
             <input
-              aria-label="새 프로젝트 이름"
+              aria-label={t("새 프로젝트 이름")}
               maxLength={72}
               value={name}
               disabled={busy}
@@ -123,43 +126,45 @@ export default function ProjectManager({
             type="submit"
             disabled={busy || !name.trim()}
           >
-            {busy ? "저장 중…" : "새 폰트 시작하기 →"}
+            {busy ? t("저장 중…") : t("새 폰트 시작하기 →")}
           </button>
         </form>
-        <h3>보관한 프로젝트</h3>
+        <h3>{t("보관한 프로젝트")}</h3>
         <div className="saved-projects">
           {projects.map((item) => (
             <article key={item.id} data-project-id={item.id}>
               <div>
                 <strong>{item.name}</strong>
                 <small>
-                  {item.count}자 작성 ·{" "}
-                  {new Date(item.updatedAt).toLocaleDateString("ko-KR")}
-                  {item.id === current.id ? " · 현재 작업" : ""}
+                  {t("{n}자 작성", { n: item.count })} ·{" "}
+                  {new Date(item.updatedAt).toLocaleDateString()}
+                  {item.id === current.id ? " · " + t("현재 작업") : ""}
                 </small>
               </div>
               <button
                 disabled={busy || item.id === current.id}
                 onClick={() => void run(() => onTransition(item.id, false))}
-                aria-label={item.name + " 프로젝트 열기"}
+                aria-label={t("{name} 프로젝트 열기", { name: item.name })}
               >
-                열기
+                {t("열기")}
               </button>
               <button
                 disabled={busy || item.id === current.id}
                 onClick={() => setDeleting(item.id)}
-                aria-label={item.name + " 프로젝트 삭제"}
+                aria-label={t("{name} 프로젝트 삭제", { name: item.name })}
               >
-                삭제
+                {t("삭제")}
               </button>
               {deleting === item.id && (
                 <div className="project-delete-confirm">
                   <p>
-                    ‘{item.name}’ 프로젝트를 영구 삭제할까요? 이 동작은 되돌릴
-                    수 없어요.
+                    {t(
+                      "‘{name}’ 프로젝트를 영구 삭제할까요? 이 동작은 되돌릴 수 없어요.",
+                      { name: item.name },
+                    )}
                   </p>
                   <button disabled={busy} onClick={() => setDeleting(null)}>
-                    취소
+                    {t("취소")}
                   </button>
                   <button
                     disabled={busy}
@@ -171,7 +176,7 @@ export default function ProjectManager({
                       })
                     }
                   >
-                    확인하고 삭제
+                    {t("확인하고 삭제")}
                   </button>
                 </div>
               )}

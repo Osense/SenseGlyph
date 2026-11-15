@@ -7,6 +7,7 @@ const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_EXECUTABLE_PATH,
 });
 const context = await browser.newContext({
+  locale: "ko-KR",
   viewport: { width: 1366, height: 900 },
   acceptDownloads: true,
 });
@@ -368,6 +369,7 @@ try {
   );
   await context.close();
   const reduced = await browser.newContext({
+    locale: "ko-KR",
     reducedMotion: "reduce",
     viewport: { width: 1366, height: 768 },
   });

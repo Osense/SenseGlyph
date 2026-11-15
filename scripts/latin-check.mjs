@@ -5,6 +5,7 @@ import opentype from "opentype.js";
 
 const browser = await chromium.launch({ headless: true }),
   context = await browser.newContext({
+    locale: "ko-KR",
     viewport: { width: 1366, height: 768 },
     acceptDownloads: true,
   }),

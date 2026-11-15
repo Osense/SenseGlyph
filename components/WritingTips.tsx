@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "../lib/i18n";
 
 import TipDeck from "./TipDeck";
 
@@ -33,6 +34,7 @@ const TIPS = [
 ] as const;
 
 function Art({ kind }: { kind: (typeof TIPS)[number]["art"] }) {
+  const t = useT();
   if (kind === "fit")
     return (
       <svg viewBox="0 0 400 300" aria-hidden="true" className="tip-art tip-fit">
@@ -53,10 +55,10 @@ function Art({ kind }: { kind: (typeof TIPS)[number]["art"] }) {
           <path d="M228 118 L230 205" pathLength={1} />
         </g>
         <text x="18" y="70" className="tip-label tip-label-bad">
-          ✗ 너무 작게
+          {t("✗ 너무 작게")}
         </text>
         <text x="18" y="70" className="tip-label tip-label-good">
-          ✓ 견본만큼
+          {t("✓ 견본만큼")}
         </text>
       </svg>
     );
@@ -72,16 +74,16 @@ function Art({ kind }: { kind: (typeof TIPS)[number]["art"] }) {
         </text>
         <g className="tip-row tip-row-bad">
           <text x="60" y="100" fontSize="70">
-            가
+            {t("가")}
           </text>
           <text x="140" y="86" fontSize="44">
-            나
+            {t("나")}
           </text>
           <text x="198" y="110" fontSize="86">
-            다
+            {t("다")}
           </text>
           <text x="300" y="80" fontSize="52">
-            라
+            {t("라")}
           </text>
         </g>
         <line x1="50" y1="240" x2="390" y2="240" className="tip-line" />
@@ -91,16 +93,16 @@ function Art({ kind }: { kind: (typeof TIPS)[number]["art"] }) {
         </text>
         <g className="tip-row tip-row-good">
           <text x="60" y="236" fontSize="62">
-            가
+            {t("가")}
           </text>
           <text x="142" y="236" fontSize="62">
-            나
+            {t("나")}
           </text>
           <text x="224" y="236" fontSize="62">
-            다
+            {t("다")}
           </text>
           <text x="306" y="236" fontSize="62">
-            라
+            {t("라")}
           </text>
         </g>
       </svg>
@@ -118,7 +120,7 @@ function Art({ kind }: { kind: (typeof TIPS)[number]["art"] }) {
           <path d="M200 60 L200 250" />
         </g>
         <text x="40" y="285" className="tip-label tip-label-swap">
-          비뚤 → 반듯
+          {t("비뚤 → 반듯")}
         </text>
       </svg>
     );
@@ -134,10 +136,10 @@ function Art({ kind }: { kind: (typeof TIPS)[number]["art"] }) {
         <path className="tip-out" d="M150 80 L180 290" pathLength={1} />
         <path className="tip-in" d="M150 80 L172 250" pathLength={1} />
         <text x="10" y="150" className="tip-label tip-out-label">
-          ✗ 밖으로
+          {t("✗ 밖으로")}
         </text>
         <text x="10" y="150" className="tip-label tip-in-label">
-          ✓ 안쪽에
+          {t("✓ 안쪽에")}
         </text>
       </svg>
     );
@@ -148,7 +150,7 @@ function Art({ kind }: { kind: (typeof TIPS)[number]["art"] }) {
       className="tip-art tip-spread"
     >
       <text x="40" y="170" fontSize="96" className="tip-source">
-        각
+        {t("각")}
       </text>
       {[
         "갈",
@@ -180,18 +182,40 @@ function Art({ kind }: { kind: (typeof TIPS)[number]["art"] }) {
 }
 
 /** 글자 쓰기 단계에 들어올 때 보여 주는 '예쁜 폰트를 위한 쓰기 팁' 슬라이드 */
-export default function WritingTips({ onClose }: { onClose: () => void }) {
+/** 일본어 폰트에서 바꿔 보여 줄 팁(자모 이야기 대신) */
+const JA_TIPS: Record<string, { title: string; body: string }> = {
+  [TIPS[0].art]: {
+    title: "견본의 비율에 맞춰 써요",
+    body: "연하게 보이는 견본 글자의 크기와 위치를 따라 쓰면, 작은 가나와 、。 같은 문장 기호가 제자리에 들어가요.",
+  },
+  [TIPS[4].art]: {
+    title: "쓴 글자가 그대로 폰트가 돼요",
+    body: "가나와 한자는 쓴 모양 그대로 들어가요. 쓰지 않은 한자는 견본 글꼴로 채워지니, 자주 쓰는 한자부터 써 보세요.",
+  },
+};
+
+export default function WritingTips({
+  onClose,
+  script = "ko",
+}: {
+  onClose: () => void;
+  script?: "ko" | "ja";
+}) {
+  const t = useT();
   return (
     <TipDeck
-      kicker="예쁜 폰트를 위한 쓰기 팁"
-      tips={TIPS.map((tip) => ({
-        id: tip.art,
-        title: tip.title,
-        body: tip.body,
-        art: <Art kind={tip.art} />,
-      }))}
-      doneLabel="이제 써 볼게요 ✎"
-      skipLabel="건너뛰고 바로 쓰기"
+      kicker={t("예쁜 폰트를 위한 쓰기 팁")}
+      tips={TIPS.map((tip) => {
+        const text = (script === "ja" && JA_TIPS[tip.art]) || tip;
+        return {
+          id: tip.art,
+          title: t(text.title),
+          body: t(text.body),
+          art: <Art kind={tip.art} />,
+        };
+      })}
+      doneLabel={t("이제 써 볼게요 ✎")}
+      skipLabel={t("건너뛰고 바로 쓰기")}
       onClose={onClose}
     />
   );

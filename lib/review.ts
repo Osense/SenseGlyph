@@ -1,4 +1,4 @@
-import { CHARSET } from "../data/charset";
+import { charsetFor } from "../data/charset";
 import { slotKeys } from "./hangul";
 import { strokesAreSafe } from "./safety";
 import { separateSample } from "./font/composition";
@@ -75,7 +75,7 @@ export function glyphIssues(
 export function projectIssues(project: FontProject | null) {
   const result: Record<string, ReviewIssue[]> = {};
   if (project)
-    for (const { char } of CHARSET) {
+    for (const { char } of charsetFor(project.settings.script)) {
       const issues = glyphIssues(
         project.samples[char],
         project.fontPreparation?.separations[char],

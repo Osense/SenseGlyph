@@ -1,4 +1,5 @@
-import { zipSync } from "fflate";
+import { strToU8, zipSync } from "fflate";
+import { LICENSE_NOTICE } from "./license-notice";
 import { compress } from "woff2-encoder";
 import { writeWoff } from "./sfnt-writer";
 import { nameOutputFont, type OutputNames } from "./output-names";
@@ -45,6 +46,7 @@ export async function convertFont({
         { level: 6 },
       ];
     }
+    files["LICENSE.txt"] = [strToU8(LICENSE_NOTICE), { level: 6 }];
     return Uint8Array.from(zipSync(files, { level: 0 })).buffer;
   }
   if (names) {
@@ -72,6 +74,7 @@ export async function convertFont({
         [filename + ".otf"]: [new Uint8Array(otf), { level: 6 }],
         [filename + ".woff"]: new Uint8Array(writeWoff(ttf)),
         [filename + ".woff2"]: woff2,
+        "LICENSE.txt": [strToU8(LICENSE_NOTICE), { level: 6 }],
       },
       { level: 0 },
     ),

@@ -18,7 +18,11 @@ for (const [label, viewport] of [
   ["tablet-landscape", { width: 1180, height: 820 }],
   ["tablet-portrait", { width: 820, height: 1180 }],
 ]) {
-  const context = await browser.newContext({ viewport, hasTouch: true });
+  const context = await browser.newContext({
+    viewport,
+    hasTouch: true,
+    locale: "ko-KR",
+  });
   const page = await context.newPage();
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(BASE + "/?step=2");
@@ -72,6 +76,7 @@ for (const [label, viewport] of [
 }
 
 const context = await browser.newContext({
+  locale: "ko-KR",
   viewport: { width: 1180, height: 820 },
   acceptDownloads: true,
 });
@@ -284,7 +289,7 @@ const [weights] = await Promise.all([
   );
   check(
     "굵기 3종 ZIP (가는·보통·굵은 TTF·OTF)",
-    files.length === 6 &&
+    files.length === 7 &&
       ["Light", "Regular", "Bold"].every((s) =>
         files.some((f) => f.endsWith("-" + s + ".ttf")),
       ),

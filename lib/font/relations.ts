@@ -110,7 +110,9 @@ function learn(pools: Map<string, ComponentSample[]>): Relations {
     for (const [k, s] of map) {
       if (k === "H" || k === "V" || k === "C") continue;
       const jung = Number(k);
-      const group = Number.isFinite(jung) ? out.get(vowelType(jung)) : undefined;
+      const group = Number.isFinite(jung)
+        ? out.get(vowelType(jung))
+        : undefined;
       if (group === undefined) continue;
       const n = s.values.length;
       out.set(k, (out.get(k)! * n + group * 2) / (n + 2));

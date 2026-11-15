@@ -1,5 +1,7 @@
 import { SPECIAL_SYMBOLS } from "../data/charset";
 
+import type { WritingScript } from "./types";
+
 export const REFERENCE_FONTS = [
   {
     id: "sans",
@@ -50,17 +52,53 @@ export const REFERENCE_FONTS = [
     name: "갈무리11",
     file: "Galmuri11.woff2",
   },
+  // 일본어 견본(OFL, 가나·상용한자 2,136자로 줄인 파일)
+  {
+    id: "ja-klee",
+    family: "Klee One",
+    label: "교과서체",
+    name: "Klee One",
+    file: "KleeOne-Regular.woff2",
+    script: "ja",
+  },
+  {
+    id: "ja-maru",
+    family: "Zen Maru Gothic",
+    label: "둥근 고딕",
+    name: "Zen Maru Gothic",
+    file: "ZenMaruGothic-Medium.woff2",
+    script: "ja",
+  },
+  {
+    id: "ja-yomogi",
+    family: "Yomogi",
+    label: "펜 손글씨",
+    name: "Yomogi",
+    file: "Yomogi-Regular.woff2",
+    script: "ja",
+  },
 ] as const;
 export type ReferenceFontId = (typeof REFERENCE_FONTS)[number]["id"];
 
-export function referenceFont(id?: string) {
-  return REFERENCE_FONTS.find((font) => font.id === id) ?? REFERENCE_FONTS[0];
+const scriptOf = (font: (typeof REFERENCE_FONTS)[number]): WritingScript =>
+  "script" in font ? font.script : "ko";
+/** 이 언어로 고를 수 있는 견본 */
+export const referenceFontsFor = (script: WritingScript = "ko") =>
+  REFERENCE_FONTS.filter((font) => scriptOf(font) === script);
+export const defaultReferenceFont = (script: WritingScript = "ko") =>
+  referenceFontsFor(script)[0].id;
+
+export function referenceFont(id?: string, script?: WritingScript) {
+  const found = REFERENCE_FONTS.find((font) => font.id === id);
+  if (found && (!script || scriptOf(found) === script)) return found;
+  return referenceFontsFor(script ?? "ko")[0];
 }
 
 export function referenceStack(id?: string) {
   return (
     '"' +
     referenceFont(id).family +
+    (referenceFont(id).id.startsWith("ja-") ? '", "Klee One' : "") +
     '", "Noto Sans KR", "Special Symbols Fallback", sans-serif'
   );
 }

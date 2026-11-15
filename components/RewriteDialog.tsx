@@ -1,4 +1,5 @@
 "use client";
+import { useLang, useT } from "../lib/i18n";
 
 import { useEffect, useRef, useState } from "react";
 import WritingPad from "./WritingPad";
@@ -15,6 +16,7 @@ export default function RewriteDialog({
   char: string;
   onClose: () => void;
 }) {
+  const t = useT();
   const project = useStudio((state) => state.project)!;
   const commit = useStudio((state) => state.commit);
   const undo = useStudio((state) => state.undo);
@@ -52,43 +54,50 @@ export default function RewriteDialog({
           <strong className="sg-char" id="sg-rewrite-title">
             {char}
           </strong>
-          <p>이 글자만 다시 써요. {characterGuide(char, category)}</p>
+          <p>
+            {t("이 글자만 다시 써요.")}{" "}
+            {characterGuide(char, category, useLang.getState().lang)}
+          </p>
           <button className="sg-primary" disabled={busy} onClick={onClose}>
-            다 썼어요 · 자모 나누기로 →
+            {t("다 썼어요 · 자모 나누기로 →")}
           </button>
         </header>
-        <div className="sg-rewrite-tools" role="toolbar" aria-label="쓰기 도구">
+        <div
+          className="sg-rewrite-tools"
+          role="toolbar"
+          aria-label={t("쓰기 도구")}
+        >
           <button
             aria-pressed={tool === "pen"}
             disabled={busy}
             onClick={() => setTool("pen")}
           >
-            펜
+            {t("펜")}
           </button>
           <button
             aria-pressed={tool === "eraser"}
             disabled={busy}
             onClick={() => setTool("eraser")}
           >
-            지우개
+            {t("지우개")}
           </button>
           <button
             disabled={busy || !history?.past.length}
             onClick={() => undo(char)}
           >
-            ↶ 취소
+            {t("↶ 취소")}
           </button>
           <button
             disabled={busy || !history?.future.length}
             onClick={() => redo(char)}
           >
-            ↷ 다시
+            {t("↷ 다시")}
           </button>
           <button
             disabled={busy || !strokes.length}
             onClick={() => commit(char, category, [])}
           >
-            ↺ 모두 지우기
+            {t("↺ 모두 지우기")}
           </button>
         </div>
         <div className="sg-pad-area sg-rewrite-pad">

@@ -201,7 +201,111 @@ function jamoGuide(char: string) {
   return `모음 ${char}(${sound})예요. 모음만 따로 쓰거나 한글 자모를 설명할 때 써요. 세로 모음은 길게, 가로 모음은 넓게 써 주세요.`;
 }
 
-export function characterGuide(char: string, category: CharCategory) {
+const SMALL_KANA = "ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮ";
+const JA_PUNCT_GUIDE: Record<string, string> = {
+  "、": "読点(、)이에요. 칸의 왼쪽 아래에 작게 찍어 주세요. 가로쓰기에서 쉼표 자리예요.",
+  "。": "句点(。)이에요. 칸의 왼쪽 아래에 작은 동그라미로 써 주세요.",
+  "「": "여는 낫표예요. 칸의 오른쪽 위에 ㄱ을 뒤집은 모양으로 써 주세요.",
+  "」": "닫는 낫표예요. 칸의 왼쪽 아래에 써 주세요.",
+  "『": "겹낫표(여는)예요. 책·작품 이름에 써요. 오른쪽 위에 두 겹으로.",
+  "』": "겹낫표(닫는)예요. 왼쪽 아래에 두 겹으로 써 주세요.",
+  "・": "가운뎃점(中黒)이에요. 칸 한가운데에 작은 점으로.",
+  々: "같은 한자를 되풀이하는 기호예요(人々). 한자 크기로 써 주세요.",
+  "〜": "물결표예요. 칸 가운데 높이에 가로로 길게 써 주세요.",
+  "…": "말줄임표예요. 칸 가운데 높이에 점 세 개를 고르게.",
+  "【": "여는 괄호예요. 칸의 오른쪽에 굵게 써 주세요.",
+  "】": "닫는 괄호예요. 칸의 왼쪽에 굵게 써 주세요.",
+};
+function japaneseGuide(char: string, category: CharCategory) {
+  if (category === "ja-punct" || JA_PUNCT_GUIDE[char])
+    return (
+      JA_PUNCT_GUIDE[char] ??
+      "일본어 문장 기호예요. 견본처럼 칸 안의 자리를 지켜 써 주세요."
+    );
+  const kind = category === "hiragana" ? "히라가나" : "가타카나";
+  if (SMALL_KANA.includes(char))
+    return `작은 ${kind} ${char}예요. 보통 글자의 2/3쯤 크기로, 칸의 왼쪽 아래 쪽에 써 주세요.`;
+  if (char === "ー")
+    return "장음 기호(ー)예요. 칸 가운데 높이에 가로로 길게 그어 주세요.";
+  if (category === "kanji")
+    return `한자 ${char}예요. 획순대로 쓰면 다른 한자와 모양이 고르게 나와요. 칸을 넉넉하게 채워 주세요.`;
+  if (/[\u3099\u309a]/.test(char.normalize("NFD")))
+    return `${kind} ${char}예요. 탁점(゛)·반탁점(゜)은 오른쪽 위에 작게 붙여 주세요.`;
+  return `${kind} ${char}예요. 한자보다 조금 작게, 칸 가운데에 써 주세요.`;
+}
+
+/** 한국어가 아닌 화면 언어의 짧은 안내 */
+function foreignGuide(
+  char: string,
+  category: CharCategory,
+  lang: "ja" | "en",
+): string {
+  const ja = lang === "ja";
+  const small = SMALL_KANA.includes(char);
+  switch (category) {
+    case "hiragana":
+    case "katakana": {
+      const kind = ja
+        ? category === "hiragana"
+          ? "ひらがな"
+          : "カタカナ"
+        : category === "hiragana"
+          ? "hiragana"
+          : "katakana";
+      if (char === "ー")
+        return ja
+          ? "長音記号です。マスの真ん中の高さに横に長く書いてください。"
+          : "Long vowel mark. Draw a long horizontal line at the middle height of the box.";
+      if (small)
+        return ja
+          ? `小さい${kind}「${char}」です。ふつうの字の2/3くらいの大きさで、マスの左下寄りに書いてください。`
+          : `Small ${kind} ${char}. Write it about 2/3 the normal size, toward the lower left of the box.`;
+      return ja
+        ? `${kind}「${char}」です。漢字より少し小さめに、マスの真ん中に書いてください。`
+        : `${kind} ${char}. Write it a little smaller than kanji, in the middle of the box.`;
+    }
+    case "kanji":
+      return ja
+        ? `漢字「${char}」です。筆順どおりに、マスいっぱいに書くと形がそろいます。`
+        : `Kanji ${char}. Follow the stroke order and fill the box generously.`;
+    case "ja-punct":
+      return ja
+        ? "記号です。見本と同じように、マスの中の位置を守って書いてください。"
+        : "Punctuation. Keep it in the same spot of the box as the sample.";
+    case "latin-upper":
+      return ja
+        ? `英大文字 ${char} です。上の高さの線とベースラインに合わせてください。`
+        : `Capital ${char}. Use the cap-height line and the baseline.`;
+    case "latin-lower":
+      return ja
+        ? `英小文字 ${char} です。${/[gjpqy]/.test(char) ? "しっぽがベースラインの下に出る字です。" : "小文字の高さの線とベースラインに合わせてください。"}`
+        : `Lowercase ${char}. ${/[gjpqy]/.test(char) ? "Its tail goes below the baseline." : "Use the x-height line and the baseline."}`;
+    case "digit":
+      return ja
+        ? `数字 ${char} です。ほかの数字と高さをそろえてください。`
+        : `Digit ${char}. Keep the same height as the other digits.`;
+    case "hangul-syllable":
+      return ja
+        ? "ハングルの組み合わせに使う字です。見本を見て一画ずつ書いてください。"
+        : "A Hangul syllable used for combining. Follow the sample one stroke at a time.";
+    default:
+      return ja
+        ? "記号です。見本を見て形と高さを合わせて書いてください。"
+        : "A symbol. Match its shape and height to the sample.";
+  }
+}
+
+export function characterGuide(
+  char: string,
+  category: CharCategory,
+  lang: "ko" | "ja" | "en" = "ko",
+) {
+  if (lang !== "ko") return foreignGuide(char, category, lang);
+  if (
+    ["hiragana", "katakana", "kanji", "ja-punct"].includes(category) ||
+    (JA_PUNCT_GUIDE[char] && category !== "korean-punct")
+  )
+    return japaneseGuide(char, category);
   if (category === "special-symbol")
     return (
       specials[char] ??

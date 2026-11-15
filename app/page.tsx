@@ -164,6 +164,7 @@ export default function Page() {
     [list, setList] = useState<ListId>("basic"),
     [tool, setTool] = useState<"pen" | "eraser">("pen"),
     [modal, setModal] = useState(false),
+    [renameCopy, setRenameCopy] = useState(false),
     [legalOpen, setLegalOpen] = useState(false),
     [accountOpen, setAccountOpen] = useState(false),
     [noCount, setNoCount] = useState(false),
@@ -750,6 +751,12 @@ export default function Page() {
       no: step === 3 ? t("조금 더 확인할게요") : t("조금 더 쓸게요"),
     };
   };
+  const nextShort =
+    list !== "review" && isLast
+      ? list === "premium" || script === "ja"
+        ? t("폰트 완성")
+        : t("자모 나누기")
+      : t("다음 글자");
   const nextWritingChar = () => {
     if (list !== "review" && isLast) goStep(list === "premium" ? 4 : 3);
     else if (list === "review" && !navigationChars.length) selectList("basic");
@@ -876,9 +883,10 @@ export default function Page() {
               if (!active) return;
               const copy = await duplicateProject(
                 active,
-                t("{name} 복사본", { name: active.name }),
+                t("{name}의 복사본", { name: active.name }),
               );
               setProject(copy);
+              setRenameCopy(true);
               notify(
                 t(
                   "새 프로젝트로 복제했어요. 여기서 고친 뒤 다시 결제해 내려받을 수 있어요.",
@@ -966,6 +974,17 @@ export default function Page() {
                 <i aria-hidden="true">↺</i>
                 <span>{t("다시쓰기")}</span>
               </button>
+              {/* 다음 글자: 펜을 쥔 반대손이 도구 사이에서 바로 누르도록 */}
+              <button
+                className="sg-tool sg-tool-next sg-rail-next"
+                aria-label={nextLabel}
+                data-ink-locked={busy || undefined}
+                disabled={busy}
+                onClick={nextWritingChar}
+              >
+                <i aria-hidden="true">→</i>
+                <span>{nextShort}</span>
+              </button>
               <span className="sg-rail-gap" />
               <button
                 className="sg-tool"
@@ -989,16 +1008,6 @@ export default function Page() {
                   ?
                 </i>
                 <span>{t("쓰기 팁")}</span>
-              </button>
-              <button
-                className="sg-tool sg-rail-next"
-                aria-label={t("다음 글자")}
-                data-ink-locked={busy || undefined}
-                disabled={busy}
-                onClick={nextWritingChar}
-              >
-                <i aria-hidden="true">›</i>
-                <span>{t("다음 글자")}</span>
               </button>
             </div>
 
@@ -1137,14 +1146,6 @@ export default function Page() {
 
             <aside className="sg-side" aria-label={t("이동과 글자 확인")}>
               <div className="sg-nav">
-                <button
-                  className="sg-primary"
-                  data-ink-locked={busy || undefined}
-                  disabled={busy}
-                  onClick={nextWritingChar}
-                >
-                  {nextLabel}
-                </button>
                 <div className="sg-nav-row">
                   <button
                     data-ink-locked={busy || undefined}
@@ -1638,6 +1639,42 @@ export default function Page() {
               {t("되돌리기")}
             </button>
           )}
+        </div>
+      )}
+      {renameCopy && (
+        <div className="modal-backdrop" onClick={() => setRenameCopy(false)}>
+          <form
+            className="settings-modal sg-rename-copy"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rename-copy-title"
+            onClick={(event) => event.stopPropagation()}
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!project.name.trim()) rename(t("새 프로젝트"));
+              setRenameCopy(false);
+            }}
+          >
+            <h2 id="rename-copy-title">{t("복제한 프로젝트 이름")}</h2>
+            <p>
+              {t(
+                "결제 기록 없이 새로 고칠 수 있는 프로젝트예요. 알아보기 쉬운 이름으로 바꿔 두세요.",
+              )}
+            </p>
+            <label className="field">
+              {t("프로젝트 이름")}
+              <input
+                value={project.name}
+                maxLength={80}
+                autoFocus
+                onFocus={(event) => event.target.select()}
+                onChange={(event) => rename(event.target.value)}
+              />
+            </label>
+            <button type="submit" className="sg-primary">
+              {t("확인")}
+            </button>
+          </form>
         </div>
       )}
       {modal && (

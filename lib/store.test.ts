@@ -51,4 +51,5 @@ it("locks a purchased project against edits", () => {
   s.undo("겨");
   expect(useStudio.getState().project?.samples["겨"].strokes[0].id).toBe("a");
   expect(useStudio.getState().project?.purchase?.local).toBe("내글씨");
+  expect(useStudio.getState().project?.name.endsWith(" - 내글씨")).toBe(true);
 });

@@ -60,6 +60,14 @@ export default function LoginScreen() {
               "만 자를 쓰고, 스캔하고, 한 글자씩 다듬던 몇 주를 — 태블릿 하나로, 한나절에.",
             )}
           </small>
+          <p className="sg-login-license">
+            <b>{t("만든 폰트의 라이선스, 전부 당신의 것.")}</b>
+            <span>
+              {t(
+                "가게 간판에도, 유튜브 자막에도, 판매하는 굿즈에도. 사용료도 출처 표기도 묻지 않아요.",
+              )}
+            </span>
+          </p>
         </div>
         <ul className="sg-login-benefits">
           {BENEFITS.map((b) => (

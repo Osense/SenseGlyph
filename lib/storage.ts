@@ -65,7 +65,7 @@ export async function duplicateProject(current: FontProject, name: string) {
   const db = await database();
   const tx = db.transaction(["projects", "meta"], "readwrite");
   const projects = (await tx.objectStore("projects").getAll()) as FontProject[];
-  const base = name.trim().slice(0, 72) || current.name + " 복사본";
+  const base = name.trim().slice(0, 72) || current.name + "의 복사본";
   let unique = base,
     number = 2;
   while (projects.some((p) => p.name === unique))

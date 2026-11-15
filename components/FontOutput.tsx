@@ -661,6 +661,11 @@ export default function FontOutput({
             {exporting && mode === "share" ? t("준비 중…") : t("공유하기 ↗")}
           </button>
         </div>
+        <p className="fw-license">
+          {t(
+            "라이선스는 모두 만든 사람의 것 — 개인 작업도, 상업적 사용도 자유롭게. 쓰지 않아 견본 글꼴로 채운 글자만 OFL 1.1을 따라요.",
+          )}
+        </p>
         {status !== "ready" ? (
           <p className="fw-note">{t("폰트를 만든 뒤에 내려받을 수 있어요.")}</p>
         ) : (

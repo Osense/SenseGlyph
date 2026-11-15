@@ -74,7 +74,15 @@ export const useStudio = create<State>((set, get) => ({
   markPurchased: (purchase) =>
     set((s) => ({
       project: s.project
-        ? { ...s.project, purchase, updatedAt: Date.now() }
+        ? {
+            ...s.project,
+            // 라이브러리에서 알아보기 쉽게 '프로젝트 이름 - 내보낸 폰트 이름'으로 기록
+            name: s.project.name.endsWith(" - " + purchase.local)
+              ? s.project.name
+              : `${s.project.name} - ${purchase.local}`.slice(0, 80),
+            purchase,
+            updatedAt: Date.now(),
+          }
         : null,
     })),
   prepareFont: (fontPreparation) =>

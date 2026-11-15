@@ -21,9 +21,7 @@ export const cleanEnglishName = (value: string) =>
 let reserved: Set<string> | null = null;
 async function reservedNames() {
   if (!reserved) {
-    const { RESERVED_FONT_NAMES } = await import(
-      "../data/reserved-font-names"
-    );
+    const { RESERVED_FONT_NAMES } = await import("../data/reserved-font-names");
     reserved = new Set(RESERVED_FONT_NAMES);
   }
   return reserved;

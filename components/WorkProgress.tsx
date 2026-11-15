@@ -96,8 +96,7 @@ export default function WorkProgress({
           <span style={{ width: (percent ?? 100) + "%" }} />
         </div>
         <p className="sg-work-line" id="sg-work-line">
-          {t(line)}…{" "}
-          <small>({t("{n}초", { n: seconds })})</small>
+          {t(line)}… <small>({t("{n}초", { n: seconds })})</small>
         </p>
         {step && <p className="sg-work-step">{t(step)}</p>}
         <p className="sg-work-note">

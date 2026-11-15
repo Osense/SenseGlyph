@@ -113,11 +113,5 @@ export const SAMPLE_PAYMENTS = [
     amount: 19900,
     status: "예시",
   },
-  {
-    date: "2026-12-01",
-    item: "상업용 라이선스",
-    amount: 29000,
-    status: "예시",
-  },
   { date: "2027-01-10", item: "일본어 팩", amount: 9900, status: "예시" },
 ];

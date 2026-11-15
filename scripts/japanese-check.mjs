@@ -106,7 +106,7 @@ await stroke([
   [760, 760],
 ]);
 await page.screenshot({ path: "artifacts/ja-write.png" });
-await page.click('.sg-nav button:has-text("다음")');
+await page.click('.sg-tool-next');
 await page.waitForTimeout(200);
 check("다음 글자 い", (await page.locator(".sg-char").innerText()) === "い");
 await stroke([

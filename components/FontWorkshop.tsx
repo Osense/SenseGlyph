@@ -130,9 +130,12 @@ export default function FontWorkshop({
   const t = useT();
   const script = project.settings.script ?? "ko";
   const firstChar = charsetFor(script)[0].char;
+  // 프로젝트 이름을 바꿔도(결제 후 이름 기록 포함) 만들어 둔 폰트가 무효가 되지 않게
+  // 기본값은 프로젝트가 바뀔 때만 새로 만든다.
   const defaults = useMemo(
     () => defaultPreparation(project.name),
-    [project.id, project.name],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [project.id],
   );
   const prep = useMemo(() => {
     const value = project.fontPreparation ?? defaults;

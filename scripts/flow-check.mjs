@@ -390,6 +390,14 @@ check(
   await page.locator(".fw-purchased").isVisible(),
 );
 await page.click(".sg-locked-bar button");
+await page.waitForSelector(".sg-rename-copy");
+const copyName = await page.locator(".sg-rename-copy input").inputValue();
+check(
+  "결제한 프로젝트 이름에 폰트 이름 기록",
+  / - .+의 복사본$/.test(copyName),
+);
+await page.fill(".sg-rename-copy input", "고친 손글씨");
+await page.click('.sg-rename-copy button[type="submit"]');
 await page.waitForTimeout(500);
 check("복제하면 잠금 해제", !(await page.locator(".sg-locked-bar").count()));
 check("브라우저 오류 없음", !errors.length, errors.join(" | "));

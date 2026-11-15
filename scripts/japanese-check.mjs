@@ -45,10 +45,17 @@ check(
   steps.length + "단계",
 );
 await page.click(".journey-next");
+await page.waitForSelector(".sg-ask");
+check(
+  "다음 단계 전에 묻기",
+  (await page.locator("#sg-ask-question").innerText()).includes("이 도구로"),
+);
+await page.click(".sg-ask-yes");
 await page.waitForSelector(".setup-fonts");
 const fonts = await page.locator(".setup-fonts [role=radio]").allInnerTexts();
 check("일본어 견본 3가지", fonts.length === 3 && /Klee One/.test(fonts[0]));
 await page.click(".journey-next");
+await page.click(".sg-ask-yes");
 await page.waitForSelector(".input-canvas");
 if (await page.locator(".sg-tips").count())
   await page.click("text=건너뛰고 바로 쓰기");

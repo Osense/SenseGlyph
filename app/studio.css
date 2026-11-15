@@ -1227,6 +1227,82 @@ details.sg-help summary::-webkit-details-marker {
   margin: 0;
 }
 
+/* 측면 도구 줄의 '다음 글자': 쓰지 않는 손으로 넘기기 */
+.sg-rail .sg-rail-next {
+  margin-top: auto;
+  min-height: 92px;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+.sg-rail .sg-rail-next > i {
+  font-size: 34px;
+}
+.sg-rail .sg-rail-next:disabled {
+  opacity: 0.5;
+}
+
+/* 왼손잡이 모드: 도구 줄은 오른쪽, 이동·확인 칸은 왼쪽 */
+.is-left-handed .sg-write {
+  grid-template-columns: 272px minmax(0, 1fr) 84px;
+}
+.is-left-handed .sg-side {
+  order: 1;
+}
+.is-left-handed .sg-stage {
+  order: 2;
+}
+.is-left-handed .sg-rail {
+  order: 3;
+}
+
+/* 다음 단계로 넘어가기 전 묻는 창 */
+.sg-ask {
+  max-width: 440px;
+}
+.sg-ask h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+.sg-ask p {
+  margin: 0 0 18px;
+  line-height: 1.7;
+  font-size: 14px;
+  color: var(--muted);
+}
+.sg-ask-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sg-ask-actions button {
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--sheet);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.sg-ask-actions .sg-ask-yes {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+.sg-ask-stop {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 /* ---------- portrait tablet ---------- */
 @media (max-width: 1000px) {
   .sg-topbar {
@@ -1269,6 +1345,24 @@ details.sg-help summary::-webkit-details-marker {
   }
   .sg-rail-gap {
     display: none;
+  }
+  /* 세로 화면: 오른손잡이는 왼쪽 끝, 왼손잡이는 오른쪽 끝(row-reverse)에 '다음 글자' */
+  .sg-rail .sg-rail-next {
+    order: -1;
+    margin-top: 0;
+    min-height: 56px;
+    flex: 1.4 0 88px;
+  }
+  .is-left-handed .sg-write {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .is-left-handed .sg-rail,
+  .is-left-handed .sg-stage,
+  .is-left-handed .sg-side {
+    order: 0;
+  }
+  .is-left-handed .sg-rail {
+    flex-direction: row-reverse;
   }
   .sg-side {
     display: grid;

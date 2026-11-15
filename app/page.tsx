@@ -47,6 +47,7 @@ import JourneySetup from "../components/JourneySetup";
 import { characterGuide } from "../lib/character-guide";
 import { useLang, useT, type UiLang } from "../lib/i18n";
 import { LegalTabs } from "../components/LegalDocument";
+import StepQuestion, { type StepAsk } from "../components/StepQuestion";
 import LoginScreen from "../components/LoginScreen";
 import AccountPanel from "../components/AccountPanel";
 import { useAccount } from "../lib/account";
@@ -171,6 +172,11 @@ export default function Page() {
     [projectsOpen, setProjectsOpen] = useState(false),
     [fontReviewChar, setFontReviewChar] = useState<string | undefined>(),
     [dark, setDark] = useState(false),
+    // 왼손잡이: 도구 줄과 '다음 글자'를 오른쪽(쓰지 않는 손 쪽)으로
+    [leftHanded, setLeftHanded] = useState(false),
+    // 다음 단계로 넘어가기 전에 묻기(기본 켜짐)
+    [askSteps, setAskSteps] = useState(true),
+    [askTarget, setAskTarget] = useState<number | null>(null),
     [busy, setBusy] = useState(false),
     [toast, setToast] = useState(""),
     [toastUndo, setToastUndo] = useState(false),
@@ -370,6 +376,8 @@ export default function Page() {
       const pref = JSON.parse(localStorage.getItem("hanhoek-ui") ?? "{}");
       // 밝은 화면이 기본. 이 버전 이후에 직접 고른 값만 따른다.
       setDark(pref.theme === "osns-light" ? !!pref.dark : false);
+      setLeftHanded(pref.hand === "left");
+      setAskSteps(pref.askSteps !== false);
     } catch {}
     return () => {
       alive = false;
@@ -384,6 +392,8 @@ export default function Page() {
         JSON.stringify({
           ...pref,
           dark,
+          hand: leftHanded ? "left" : "right",
+          askSteps,
           theme: "osns-light",
           journeyVersion: 2,
         }),
@@ -391,7 +401,7 @@ export default function Page() {
     } catch {
       /* UI 선호 저장이 차단돼도 벡터 입력은 계속 허용한다. */
     }
-  }, [dark, !!project]);
+  }, [dark, leftHanded, askSteps, !!project]);
   useEffect(() => {
     if (step !== 2 || !project) return;
     try {
@@ -688,8 +698,60 @@ export default function Page() {
           ? t("폰트 완성 →")
           : t("자모 나누기 →")
         : t("다음 →");
+  /** 앞 단계로 갈 때는 바로, 다음 단계로 갈 때는 한 번 묻고 넘어간다(설정에서 끌 수 있음). */
+  const goStep = (next: number) => {
+    if (busy) return;
+    const target = next === 3 && script === "ja" ? 4 : next;
+    if (askSteps && target > step) setAskTarget(target);
+    else changeStep(target);
+  };
+  /** 단계마다 묻는 말: 지금 한 일과 다음에 할 일을 짧게 */
+  const stepAsk = (target: number): StepAsk => {
+    if (target === 1)
+      return {
+        question: t("이 도구로 쓸까요?"),
+        detail: t(
+          "{brush}(으)로 시작해요. 쓰는 중에도 ‘도구 설정’에서 바꿀 수 있어요. 다음은 내 글씨와 닮은 견본을 고를 차례예요.",
+          { brush: t(brushLabel ?? "") },
+        ),
+        yes: t("네, 견본 고르러 갈게요"),
+        no: t("도구를 더 볼게요"),
+      };
+    if (target === 2)
+      return {
+        question: t("이 견본을 안내선으로 쓸까요?"),
+        detail: t(
+          "‘{font}’ 모양이 쓰기 칸에 연하게 깔려요. 따라 써도, 보고 써도 돼요. 다음은 글자를 하나씩 쓸 차례예요.",
+          { font: sampleName },
+        ),
+        yes: t("네, 글씨 쓰러 갈게요"),
+        no: t("견본을 더 볼게요"),
+      };
+    if (target === 3)
+      return {
+        question: t("다 썼다면 자모를 나눠 볼까요?"),
+        detail: t(
+          "지금까지 {n}자를 썼어요. 쓴 글자를 초성·중성·종성으로 나눠 나머지 한글을 조합해요. 더 쓰고 싶으면 언제든 돌아올 수 있어요.",
+          {
+            n: Object.values(project.samples).filter(
+              (sample) => sample.strokes.length > 0,
+            ).length,
+          },
+        ),
+        yes: t("네, 자모 나누기로"),
+        no: t("조금 더 쓸게요"),
+      };
+    return {
+      question: t("이제 폰트를 만들어 볼까요?"),
+      detail: t(
+        "쓴 글씨를 정돈해 폰트로 묶어요. 결과를 미리 보고, 마음에 들 때만 내려받으면 돼요. 앞 단계로는 언제든 돌아올 수 있어요.",
+      ),
+      yes: t("네, 폰트 만들기로"),
+      no: step === 3 ? t("조금 더 확인할게요") : t("조금 더 쓸게요"),
+    };
+  };
   const nextWritingChar = () => {
-    if (list !== "review" && isLast) changeStep(list === "premium" ? 4 : 3);
+    if (list !== "review" && isLast) goStep(list === "premium" ? 4 : 3);
     else if (list === "review" && !navigationChars.length) selectList("basic");
     else go(1);
   };
@@ -719,7 +781,10 @@ export default function Page() {
     <main
       ref={stageRoot}
       className={
-        (dark ? "studio dark" : "studio") + " journey sg-step-" + viewStep
+        (dark ? "studio dark" : "studio") +
+        " journey sg-step-" +
+        viewStep +
+        (leftHanded ? " is-left-handed" : "")
       }
     >
       <header className="sg-topbar">
@@ -831,7 +896,9 @@ export default function Page() {
           step={step}
           settings={s}
           update={update}
-          next={() => changeStep(step + 1)}
+          next={() => goStep(step + 1)}
+          leftHanded={leftHanded}
+          onHand={setLeftHanded}
           hasWriting={usedBrushes.size > 0}
           dark={dark}
           script={script}
@@ -922,6 +989,16 @@ export default function Page() {
                   ?
                 </i>
                 <span>{t("쓰기 팁")}</span>
+              </button>
+              <button
+                className="sg-tool sg-rail-next"
+                aria-label={t("다음 글자")}
+                data-ink-locked={busy || undefined}
+                disabled={busy}
+                onClick={nextWritingChar}
+              >
+                <i aria-hidden="true">›</i>
+                <span>{t("다음 글자")}</span>
               </button>
             </div>
 
@@ -1190,7 +1267,7 @@ export default function Page() {
                 className="sg-next-step"
                 data-ink-locked={busy || undefined}
                 disabled={busy}
-                onClick={() => changeStep(3)}
+                onClick={() => goStep(3)}
               >
                 {script === "ja"
                   ? t("쓴 글자로 폰트 만들기 →")
@@ -1502,7 +1579,9 @@ export default function Page() {
         <FontWorkshop
           key={project.id}
           stage={viewStep === 3 ? "separation" : "build"}
-          onStageChange={(next) => changeStep(next === "separation" ? 3 : 4)}
+          onStageChange={(next) =>
+            next === "separation" ? changeStep(3) : goStep(4)
+          }
           project={project}
           onChange={useStudio.getState().prepareFont}
           initialChar={fontReviewChar}
@@ -1617,6 +1696,22 @@ export default function Page() {
             <label className="check">
               <input
                 type="checkbox"
+                checked={leftHanded}
+                onChange={(e) => setLeftHanded(e.target.checked)}
+              />
+              {t("왼손잡이 모드 (도구와 다음 글자 버튼을 오른쪽에)")}
+            </label>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={askSteps}
+                onChange={(e) => setAskSteps(e.target.checked)}
+              />
+              {t("다음 단계로 넘어가기 전에 물어보기")}
+            </label>
+            <label className="check">
+              <input
+                type="checkbox"
                 checked={s.grid.sizeGuide}
                 onChange={(event) =>
                   update({
@@ -1701,6 +1796,18 @@ export default function Page() {
             </p>
           </section>
         </div>
+      )}
+      {askTarget !== null && (
+        <StepQuestion
+          ask={stepAsk(askTarget)}
+          onNo={() => setAskTarget(null)}
+          onYes={(stopAsking) => {
+            const target = askTarget;
+            setAskTarget(null);
+            if (stopAsking) setAskSteps(false);
+            changeStep(target);
+          }}
+        />
       )}
       {legalOpen && (
         <div className="modal-backdrop" onClick={() => setLegalOpen(false)}>

@@ -38,7 +38,11 @@ export default function JourneySetup({
   script = "ko",
   onScript,
   onLegal,
+  leftHanded = false,
+  onHand,
 }: {
+  leftHanded?: boolean;
+  onHand?: (left: boolean) => void;
   onLegal?: () => void;
   script?: WritingScript;
   onScript?: (script: WritingScript) => void;
@@ -108,6 +112,35 @@ export default function JourneySetup({
                 )}
               </small>
             )}
+          </div>
+        )}
+        {step === 0 && onHand && (
+          <div className="setup-script setup-hand">
+            <span>{t("어느 손으로 쓰세요?")}</span>
+            <div role="radiogroup" aria-label={t("어느 손으로 쓰세요?")}>
+              {(
+                [
+                  [false, "오른손", "도구는 왼쪽, 왼손으로 넘겨요"],
+                  [true, "왼손", "도구는 오른쪽, 오른손으로 넘겨요"],
+                ] as const
+              ).map(([left, label, note]) => (
+                <button
+                  key={label}
+                  type="button"
+                  role="radio"
+                  aria-checked={leftHanded === left}
+                  onClick={() => onHand(left)}
+                >
+                  <strong>{t(label)}</strong>
+                  <small>{t(note)}</small>
+                </button>
+              ))}
+            </div>
+            <small>
+              {t(
+                "쓰는 손이 화면을 가리지 않게, 도구와 ‘다음 글자’ 버튼을 반대쪽 손 가까이에 둬요. 설정에서 언제든 바꿀 수 있어요.",
+              )}
+            </small>
           </div>
         )}
         {step === 0 ? (

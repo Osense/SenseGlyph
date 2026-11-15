@@ -1,6 +1,6 @@
 {
   "name": "handwritten-font-studio",
-  "version": "0.2.46",
+  "version": "0.2.47",
   "private": true,
   "scripts": {
     "test:regions-projects": "node scripts/regions-projects-check.mjs",

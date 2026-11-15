@@ -13,13 +13,17 @@ import type { Box, CorrectionDetail, FontBuildSettings, Part } from "./types";
 import { CORRECTION_KEYS } from "./types";
 import { vowelRoles } from "./primitives";
 
-export type CorrectionAmounts = Record<keyof CorrectionDetail, number>;
+export type CorrectionAmounts = Record<
+  (typeof CORRECTION_KEYS)[number],
+  number
+>;
 export const NO_CORRECTION: CorrectionAmounts = {
   layout: 0,
   straighten: 0,
   smooth: 0,
   size: 0,
   weight: 0,
+  balance: 0,
 };
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v / 100));
@@ -33,6 +37,7 @@ export function detailFromStrength(strength: number): CorrectionDetail {
     smooth: Math.round(s * 0.8),
     size: Math.round(s * 0.7),
     weight: Math.round(s * 0.5),
+    balance: s,
   };
 }
 

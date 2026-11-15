@@ -29,8 +29,7 @@ export function setCountingDisabled(disabled: boolean) {
   } catch {}
 }
 
-const keyFor = (key: CounterKey) =>
-  (isNativeApp() ? "android-" : "web-") + key;
+const keyFor = (key: CounterKey) => (isNativeApp() ? "android-" : "web-") + key;
 
 function hit(key: CounterKey) {
   if (countingDisabled() || typeof fetch === "undefined") return;

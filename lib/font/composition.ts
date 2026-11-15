@@ -12,6 +12,7 @@ import { decompose, slotKeys, vowelType } from "../hangul";
 import { activeSeparation, effectiveSample } from "./editing";
 import { cachedJudgement } from "./judge";
 import { arrangePieces, relationsOf, type Piece } from "./relations";
+import { alignPieces, averagePieces } from "./balance";
 import {
   blendStrokes,
   deriveMissingSlots,
@@ -467,6 +468,8 @@ export function composeGlyph(
   char: string,
   library: Map<string, ComponentSample>,
   pools?: Map<string, ComponentSample[]>,
+  /** 자모 균형 보정 강도 0~1(lib/font/balance.ts). 0이면 쓴 그대로 */
+  balance = 0,
 ): Stroke[] | null {
   const keys = slotKeys(char);
   if (!keys.length || !keys.every((key) => library.has(key))) return null;
@@ -558,8 +561,12 @@ export function composeGlyph(
       strokes: placeComponent(blended, home, target),
     };
   });
+  // 균형 보정 1: 같은 자리 자모의 평균 위치·크기로(강도만큼)
+  const averaged = averagePieces(pieces, pools, target, balance);
   // 자리만 맞춘 조각들을 내 글씨에서 배운 관계(간격·맞춤·크기)대로 다시 쌓는다(lib/font/relations.ts).
-  return arrangePieces(char, pieces, relationsOf(pools), target).flatMap(
+  const arranged = arrangePieces(char, averaged, relationsOf(pools), target);
+  // 균형 보정 2: 초성–모음 기둥 맞춤, 받침 가운데(강도만큼)
+  return alignPieces(char, arranged, target, balance).flatMap(
     (piece) => piece.strokes,
   );
 }

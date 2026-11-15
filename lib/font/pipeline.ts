@@ -31,7 +31,7 @@ export function fontLayout(
   project: FontProject,
   handwriting: Handwriting,
   settings: FontBuildSettings,
-  { includePremium = true, sizeEvening = 0 } = {},
+  { includePremium = true, sizeEvening = 0, balance = 0 } = {},
 ) {
   const direct = new Map<string, Stroke[]>();
   for (const sample of Object.values(project.samples)) {
@@ -59,7 +59,7 @@ export function fontLayout(
       return half ? (direct.get(half) ?? null) : null;
     }
     return /^[가-힣]$/.test(char)
-      ? composeGlyph(char, handwriting.library, handwriting.pools)
+      ? composeGlyph(char, handwriting.library, handwriting.pools, balance)
       : null;
   };
   const glyph = (char: string): (LaidOutGlyph & { direct: boolean }) | null => {
@@ -89,5 +89,6 @@ export function fontPipeline(
   return fontLayout(project, handwriting, preparation.settings, {
     includePremium,
     sizeEvening: correct ? correctionAmounts(preparation.settings).size : 0,
+    balance: correct ? correctionAmounts(preparation.settings).balance : 0,
   });
 }

@@ -36,7 +36,14 @@ const along = (
     x0 + ((x1 - x0) * i) / n,
     y0 + ((y1 - y0) * i) / n,
   ]);
-const full = { layout: 1, straighten: 1, smooth: 1, size: 1, weight: 1 };
+const full = {
+  layout: 1,
+  straighten: 1,
+  smooth: 1,
+  size: 1,
+  weight: 1,
+  balance: 0,
+};
 const angle = (s: Stroke) => {
   const a = s.points[0],
     b = s.points.at(-1)!;
@@ -127,7 +134,9 @@ describe("handwriting correction", () => {
       smooth: 0,
       size: 0,
       weight: 0,
+      balance: 0,
     });
+    expect(detailFromStrength(100).balance).toBe(100);
     const legacy = defaultPreparation("old").settings;
     delete legacy.correction;
     legacy.alignToReference = true;
@@ -149,6 +158,7 @@ describe("handwriting correction", () => {
       smooth: 0,
       size: 0,
       weight: 0,
+      balance: 0,
     });
     const prep = defaultPreparation("x");
     prep.settings.correctionDetail = custom.correctionDetail;

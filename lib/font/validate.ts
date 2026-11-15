@@ -23,9 +23,12 @@ export function validPreparation(value: unknown): value is FontPreparation {
   if (s.correctionDetail !== undefined) {
     const detail = s.correctionDetail;
     if (!record(detail)) return false;
-    for (const key of CORRECTION_KEYS)
+    for (const key of CORRECTION_KEYS) {
+      // 나중에 생긴 항목(balance)은 예전 저장본에 없을 수 있다.
+      if (key === "balance" && detail[key] === undefined) continue;
       if (!finite(detail[key]) || detail[key] < 0 || detail[key] > 100)
         return false;
+    }
   }
   if (
     s.strokeWeight !== undefined &&

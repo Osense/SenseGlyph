@@ -35,6 +35,8 @@ export interface CorrectionDetail {
   size: number;
   /** 획 굵기(필압) 고르게 */
   weight: number;
+  /** 조합한 자모의 크기·위치·맞춤을 고르게(빌려 온 자모의 균형) */
+  balance?: number;
 }
 export const CORRECTION_KEYS = [
   "layout",
@@ -42,6 +44,7 @@ export const CORRECTION_KEYS = [
   "smooth",
   "size",
   "weight",
+  "balance",
 ] as const satisfies readonly (keyof CorrectionDetail)[];
 
 export interface FontBuildSettings {

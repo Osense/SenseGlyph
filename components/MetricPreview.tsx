@@ -105,6 +105,7 @@ export default function MetricPreview({
         ? original
         : fontLayout(project, corrected, settings, {
             sizeEvening: amounts.size,
+            balance: amounts.balance,
           }),
     [corrected, original, layoutKey, amounts.size],
   );

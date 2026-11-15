@@ -28,8 +28,9 @@ from fontTools.ttLib import TTFont
 from fontTools.pens.basePen import BasePen
 from PIL import Image, ImageFilter
 
-FONTS = dict(re.findall(r'id:\s*"([^"]+)"[^}]*?file:\s*"([^"]+)"',
-                        Path('lib/reference-fonts.ts').read_text(encoding='utf-8')))
+FONTS = {k: v for k, v in re.findall(r'id:\s*"([^"]+)"[^}]*?file:\s*"([^"]+)"',
+                        Path('lib/reference-fonts.ts').read_text(encoding='utf-8'))
+         if not k.startswith('ja-')}
 CHARS = re.search(r'export const HANGUL\s*=\s*"([^"]+)"',
                   Path('data/charset.ts').read_text(encoding='utf-8')).group(1).split()
 N = 96    # stored resolution (runtime contract)
@@ -172,7 +173,7 @@ def piece_count(contours):
     return max(1, sum(1 for c in pieces if len(c[0]) >= total * 0.015))
 
 
-def best_cut(pieces, side, candidates, prior_a, prior_b, expected, total, count_w=1.0, knife_w=6.0, keep=1):
+def best_cut(pieces, side, candidates, prior_a, prior_b, expected, total, count_w=1.0, knife_w=6.0, keep=1, split_only=False):
     """pieces: list of (ys, xs). side(ys, xs, t) -> bool array (True = side A).
 
     Two readings per cut position:
@@ -192,13 +193,15 @@ def best_cut(pieces, side, candidates, prior_a, prior_b, expected, total, count_
             centre = bool(side(cy, cx, t)[0])
             whole.append(centre); minority += (n - n_in) if centre else n_in
             frac = n_in / n
-            if frac >= 0.8: split.append(True)
-            elif frac <= 0.2: split.append(False)
+            edge = 0.995 if split_only else 0.8  # 구조로 찾은 자리는 붙은 잉크도 그 줄에서 자른다
+            if frac >= edge: split.append(True)
+            elif frac <= 1 - edge: split.append(False)
             else:
                 split.append(inside)
                 # Cost of a knife cut = ink cross-section along the cut line.
                 cut_ink += int(((side(ys + 1, xs, t) != inside) | (side(ys, xs + 1, t) != inside)).sum())
-        for result, cost in ((whole, minority / total * 8), (split, cut_ink / R * knife_w)):
+        readings = ((split, cut_ink / R * knife_w),) if split_only else ((whole, minority / total * 8), (split, cut_ink / R * knife_w))
+        for result, cost in readings:
             na = sum(1 for r in result if r is not False)
             nb = sum(1 for r in result if r is not True)
             if na == 0 or nb == 0: continue
@@ -235,6 +238,10 @@ def horizontal_vowel_cut(top, vi):
     if vi in (13, 17, 18):  # ㅜ ㅠ ㅡ
         return top_row
     # ㅗ ㅛ: 위로 올라가며 짧은 기둥을 지나 초성 아래 획이 나오는 곳을 찾는다.
+    xs_ = np.nonzero(m.any(axis=0))[0]
+    found = stem_cut_up(m, top_row, int(xs_.min()), int(xs_.max()) + 1, rows[-1] - rows[0])
+    if found is not None:
+        return found
     counts = m.sum(axis=1)
     limit = max(rows[0], top_row - int((rows[-1] - rows[0]) * 0.45))
     y = top_row - 1; skip = 0
@@ -245,6 +252,87 @@ def horizontal_vowel_cut(top, vi):
         if counts[y] > widest * 0.35: return y + 1
         y -= 1
     return None
+
+
+def segments(row, x0=0, x1=None):
+    """한 줄의 잉크 구간 [(시작, 끝)] (끝은 미포함), x0~x1 안쪽만."""
+    part = row[x0:x1]
+    d = np.diff(np.concatenate([[0], part.astype(np.int8), [0]]))
+    return [(int(a) + x0, int(b) + x0) for a, b in zip(np.where(d == 1)[0], np.where(d == -1)[0])]
+
+
+def stem_cut_up(m, beam_top, x0, x1, height):
+    """ㅗ·ㅛ: 모음 가로획 바로 위의 짧은 기둥을 따라 올라가다가, 기둥이 아닌 잉크
+    (초성의 아래 획, ㅇ의 둥근 아래쪽)가 처음 나오는 줄 바로 아래를 자른다.
+    잉크 양(행 합계)이 아니라 '기둥과 이어지지 않는 새 구간'으로 보므로,
+    ㅇ처럼 아래가 가는 초성에서도 기둥까지 초성으로 묶이지 않는다."""
+    beam = max((b - a for a, b in segments(m[beam_top], x0, x1)), default=0)
+    if beam < 6:
+        return None
+    y = beam_top - 1; skip = 0
+    # 가로획 둥근 가장자리·붓 맺음: 기둥만 남는 줄이 나올 때까지 몇 줄 올라간다
+    while y > 0 and skip < 12:
+        segs = segments(m[y], x0, x1)
+        if segs and all(b - a <= beam * 0.3 for a, b in segs):
+            break
+        if not segs:
+            return y + 1  # 가로획 바로 위가 비어 있다(기둥 없음)
+        y -= 1; skip += 1
+    else:
+        return None
+    stems = segments(m[y], x0, x1)
+    width = max(b - a for a, b in stems)
+    limit = max(0, beam_top - int(height * 0.5))
+    while y > limit:
+        segs = segments(m[y], x0, x1)
+        if not segs:
+            return y + 1
+        for a, b in segs:
+            # 처음 기둥 자리(조금의 기울기 허용)와 겹치지 않거나, 기둥보다 훨씬 넓으면 초성이다
+            joined = [st for st in stems if a < st[1] + 3 and b > st[0] - 3]
+            if not joined or b - a > max(width * 2.0, width + 5):
+                return y + 1
+        y -= 1
+    return None
+
+
+def mixed_vowel_cut(top, vi):
+    """섞임 모음(ㅘㅙㅚㅝㅞㅟㅢ): 오른쪽 긴 기둥의 왼쪽 끝(x)과, 그 왼쪽의 모음 가로획(ㅗ·ㅜ·ㅡ의 보)
+    위쪽(y)으로 자른다. 위·왼쪽 사분면이 초성이다.
+    ㅜ 기반·ㅢ는 보 바로 위, ㅗ 기반은 보 위 짧은 기둥이 끝나는 곳."""
+    m = np.zeros((R, R), dtype=bool)
+    for ys, xs in top: m[ys, xs] = True
+    ys_, xs_ = np.nonzero(m)
+    if len(ys_) < 20: return None
+    x0, x1, y0, y1 = xs_.min(), xs_.max(), ys_.min(), ys_.max()
+    W, H = x1 - x0, y1 - y0
+    if W < 10 or H < 10: return None
+    def vrun(col):
+        d = np.diff(np.concatenate([[0], col.astype(np.int8), [0]]))
+        a, b = np.where(d == 1)[0], np.where(d == -1)[0]
+        return int((b - a).max()) if len(a) else 0
+    zone = range(int(x0 + W * 0.5), x1 + 1)
+    runs = {x: vrun(m[:, x]) for x in zone}
+    best = max(runs.values())
+    if best < H * 0.5: return None
+    pillar = min(x for x, r in runs.items() if r >= best * 0.7)
+    left = pillar - 1
+    while left > x0 and vrun(m[:, left]) >= best * 0.7: left -= 1
+    pillar_left = left + 1
+    # 기둥 왼쪽의 가장 아래쪽 넓은 가로획 = 모음의 보
+    widths = [max((b - a for a, b in segments(m[y], x0, pillar_left)), default=0) for y in range(R)]
+    lo = int(y0 + H * 0.3)
+    widest = max(widths[lo:y1 + 1] or [0])
+    if widest < W * 0.25: return None
+    bar = [y for y in range(lo, y1 + 1) if widths[y] >= widest * 0.85]
+    bottom = bar[-1]; beam_top = bottom
+    while beam_top - 1 in bar: beam_top -= 1
+    if vi in (14, 15, 16, 19):  # ㅝㅞㅟㅢ
+        cut_y = beam_top
+    else:  # ㅘㅙㅚ
+        cut_y = stem_cut_up(m, beam_top, x0, pillar_left, H)
+        if cut_y is None: return None
+    return (pillar_left - 1, cut_y)
 
 
 def jong_cut_hint(big, vi):
@@ -368,10 +456,15 @@ def build(char, glyphs, cmap, priors):
         if kind == 'H':
             forced = horizontal_vowel_cut(top, vi)
             if forced is not None:
-                found = best_cut(top, lambda ys, xs, t: ys < t, [forced], pc, pv, (forced,), total)
+                # 모음 구조로 찾은 자리: 붙어 있는 잉크도 그 줄에서 자른다(통째로 한쪽에 넘기지 않는다)
+                found = best_cut(top, lambda ys, xs, t: ys < t, [forced], pc, pv, (forced,), total, split_only=True)
                 if found: return found
             cand = range(int(ty0 + (ty1 - ty0) * 0.15), int(ty0 + (ty1 - ty0) * 0.88))
             return best_cut(top, lambda ys, xs, t: ys < t, cand, pc, pv, (ty0 + (ty1 - ty0) * 0.52,), total)
+        forced = mixed_vowel_cut(top, vi)
+        if forced is not None:
+            found = best_cut(top, lambda ys, xs, t: (xs < t[0]) & (ys < t[1]), [forced], pc, pv, forced, total, split_only=True)
+            if found: return found
         xs_c = range(int(tx0 + (tx1 - tx0) * 0.3), int(tx0 + (tx1 - tx0) * 0.9), 3)
         ys_c = range(int(ty0 + (ty1 - ty0) * 0.2), int(ty0 + (ty1 - ty0) * 0.85), 3)
         cand = [(a, b) for a in xs_c for b in ys_c]

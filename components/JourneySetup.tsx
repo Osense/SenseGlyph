@@ -2,6 +2,7 @@
 import { APP_NAME, APP_VERSION, MAKER } from "../lib/version";
 import { useState } from "react";
 import { useT } from "../lib/i18n";
+import { compositionFit } from "../lib/font/reference";
 import { BrushPreview } from "./Preview";
 import WritingPad from "./WritingPad";
 import PixelSizeControl from "./PixelSizeControl";
@@ -304,6 +305,18 @@ export default function JourneySetup({
               >
                 {sentence || SENTENCE[script]}
               </span>
+              {script === "ko" && compositionFit(f.id) === "good" && (
+                <span className="font-choice-fit is-good">
+                  {t("추천 · 자모 자리가 일정해서 조합한 글자가 고르게 나와요")}
+                </span>
+              )}
+              {script === "ko" && compositionFit(f.id) === "loose" && (
+                <span className="font-choice-fit">
+                  {t(
+                    "글자마다 자모 자리가 달라 조합한 글자가 덜 고를 수 있어요",
+                  )}
+                </span>
+              )}
             </button>
           ))}
         </div>

@@ -199,3 +199,52 @@ export function referenceUsesFallback(char: string, font = "sans") {
 export function referenceFit(char: string, font?: string) {
   return referenceEntry(char, font)?.fit ?? 1;
 }
+
+/**
+ * 견본 글꼴의 '조합 고르기' 점수: 같은 짜임(세로·가로·섞임 모음, 받침 유무) 글자들 사이에서
+ * 자모 상자(위치·크기)가 얼마나 흔들리는지의 평균 표준편차. 작을수록 글자마다 자모 자리가
+ * 일정해서, 다른 글자에서 빌려 온 자모를 붙여도 덜 어긋난다(타자기·탈네모꼴에 가까움).
+ */
+export function compositionSpread(font: string): number | null {
+  const entries = fonts[font];
+  if (!entries) return null;
+  const groups = new Map<string, number[][]>();
+  for (const [char, entry] of Object.entries(entries)) {
+    const code = char.charCodeAt(0) - 0xac00;
+    if (code < 0 || code > 11171) continue;
+    const vi = Math.floor(code / 28) % 21,
+      jong = code % 28 > 0;
+    const kind = [0, 1, 2, 3, 4, 5, 6, 7, 20].includes(vi)
+      ? "V"
+      : [8, 12, 13, 17, 18].includes(vi)
+        ? "H"
+        : "C";
+    for (const [part, box] of Object.entries(entry.boxes)) {
+      const key = part + kind + jong;
+      groups.set(key, [...(groups.get(key) ?? []), box as number[]]);
+    }
+  }
+  const spreads: number[] = [];
+  for (const boxes of groups.values()) {
+    if (boxes.length < 4) continue;
+    let sum = 0;
+    for (let k = 0; k < 4; k++) {
+      const values = boxes.map((b) => b[k]);
+      const mean = values.reduce((a, b) => a + b, 0) / values.length;
+      sum += Math.sqrt(
+        values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length,
+      );
+    }
+    spreads.push(sum / 4);
+  }
+  return spreads.length
+    ? spreads.reduce((a, b) => a + b, 0) / spreads.length
+    : null;
+}
+
+/** 조합 고르기 등급: good(추천) · fair · loose(조합이 덜 고름) */
+export function compositionFit(font: string): "good" | "fair" | "loose" | null {
+  const spread = compositionSpread(font);
+  if (spread === null) return null;
+  return spread <= 0.05 ? "good" : spread <= 0.07 ? "fair" : "loose";
+}

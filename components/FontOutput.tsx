@@ -1,6 +1,7 @@
 "use client";
 
 import { isNativeApp } from "../lib/native";
+import { romanizeName } from "../lib/font/romanize";
 import { useT } from "../lib/i18n";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { ExportFormat } from "../lib/font/export-formats";
@@ -201,9 +202,11 @@ export default function FontOutput({
   const [specimen, setSpecimen] = useState(
     script === "ja" ? SPECIMEN_JA : SPECIMEN,
   );
+  // 영문 이름은 비워 두면 현지 이름을 로마자로 바꿔 자동으로 채운다(PostScript 이름은 영문이어야 함).
+  const autoEnglish = romanizeName(korean.trim().normalize("NFC"), script);
   const names = {
     korean: korean.trim().normalize("NFC"),
-    english: english.trim(),
+    english: english.trim() || autoEnglish,
     script,
   };
   const localName = script === "ja" ? "일본어" : "한글";
@@ -219,7 +222,7 @@ export default function FontOutput({
   const reasons = blockers(
     status,
     korean.trim(),
-    english.trim(),
+    names.english,
     !!exporting,
     script,
   );
@@ -368,15 +371,23 @@ export default function FontOutput({
                 aria-label={t("영문 폰트 이름")}
                 maxLength={60}
                 value={english}
-                placeholder="Type a name here!"
+                placeholder={autoEnglish}
                 aria-invalid={(!!english && !englishValid) || undefined}
                 onChange={(event) => setEnglish(event.target.value)}
               />
             </span>
-            {!!english && !englishValid && (
+            {!!english && !englishValid ? (
               <small className="fw-error">
                 {t("띄어쓰기 없이 영어·숫자로만 입력해 주세요.")}
               </small>
+            ) : (
+              !english && (
+                <small>
+                  {t("비워 두면 ‘{name}’으로 자동으로 넣어요.", {
+                    name: autoEnglish,
+                  })}
+                </small>
+              )
             )}
           </label>
         </div>
@@ -559,11 +570,11 @@ export default function FontOutput({
         {status !== "ready" ? (
           <p className="fw-note">{t("폰트를 만든 뒤에 내려받을 수 있어요.")}</p>
         ) : (
-          (!names.korean || !names.english) && (
+          !names.korean && (
             <p className="fw-note">
               {script === "ja"
-                ? t("일본어·영문 폰트 이름을 넣으면 내려받을 수 있어요.")
-                : t("한글·영문 폰트 이름을 넣으면 내려받을 수 있어요.")}
+                ? t("일본어 폰트 이름을 넣으면 내려받을 수 있어요.")
+                : t("한글 폰트 이름을 넣으면 내려받을 수 있어요.")}
             </p>
           )
         )}

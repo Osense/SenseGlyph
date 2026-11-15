@@ -3317,3 +3317,108 @@ button {
   font-size: 12px;
   line-height: 1.6;
 }
+
+/* 작업 창: 폰트 만들기·파일 꾸리기 */
+.sg-work-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: color-mix(in srgb, var(--ink) 28%, transparent);
+  backdrop-filter: blur(2px);
+}
+.sg-work {
+  width: min(420px, 100%);
+  background: var(--paper, #fff);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 22px 22px 18px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
+  display: grid;
+  gap: 10px;
+}
+.sg-work h2 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.sg-work-percent {
+  font-size: 40px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.sg-work-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--sheet);
+  overflow: hidden;
+}
+.sg-work-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+.sg-work-bar.is-flowing span {
+  width: 40% !important;
+  animation: sg-flow 1.2s ease-in-out infinite;
+}
+@keyframes sg-flow {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(260%);
+  }
+}
+.sg-work-line {
+  margin: 4px 0 0;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 13px;
+  min-height: 2.6em;
+}
+.sg-work-line b {
+  color: var(--accent);
+  display: inline-block;
+  width: 1em;
+}
+.sg-work-line small,
+.sg-work-step,
+.sg-work-note {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0;
+}
+.sg-work-cancel {
+  justify-self: end;
+  margin-top: 6px;
+  border: 1px solid var(--line);
+  background: var(--sheet);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sg-work-bar.is-flowing span {
+    animation: none;
+  }
+}
+.font-choice-fit {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.font-choice-fit.is-good {
+  color: var(--accent);
+  font-weight: 600;
+}

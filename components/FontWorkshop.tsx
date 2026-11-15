@@ -1,6 +1,7 @@
 "use client";
 
 import FontOutput from "./FontOutput";
+import WorkProgress from "./WorkProgress";
 import { useT } from "../lib/i18n";
 import { countExport } from "../lib/analytics";
 import { OUTPUT_PREFIX, type OutputNames } from "../lib/font/output-names";
@@ -78,9 +79,10 @@ const PRESETS = [
   { value: 25, label: "살짝" },
   { value: 50, label: "단정하게" },
   { value: 80, label: "많이" },
+  { value: 100, label: "견본처럼" },
 ];
 const DETAIL_LABELS: Record<
-  keyof CorrectionDetail,
+  (typeof CORRECTION_KEYS)[number],
   { label: string; note: string }
 > = {
   layout: {
@@ -94,6 +96,10 @@ const DETAIL_LABELS: Record<
   smooth: { label: "떨림", note: "획의 잔떨림을 부드럽게" },
   size: { label: "글자 크기", note: "작게 쓴 글자를 보통 크기 쪽으로" },
   weight: { label: "굵기 고르게", note: "획마다 다른 필압을 고르게" },
+  balance: {
+    label: "자모 균형",
+    note: "다른 글자에서 빌려 온 자모의 크기·위치를 평균에 맞추고, 초성을 모음 기둥에 맞춰요",
+  },
 };
 
 interface Props {
@@ -206,6 +212,10 @@ export default function FontWorkshop({
       : writtenHangul;
 
   const [building, setBuilding] = useState(false);
+  /** 사용자가 직접 시작한 작업이면 작업 창을 띄운다(뒤에서 미리 만드는 중에는 띄우지 않음) */
+  const [workView, setWorkView] = useState<null | "build" | "export">(null);
+  const [exportProgress, setExportProgress] = useState<number | null>(null);
+  const exportToken = useRef(0);
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -245,6 +255,30 @@ export default function FontWorkshop({
     setBuilding(false);
     setError("");
   };
+  /** 내보내기(파일 꾸리기·굵기 3종 만들기) 중단 */
+  const cancelExport = () => {
+    exportToken.current++;
+    exportWorker.current?.terminate();
+    exportWorker.current = null;
+    weightsJob.current?.cancel();
+    weightsJob.current = null;
+    setExporting(null);
+    setExportNotice("");
+    setExportProgress(null);
+    setWorkView(null);
+  };
+  /** 폰트 만들기 중단 */
+  const cancelBuild = () => {
+    resetResult();
+    setWorkView(null);
+  };
+  // 작업이 끝나면 작업 창을 닫는다
+  useEffect(() => {
+    if (workView === "build" && !building) setWorkView(null);
+  }, [workView, building]);
+  useEffect(() => {
+    if (workView === "export" && !exporting) setWorkView(null);
+  }, [workView, exporting]);
   useEffect(() => {
     resetResult();
   }, [
@@ -384,6 +418,19 @@ export default function FontWorkshop({
     const timer = setTimeout(build, 1500);
     return () => clearTimeout(timer);
   }, [stage, finishStep, isCurrent, building, error, draft, prep]);
+  // 내보내기 화면에서 폰트를 만드는 동안은 작업 창을 띄운다(다듬기 화면의 미리 만들기는 조용히).
+  const shownExport = useRef(false);
+  useEffect(() => {
+    if (finishStep !== "export" || stage !== "build") {
+      shownExport.current = false;
+      return;
+    }
+    if (building && !shownExport.current) {
+      shownExport.current = true;
+      setWorkView("build");
+    }
+    if (!building) shownExport.current = false;
+  }, [finishStep, stage, building]);
   // 내보내기 화면에 오면 최신 설정의 폰트를 바로 만듭니다.
   useEffect(() => {
     if (
@@ -508,7 +555,11 @@ export default function FontWorkshop({
     setExportError("");
     setExportNotice("");
     setExporting(format);
+    setExportProgress(format === "weights" ? 0 : null);
+    setWorkView("export");
+    const token = ++exportToken.current;
     const fail = (message: string) => {
+      if (token !== exportToken.current) return;
       exportWorker.current?.terminate();
       exportWorker.current = null;
       setExporting(null);
@@ -569,13 +620,16 @@ export default function FontWorkshop({
               },
             },
           },
-          (value) =>
+          (value) => {
+            if (token !== exportToken.current) return;
+            setExportProgress(Math.round((from + value / 2) * 0.95));
             setExportNotice(
               t("{label} 폰트를 만들고 있어요… {p}%", {
                 label: t(label),
                 p: Math.round(from + value / 2),
               }),
-            ),
+            );
+          },
         );
         weightsJob.current = handle;
         handle.promise.then(
@@ -587,8 +641,10 @@ export default function FontWorkshop({
       try {
         const light = await variant(clampWeight(base * 0.7), "가는", 0);
         const bold = await variant(clampWeight(base * 1.45), "굵은", 50);
+        if (token !== exportToken.current) return;
         weightsJob.current = null;
         setExportNotice("");
+        setExportProgress(96);
         convert({ light, bold });
       } catch {
         weightsJob.current = null;
@@ -872,13 +928,15 @@ export default function FontWorkshop({
                   >
                     <summary>{t("고급 설정 · 항목별로 조절")}</summary>
                     {CORRECTION_KEYS.filter(
-                      (key) => script === "ko" || key !== "layout",
+                      (key) =>
+                        script === "ko" ||
+                        (key !== "layout" && key !== "balance"),
                     ).map((key) =>
                       slider(
                         key === "layout" && script === "ja"
                           ? DETAIL_LABELS[key].label
                           : DETAIL_LABELS[key].label,
-                        detail[key],
+                        detail[key] ?? 0,
                         0,
                         100,
                         (value) =>
@@ -887,7 +945,7 @@ export default function FontWorkshop({
                             alignToReference: undefined,
                             averageStrokes: undefined,
                           }),
-                        detail[key] + "%",
+                        (detail[key] ?? 0) + "%",
                         DETAIL_LABELS[key].note,
                         5,
                       ),
@@ -1049,6 +1107,29 @@ export default function FontWorkshop({
           </>
         ) : (
           <>
+            {workView === "build" && building && (
+              <WorkProgress
+                kind="build"
+                percent={progress}
+                step={message}
+                script={script}
+                onCancel={cancelBuild}
+              />
+            )}
+            {workView === "export" && exporting && (
+              <WorkProgress
+                kind={
+                  exporting === "weights" &&
+                  exportProgress !== null &&
+                  exportProgress < 96
+                    ? "weights"
+                    : "export"
+                }
+                percent={exportProgress}
+                script={script}
+                onCancel={cancelExport}
+              />
+            )}
             <FontOutput
               family={result?.face.family}
               characters={result?.stats.characters ?? []}
@@ -1066,6 +1147,7 @@ export default function FontWorkshop({
               error={error}
               onBuild={() => {
                 setError("");
+                setWorkView("build");
                 build();
               }}
               exporting={exporting}

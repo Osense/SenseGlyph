@@ -551,3 +551,25 @@ Google 사용자	Google ユーザー	Google user
 ‘{name}’은(는) 이미 있는 폰트 이름이에요. 다른 이름을 지어 주세요.	「{name}」はすでにあるフォント名です。別の名前にしてください。	‘{name}’ is an existing font name. Please choose another.
 ‘{name}’은(는) 다른 사용자가 쓰고 있어요.	「{name}」はほかのユーザーが使っています。	‘{name}’ is used by another user.
 띄어쓰기는 자동으로 빠지고, 영문은 소문자로만 들어가요. 내려받을 때도 한 번 더 확인해요.	スペースは自動で取り除かれ、英語は小文字だけになります。ダウンロード時にもう一度確認します。	Spaces are removed and English is lower-cased automatically. The name is checked again when you download.
+영구 삭제	完全に削除	Delete permanently
+새 폰트 시작은 ‘내 폰트’에서 →	新しいフォントは「マイフォント」で始める →	Start a new font in “My fonts” →
+결제 연결을 준비하고 있어요. 베타 기간에는 아래에 받은 코드를 넣으면 내려받을 수 있어요.	決済の接続を準備中です。ベータ期間中は、受け取ったコードを下に入力するとダウンロードできます。	Payments are being connected. During the beta, enter your code below to download.
+결제하고 내려받기	支払ってダウンロード	Pay and download
+주문 상품	ご注文の商品	Item
+결제 금액	お支払い金額	Total
+부가세 포함 · 한 번 결제로 다시 받기 무제한	税込・一度の支払いで何度でもダウンロード	VAT included · unlimited re-downloads
+결제 수단	支払い方法	Payment method
+주문 내용을 확인했고, 디지털 상품 특성상 내려받은 뒤에는 청약 철회가 제한되는 데 동의합니다.	注文内容を確認し、デジタル商品のためダウンロード後はキャンセルできないことに同意します。	I have checked the order and agree that, as a digital product, it can't be cancelled after download.
+결제창을 여는 중…	決済画面を開いています…	Opening checkout…
+{amount} 결제하기	{amount} を支払う	Pay {amount}
+코드가 맞지 않아요. 다시 확인해 주세요.	コードが違います。もう一度確認してください。	That code isn't valid. Please check it.
+코드가 있나요?	コードをお持ちですか？	Have a code?
+코드 입력	コードを入力	Enter code
+코드로 내려받기	コードでダウンロード	Download with code
+결제는 안전한 결제대행사(PG)를 통해 처리되며, 카드 정보는 쎈스 글리프에 저장되지 않아요.	決済は安全な決済代行会社を通じて行われ、カード情報は SenseGlyph に保存されません。	Payments are processed by a secure payment provider; card details are never stored by SenseGlyph.
+신용·체크카드	クレジット・デビットカード	Credit/debit card
+카카오페이	カカオペイ	Kakao Pay
+네이버페이	NAVER Pay	Naver Pay
+토스페이	Toss Pay	Toss Pay
+원	ウォン	 KRW
+정식 구매 · 일본어	正式購入・日本語	Full purchase · Japanese

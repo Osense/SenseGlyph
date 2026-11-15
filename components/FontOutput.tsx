@@ -2,6 +2,8 @@
 
 import { isNativeApp } from "../lib/native";
 import { romanizeName } from "../lib/font/romanize";
+import { isUnlocked } from "../lib/payment";
+import PaymentDialog from "./PaymentDialog";
 import {
   checkFontName,
   cleanEnglishName,
@@ -270,9 +272,15 @@ export default function FontOutput({
       setShareUnsupported(true);
       return;
     }
+    // 결제(목업): 이 창에서 결제나 코드 확인을 한 번 통과하면 다시 묻지 않는다.
+    if (!isUnlocked()) {
+      setPayFor(next);
+      return;
+    }
     setMode(next);
     onDownload(format, names, next);
   };
+  const [payFor, setPayFor] = useState<"download" | "share" | null>(null);
   const share = async () => {
     if (!shareFile) return;
     try {
@@ -692,6 +700,22 @@ export default function FontOutput({
             </button>
           </div>
         </FontDialog>
+      )}
+      {payFor && (
+        <PaymentDialog
+          order={{
+            item: script === "ja" ? "정식 구매 · 일본어" : "정식 구매 · 한글",
+            fontName: OUTPUT_PREFIX + names.korean,
+            format: format === "weights" ? "zip · 3 weights" : format,
+          }}
+          onClose={() => setPayFor(null)}
+          onPaid={() => {
+            const next = payFor;
+            setPayFor(null);
+            setMode(next);
+            onDownload(format, names, next);
+          }}
+        />
       )}
       {shareUnsupported && (
         <FontDialog

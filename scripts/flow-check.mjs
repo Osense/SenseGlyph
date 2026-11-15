@@ -277,9 +277,24 @@ await page.fill('[aria-label="한글 폰트 이름"]', "시험글씨");
 await page.fill('[aria-label="영문 폰트 이름"]', "TestHand");
 // Headless Chromium reports "download" for non-ASCII names; check the bytes instead.
 const size = async (download) => statSync(await download.path()).size;
+// 다운로드를 누르면 결제창(목업)이 뜨고, 코드 '권오현'으로 내려받는다.
+await page.click(".fw-download");
+await page.waitForSelector(".sg-pay");
+check("다운로드 전 결제창", await page.locator(".sg-pay-button").isVisible());
+await page.click(".sg-pay-agree input");
+await page.click(".sg-pay-button");
+await page.waitForSelector(".sg-pay-notice", { timeout: 5000 });
+check("결제는 준비 중 안내", true);
+await page.fill("#sg-pay-code", "틀린코드");
+await page.click('.sg-pay-code button[type="submit"]');
+check(
+  "틀린 코드는 거절",
+  await page.locator(".sg-pay-code .fw-error").isVisible(),
+);
+await page.fill("#sg-pay-code", "권오현");
 const [first] = await Promise.all([
   page.waitForEvent("download", { timeout: 180000 }),
-  page.click(".fw-download"),
+  page.click('.sg-pay-code button[type="submit"]'),
 ]);
 check(
   "코드 없이 바로 다운로드 (기본 TTF)",

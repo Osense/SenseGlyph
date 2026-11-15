@@ -1182,12 +1182,15 @@ details.sg-help summary::-webkit-details-marker {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+  align-items: start;
 }
 .fw-field {
   display: grid;
   gap: 4px;
   font-size: 14px;
   min-width: 0;
+  /* 한쪽 칸에만 안내 문구가 있어도 이름 칸 높이·위치가 어긋나지 않게 */
+  align-content: start;
 }
 .fw-prefixed {
   display: flex;
@@ -3795,4 +3798,151 @@ button {
   flex-basis: 100%;
   color: var(--muted);
   font-size: 11px;
+}
+.sg-account-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.sg-account-list button.is-danger {
+  color: #fff;
+  background: #c0392b;
+  border-color: #c0392b;
+}
+
+/* 결제창(목업) */
+.sg-pay {
+  max-width: 460px;
+  display: grid;
+  gap: 12px;
+}
+.sg-pay-order {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.sg-pay-order div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.sg-pay-order small,
+.sg-pay-order span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.sg-pay-order strong {
+  font-size: 15px;
+}
+.sg-pay-amount {
+  text-align: right;
+}
+.sg-pay-amount strong {
+  font-size: 22px;
+  color: var(--accent);
+}
+.sg-pay-methods {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.sg-pay-methods legend {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.sg-pay-methods label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.sg-pay-methods label.is-selected {
+  border-color: var(--accent);
+  background: var(--active-wash);
+}
+.sg-pay-agree {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.sg-pay-button {
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 12px;
+  border-radius: 12px;
+  border: 0;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+.sg-pay-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.sg-pay-notice {
+  margin: 0;
+  font-size: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--active-wash);
+}
+.sg-pay-code {
+  display: grid;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+.sg-pay-code label {
+  font-size: 12px;
+  color: var(--muted);
+}
+.sg-pay-code div {
+  display: flex;
+  gap: 6px;
+}
+.sg-pay-code input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 14px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.sg-pay-code button {
+  font: inherit;
+  font-size: 13px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--accent);
+  background: var(--sheet);
+  color: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+}
+.sg-pay-code button:disabled {
+  opacity: 0.45;
+}
+.sg-pay-foot {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
 }

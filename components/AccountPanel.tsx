@@ -11,7 +11,7 @@ import {
   type ExportRecord,
 } from "../lib/account";
 import { useLang, useT } from "../lib/i18n";
-import { listProjects } from "../lib/storage";
+import { deleteProject, listProjects } from "../lib/storage";
 import type { ProjectSummary } from "../lib/project-store";
 
 type Tab = "profile" | "library" | "payments";
@@ -34,6 +34,13 @@ export default function AccountPanel({
   const [name, setName] = useState(session?.name ?? "");
   const [projects, setProjects] = useState<ProjectSummary[] | null>(null);
   const [exports, setExports] = useState<ExportRecord[]>([]);
+  /** 삭제 확인 중인 프로젝트 */
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const remove = async (id: string) => {
+    await deleteProject(id);
+    setConfirming(null);
+    setProjects(await listProjects());
+  };
   useEffect(() => {
     listProjects().then(setProjects, () => setProjects([]));
     setExports(exportHistory());
@@ -158,17 +165,45 @@ export default function AccountPanel({
                         {p.id === currentId ? " · " + t("현재 작업") : ""}
                       </small>
                     </div>
-                    {p.id !== currentId && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onOpenProject(p.id);
-                          onClose();
-                        }}
-                      >
-                        {t("열기")}
-                      </button>
-                    )}
+                    {p.id !== currentId &&
+                      (confirming === p.id ? (
+                        <span className="sg-account-actions">
+                          <button
+                            type="button"
+                            className="is-danger"
+                            onClick={() => remove(p.id)}
+                          >
+                            {t("영구 삭제")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirming(null)}
+                          >
+                            {t("취소")}
+                          </button>
+                        </span>
+                      ) : (
+                        <span className="sg-account-actions">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onOpenProject(p.id);
+                              onClose();
+                            }}
+                          >
+                            {t("열기")}
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={t("{name} 프로젝트 삭제", {
+                              name: p.name,
+                            })}
+                            onClick={() => setConfirming(p.id)}
+                          >
+                            {t("삭제")}
+                          </button>
+                        </span>
+                      ))}
                   </li>
                 ))}
               </ul>
@@ -181,7 +216,7 @@ export default function AccountPanel({
                 onClose();
               }}
             >
-              {t("새 폰트 시작·삭제는 ‘내 폰트’에서 →")}
+              {t("새 폰트 시작은 ‘내 폰트’에서 →")}
             </button>
             <h3>{t("내보낸 폰트 파일")}</h3>
             {exports.length === 0 ? (

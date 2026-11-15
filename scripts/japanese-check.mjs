@@ -25,6 +25,9 @@ await page.addInitScript(() =>
     JSON.stringify({ name: "test", email: "", provider: "guest", since: 1 }),
   ),
 );
+await page.addInitScript(() =>
+  sessionStorage.setItem("senseglyph-unlocked", "1"),
+);
 const errors = [];
 page.on("pageerror", (error) => errors.push(error.message));
 await page.goto(BASE + "/?step=0");

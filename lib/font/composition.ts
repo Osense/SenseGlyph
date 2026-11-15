@@ -11,6 +11,7 @@ import {
 import { decompose, slotKeys, vowelType } from "../hangul";
 import { activeSeparation, effectiveSample } from "./editing";
 import { cachedJudgement } from "./judge";
+import { arrangePieces, relationsOf, type Piece } from "./relations";
 import {
   blendStrokes,
   deriveMissingSlots,
@@ -513,9 +514,10 @@ export function composeGlyph(
   const target = anchorChar
     ? sourceFrame(pools, anchorChar)
     : typicalFrame(pools, char);
-  return keys.flatMap((key) => {
+  const pieces = keys.map((key): Piece => {
+    const part = key.split(":")[0] as Part;
     const original = anchor?.get(key);
-    if (original) return original.strokes;
+    if (original) return { key, part, strokes: original.strokes, fixed: true };
     const pool = pools.get(key) ?? [];
     const source = pool.reduce(
       (best, candidate) =>
@@ -524,11 +526,16 @@ export function composeGlyph(
     );
     // 다른 짜임에서 옮겨 만든 자모: 정해 둔 자리에 놓는다.
     if (source.place)
-      return placeInBox(
-        source.strokes,
-        source.place,
-        target ?? { x: 120, y: 120, width: 760, height: 760 },
-      );
+      return {
+        key,
+        part,
+        fixed: false,
+        strokes: placeInBox(
+          source.strokes,
+          source.place,
+          target ?? { x: 120, y: 120, width: 760, height: 760 },
+        ),
+      };
     // 같은 자모를 여러 글자에서 썼다면 획 기본형이 같은 것끼리 섞는다(내 글씨의 평균 모양).
     const home = sourceFrame(pools, source.char);
     const others = pool
@@ -544,6 +551,15 @@ export function composeGlyph(
     const blended = others.length
       ? blendStrokes(source.strokes, others, 0.6, true)
       : source.strokes;
-    return placeComponent(blended, home, target);
+    return {
+      key,
+      part,
+      fixed: false,
+      strokes: placeComponent(blended, home, target),
+    };
   });
+  // 자리만 맞춘 조각들을 내 글씨에서 배운 관계(간격·맞춤·크기)대로 다시 쌓는다(lib/font/relations.ts).
+  return arrangePieces(char, pieces, relationsOf(pools), target).flatMap(
+    (piece) => piece.strokes,
+  );
 }

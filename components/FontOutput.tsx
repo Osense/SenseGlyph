@@ -58,12 +58,17 @@ function canShareFormat(format: ExportFormat) {
   // 안드로이드 앱은 안드로이드 공유 창을 직접 쓰므로 모든 형식을 보낼 수 있다.
   if (isNativeApp()) return true;
   try {
-    const type = format === "zip" ? "application/zip" : "font/" + format;
+    const zipped = format === "zip" || format === "weights";
+    const type = zipped ? "application/zip" : "font/" + format;
     return (
       typeof navigator !== "undefined" &&
       typeof navigator.canShare === "function" &&
       navigator.canShare({
-        files: [new File([new Uint8Array(4)], "font." + format, { type })],
+        files: [
+          new File([new Uint8Array(4)], "font." + (zipped ? "zip" : format), {
+            type,
+          }),
+        ],
       })
     );
   } catch {
@@ -357,6 +362,12 @@ export default function FontOutput({
               </li>
             </ul>
             <p>
+              <b>굵기 3종 ZIP</b>은 같은 손글씨로 가는·보통·굵은 폰트를 함께
+              만들어요. 세 개를 모두 설치하면 문서 프로그램의 '굵게(B)' 버튼이
+              내 손글씨의 굵은 모양으로 바뀌어요. 만드는 데 시간이 조금 더
+              걸려요.
+            </p>
+            <p>
               TTF와 OTF는 글자 모양이 같고 곡선을 저장하는 방식만 달라요. 어느
               쪽이 더 무겁거나 고급인 것은 아니니, <b>둘 중 하나만</b>{" "}
               설치하세요. 둘 다 설치하면 같은 이름의 글꼴이 겹칠 수 있어요.
@@ -397,6 +408,19 @@ export default function FontOutput({
               <small>TTF·OTF·WOFF2·WOFF 모두</small>
             </label>
           </div>
+          <div className="fw-format-all">
+            <span>문서에서 굵게·가늘게도 쓰려면 →</span>
+            <label className={format === "weights" ? "is-selected" : ""}>
+              <input
+                type="radio"
+                name="format"
+                checked={format === "weights"}
+                onChange={() => setFormat("weights")}
+              />
+              <strong>굵기 3종 ZIP</strong>
+              <small>가는(Light)·보통(Regular)·굵은(Bold) TTF·OTF</small>
+            </label>
+          </div>
           <p className="fw-android">
             ※ 안드로이드 휴대폰·태블릿에서는 폰트를 직접 설치할 수 없어요.
           </p>
@@ -430,7 +454,9 @@ export default function FontOutput({
             {exporting && mode === "download"
               ? "파일 준비 중…"
               : names.korean
-                ? `${OUTPUT_PREFIX}${names.korean}.${format} 다운로드 ↓`
+                ? format === "weights"
+                  ? `${OUTPUT_PREFIX}${names.korean} 굵기3종.zip 다운로드 ↓`
+                  : `${OUTPUT_PREFIX}${names.korean}.${format} 다운로드 ↓`
                 : "다운로드 ↓"}
           </button>
           <button

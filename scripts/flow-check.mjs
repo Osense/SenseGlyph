@@ -271,6 +271,27 @@ const [second] = await Promise.all([
   page.click(".fw-download"),
 ]);
 check("OTF 다운로드", (await size(second)) > 1000, second.suggestedFilename());
+await page.click('.fw-formats label:has-text("굵기 3종 ZIP")');
+const [weights] = await Promise.all([
+  page.waitForEvent("download", { timeout: 300000 }),
+  page.click(".fw-download"),
+]);
+{
+  const { unzipSync } = await import("fflate");
+  const { readFileSync } = await import("node:fs");
+  const files = Object.keys(
+    unzipSync(new Uint8Array(readFileSync(await weights.path()))),
+  );
+  check(
+    "굵기 3종 ZIP (가는·보통·굵은 TTF·OTF)",
+    files.length === 6 &&
+      ["Light", "Regular", "Bold"].every((s) =>
+        files.some((f) => f.endsWith("-" + s + ".ttf")),
+      ),
+    files.join(", "),
+  );
+}
+await page.click('.fw-formats label:has-text("TTF")');
 check(
   "안드로이드 설치 불가 안내",
   await page
@@ -310,7 +331,7 @@ await page.waitForSelector("text=보낼 준비가 됐어요", { timeout: 120000 
 await page.click('.font-flow-dialog button:has-text("공유하기")');
 await page.waitForTimeout(300);
 const shared = await page.evaluate(() => window.__shared ?? "");
-check("공유 창으로 폰트 파일 전달", /\.otf:\d{4,}/.test(shared), shared);
+check("공유 창으로 폰트 파일 전달", /\.ttf:\d{4,}/.test(shared), shared);
 await page.screenshot({ path: "artifacts/flow-export.png", fullPage: true });
 check("브라우저 오류 없음", !errors.length, errors.join(" | "));
 await browser.close();

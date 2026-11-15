@@ -3,7 +3,7 @@ import { compress } from "woff2-encoder";
 import { writeWoff } from "./sfnt-writer";
 import { nameOutputFont, type OutputNames } from "./output-names";
 
-export type ExportFormat = "ttf" | "otf" | "woff" | "woff2" | "zip";
+export type ExportFormat = "ttf" | "otf" | "woff" | "woff2" | "zip" | "weights";
 export type ConversionRequest = {
   /** 폰트 만들기에서 함께 나온 TrueType·OpenType 원본 */
   ttf: ArrayBuffer;
@@ -11,6 +11,9 @@ export type ConversionRequest = {
   format: ExportFormat;
   names?: OutputNames;
   filename: string;
+  /** 굵기 3종 묶음: 같은 손글씨로 만든 가는·굵은 폰트 */
+  light?: { ttf: ArrayBuffer; otf: ArrayBuffer };
+  bold?: { ttf: ArrayBuffer; otf: ArrayBuffer };
 };
 export type ConversionReply = { buffer: ArrayBuffer } | { error: string };
 
@@ -21,7 +24,29 @@ export async function convertFont({
   format,
   filename,
   names,
+  light,
+  bold,
 }: ConversionRequest) {
+  if (format === "weights") {
+    if (!light || !bold || !names)
+      throw new Error("굵기 3종 폰트를 준비하지 못했습니다.");
+    const files: Record<string, [Uint8Array, { level: 6 }]> = {};
+    for (const [style, pair] of [
+      ["Light", light],
+      ["Regular", { ttf, otf }],
+      ["Bold", bold],
+    ] as const) {
+      files[`${filename}-${style}.ttf`] = [
+        new Uint8Array(nameOutputFont(pair.ttf, names, style)),
+        { level: 6 },
+      ];
+      files[`${filename}-${style}.otf`] = [
+        new Uint8Array(nameOutputFont(pair.otf, names, style)),
+        { level: 6 },
+      ];
+    }
+    return Uint8Array.from(zipSync(files, { level: 0 })).buffer;
+  }
   if (names) {
     ttf = nameOutputFont(ttf, names);
     otf = nameOutputFont(otf, names);

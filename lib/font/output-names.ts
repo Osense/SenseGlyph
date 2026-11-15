@@ -16,7 +16,19 @@ export const isKoreanOutputName = (name: string) =>
 export const isEnglishOutputName = (name: string) =>
   isEnglishFontName(name) && !/\s/.test(name);
 
-export function nameOutputFont(buffer: ArrayBuffer, names: OutputNames) {
+/** 굵기 3종(가는·보통·굵은) 묶음에서 쓰는 굵기 이름 */
+export type FontStyleName = "Light" | "Regular" | "Bold";
+const STYLE = {
+  Light: { weight: 300, bold: false },
+  Regular: { weight: 400, bold: false },
+  Bold: { weight: 700, bold: true },
+} as const;
+
+export function nameOutputFont(
+  buffer: ArrayBuffer,
+  names: OutputNames,
+  style: FontStyleName = "Regular",
+) {
   const korean = names.korean.trim().normalize("NFC");
   const english = names.english.trim();
   if (
@@ -32,7 +44,14 @@ export function nameOutputFont(buffer: ArrayBuffer, names: OutputNames) {
     english: OUTPUT_PREFIX + english,
   };
   const postScript =
-    family.english.replace(/[^a-zA-Z0-9]/g, "").slice(0, 55) + "-Regular";
+    family.english.replace(/[^a-zA-Z0-9]/g, "").slice(0, 55) + "-" + style;
+  // 같은 가족 안에서 굵기만 다르게: Bold 는 기본 굵게(스타일 이름 Bold),
+  // Light 는 따로 고르는 굵기라 패밀리 이름에 Light 를 붙이고 큰 가족(16·17번 이름)으로 묶는다.
+  const legacyFamily = (name: string) =>
+    style === "Light" ? name + " Light" : name;
+  const subfamily = style === "Bold" ? "Bold" : "Regular";
+  const fullName = (name: string) =>
+    style === "Regular" ? name : name + " " + style;
   const original = sfntTable(buffer, "name");
   const table = new DataView(
     original.buffer,
@@ -41,7 +60,7 @@ export function nameOutputFont(buffer: ArrayBuffer, names: OutputNames) {
   );
   const count = table.getUint16(2);
   const storage = table.getUint16(4);
-  const renamed = new Set([1, 3, 4, 6, 16, 18, 21]);
+  const renamed = new Set([1, 2, 3, 4, 6, 16, 17, 18, 21]);
   const records: {
     platform: number;
     encoding: number;
@@ -68,10 +87,17 @@ export function nameOutputFont(buffer: ArrayBuffer, names: OutputNames) {
     [0x0412, family.korean],
   ] as const) {
     for (const [id, value] of [
-      [1, name],
+      [1, legacyFamily(name)],
+      [2, subfamily],
       [3, postScript],
-      [4, name],
+      [4, fullName(name)],
       [6, postScript],
+      ...(style === "Regular"
+        ? []
+        : ([
+            [16, name],
+            [17, style],
+          ] as const)),
     ] as const) {
       const bytes = new Uint8Array(value.length * 2);
       const view = new DataView(bytes.buffer);
@@ -110,5 +136,20 @@ export function nameOutputFont(buffer: ArrayBuffer, names: OutputNames) {
     bytes.set(record.bytes, header + offset);
     offset += record.bytes.length;
   }
-  return replaceSfntTables(buffer, { name: bytes });
+  const tables: Record<string, Uint8Array> = { name: bytes };
+  if (style !== "Regular") {
+    // OS/2 굵기 값과 굵게 표시, head 의 굵게 표시를 굵기에 맞춘다.
+    const os2 = sfntTable(buffer, "OS/2").slice();
+    const ov = new DataView(os2.buffer);
+    ov.setUint16(4, STYLE[style].weight);
+    let selection = ov.getUint16(62) & ~(0x01 | 0x20 | 0x40);
+    selection |= STYLE[style].bold ? 0x20 : 0x40;
+    ov.setUint16(62, selection);
+    tables["OS/2"] = os2;
+    const head = sfntTable(buffer, "head").slice();
+    const hv = new DataView(head.buffer);
+    hv.setUint16(44, (hv.getUint16(44) & ~1) | (STYLE[style].bold ? 1 : 0));
+    tables.head = head;
+  }
+  return replaceSfntTables(buffer, tables);
 }

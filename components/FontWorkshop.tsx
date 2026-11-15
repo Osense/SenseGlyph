@@ -226,6 +226,9 @@ export default function FontWorkshop({
     worker.current = null;
     exportWorker.current?.terminate();
     exportWorker.current = null;
+    weightsJob.current?.cancel();
+    weightsJob.current = null;
+    setExportNotice("");
     setExporting(null);
     setExportError("");
     setBuilding(false);
@@ -410,18 +413,24 @@ export default function FontWorkshop({
     };
   }, [report, project.settings.referenceFont]);
   const [shareFile, setShareFile] = useState<File | null>(null);
+  const weightsJob = useRef<BuildHandle | null>(null);
+  useEffect(() => () => weightsJob.current?.cancel(), []);
   const download = (
     format: ExportFormat,
     names: OutputNames,
     mode: "download" | "share" = "download",
   ) => {
-    if (!result || !isCurrent || exportWorker.current) return;
-    const filename = OUTPUT_PREFIX + names.korean;
-    const type = format === "zip" ? "application/zip" : "font/" + format;
+    if (!result || !isCurrent || exportWorker.current || weightsJob.current)
+      return;
+    const zipped = format === "zip" || format === "weights";
+    const filename =
+      OUTPUT_PREFIX + names.korean + (format === "weights" ? " 굵기3종" : "");
+    const ext = zipped ? "zip" : format;
+    const type = zipped ? "application/zip" : "font/" + format;
     const save = (buffer: ArrayBuffer) => {
       // 안드로이드 앱: 기기 저장소에 저장하거나 안드로이드 공유 창을 바로 연다.
       if (isNativeApp()) {
-        const name = filename + "." + format;
+        const name = filename + "." + ext;
         const job =
           mode === "share"
             ? shareFromDevice(name, buffer).then(() => "")
@@ -441,13 +450,13 @@ export default function FontWorkshop({
       }
       // 공유는 파일 변환이 끝난 뒤 다시 한 번 누르게 합니다(브라우저는 터치 직후에만 공유 창을 열어 줌).
       if (mode === "share") {
-        setShareFile(new File([buffer], filename + "." + format, { type }));
+        setShareFile(new File([buffer], filename + "." + ext, { type }));
         return;
       }
       const url = URL.createObjectURL(new Blob([buffer], { type }));
       const link = document.createElement("a");
       link.href = url;
-      link.download = filename + "." + format;
+      link.download = filename + "." + ext;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -462,7 +471,7 @@ export default function FontWorkshop({
       setExporting(null);
       setExportError(message);
     };
-    const convert = () => {
+    const convert = (extra: Partial<ConversionRequest> = {}) => {
       try {
         const converter = new Worker(FONT_EXPORT_WORKER_URL);
         exportWorker.current = converter;
@@ -486,15 +495,61 @@ export default function FontWorkshop({
           ttf: result.ttf,
           otf: result.otf,
           format,
-          filename,
+          filename: OUTPUT_PREFIX + names.korean,
           names,
+          ...extra,
         };
         converter.postMessage(request);
       } catch {
         fail("파일 변환을 시작하지 못했어요. 다시 시도해 주세요.");
       }
     };
-    convert();
+    if (format !== "weights") {
+      convert();
+      return;
+    }
+    // 굵기 3종: 지금 굵기를 보통(Regular)으로 두고, 같은 손글씨로 가는(Light)·굵은(Bold) 폰트를 더 만든다.
+    const base = result.request.preparation.settings.strokeWeight ?? 100;
+    const clampWeight = (v: number) =>
+      Math.max(LIMITS.weightMin, Math.min(LIMITS.weightMax, Math.round(v)));
+    const variant = (weight: number, label: string, from: number) =>
+      new Promise<{ ttf: ArrayBuffer; otf: ArrayBuffer }>((resolve, reject) => {
+        const handle = buildFontParallel(
+          FONT_WORKER_URL,
+          {
+            ...result.request,
+            preparation: {
+              ...result.request.preparation,
+              settings: {
+                ...result.request.preparation.settings,
+                strokeWeight: weight,
+              },
+            },
+          },
+          (value) =>
+            setExportNotice(
+              `${label} 폰트를 만들고 있어요… ${Math.round(from + value / 2)}%`,
+            ),
+        );
+        weightsJob.current = handle;
+        handle.promise.then(
+          (built) => resolve({ ttf: built.ttf, otf: built.otf }),
+          reject,
+        );
+      });
+    (async () => {
+      try {
+        const light = await variant(clampWeight(base * 0.7), "가는", 0);
+        const bold = await variant(clampWeight(base * 1.45), "굵은", 50);
+        weightsJob.current = null;
+        setExportNotice("");
+        convert({ light, bold });
+      } catch {
+        weightsJob.current = null;
+        setExportNotice("");
+        fail("굵기 3종 폰트를 만들지 못했어요. 다시 시도해 주세요.");
+      }
+    })();
   };
   const syllables = report.available.filter((ch) => decompose(ch)).length;
   const detail = correctionDetail(view);

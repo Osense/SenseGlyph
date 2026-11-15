@@ -10,6 +10,7 @@ import {
 import { newProject } from "../lib/defaults";
 import { BASE_PATH } from "../lib/base-path";
 import { CREDIT } from "../lib/version";
+import { isNativeApp, saveToDevice } from "../lib/native";
 import {
   loadProject,
   saveProject,
@@ -246,7 +247,8 @@ export default function Page() {
         ? stepParameter
         : null;
     if (requestedStep !== null) setStep(requestedStep);
-    if ("serviceWorker" in navigator)
+    // 앱(안드로이드)은 파일을 앱 안에 담고 있어 오프라인 저장(서비스 워커)이 필요 없다.
+    if ("serviceWorker" in navigator && !isNativeApp())
       navigator.serviceWorker.register(BASE_PATH + "/sw.js").catch(() => {});
     let alive = true;
     loadProject()
@@ -501,6 +503,14 @@ export default function Page() {
   }, [modal, toolSheet]);
   const exportJSON = () => {
     if (!project) return;
+    if (isNativeApp()) {
+      const name = (project.name || "손글씨") + ".json";
+      saveToDevice(name, JSON.stringify(project, null, 2)).then(
+        (place) => notify(`'${place}' 폴더에 ${name} 백업을 저장했어요.`),
+        () => notify("백업 파일을 저장하지 못했어요."),
+      );
+      return;
+    }
     const url = URL.createObjectURL(
       new Blob([JSON.stringify(project, null, 2)], {
         type: "application/json",

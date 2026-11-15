@@ -11,6 +11,7 @@ import HandwritingSearch from "./HandwritingSearch";
 import SeparationEditor from "./SeparationEditor";
 import RewriteDialog from "./RewriteDialog";
 import MetricPreview from "./MetricPreview";
+import { isNativeApp, saveToDevice, shareFromDevice } from "../lib/native";
 import { APP_NAME, APP_VERSION, MAKER } from "../lib/version";
 import type {
   ConversionReply,
@@ -198,7 +199,8 @@ export default function FontWorkshop({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState<ExportFormat | null>(null);
-  const [exportError, setExportError] = useState("");
+  const [exportError, setExportError] = useState(""),
+    [exportNotice, setExportNotice] = useState("");
   const [result, setResult] = useState(() =>
     lastGeneratedFont?.request.project.id === project.id
       ? lastGeneratedFont
@@ -417,6 +419,26 @@ export default function FontWorkshop({
     const filename = OUTPUT_PREFIX + names.korean;
     const type = format === "zip" ? "application/zip" : "font/" + format;
     const save = (buffer: ArrayBuffer) => {
+      // 안드로이드 앱: 기기 저장소에 저장하거나 안드로이드 공유 창을 바로 연다.
+      if (isNativeApp()) {
+        const name = filename + "." + format;
+        const job =
+          mode === "share"
+            ? shareFromDevice(name, buffer).then(() => "")
+            : saveToDevice(name, buffer).then(
+                (place) => `'${place}' 폴더에 ${name} 파일을 저장했어요.`,
+              );
+        job.then(
+          (notice) => setExportNotice(notice),
+          () =>
+            setExportError(
+              mode === "share"
+                ? "공유 창을 열지 못했어요. 내려받은 뒤 메신저에서 파일을 첨부해 주세요."
+                : "기기에 저장하지 못했어요. 저장 공간과 권한을 확인해 주세요.",
+            ),
+        );
+        return;
+      }
       // 공유는 파일 변환이 끝난 뒤 다시 한 번 누르게 합니다(브라우저는 터치 직후에만 공유 창을 열어 줌).
       if (mode === "share") {
         setShareFile(new File([buffer], filename + "." + format, { type }));
@@ -432,6 +454,7 @@ export default function FontWorkshop({
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     };
     setExportError("");
+    setExportNotice("");
     setExporting(format);
     const fail = (message: string) => {
       exportWorker.current?.terminate();
@@ -929,6 +952,7 @@ export default function FontWorkshop({
               }}
               exporting={exporting}
               exportError={exportError}
+              exportNotice={exportNotice}
               onDownload={download}
               shareFile={shareFile}
               onShareDone={() => setShareFile(null)}

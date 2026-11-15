@@ -471,3 +471,13 @@ main.studio.journey .sg-credit,
 .fw-actions .sg-credit {
   margin: 0 0 0 auto;
 }
+
+/* 앱에서 기기에 저장했을 때 알림 */
+.fw-saved {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--ok-wash, #e4f1e8);
+  color: var(--ok, #2f7254);
+  font-size: 13px;
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import { isNativeApp } from "../lib/native";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { ExportFormat } from "../lib/font/export-formats";
 import {
@@ -54,6 +55,8 @@ const FORMATS: { id: ExportFormat; label: string; note: string }[] = [
 
 /** 이 기기 브라우저가 해당 형식의 파일을 공유 창으로 보낼 수 있는지 */
 function canShareFormat(format: ExportFormat) {
+  // 안드로이드 앱은 안드로이드 공유 창을 직접 쓰므로 모든 형식을 보낼 수 있다.
+  if (isNativeApp()) return true;
   try {
     const type = format === "zip" ? "application/zip" : "font/" + format;
     return (
@@ -134,6 +137,7 @@ export default function FontOutput({
   onBuild,
   exporting,
   exportError,
+  exportNotice,
   onDownload,
   shareFile,
   onShareDone,
@@ -149,6 +153,8 @@ export default function FontOutput({
   onBuild: () => void;
   exporting: ExportFormat | null;
   exportError: string;
+  /** 앱에서 기기에 저장한 뒤 알려 줄 말 */
+  exportNotice?: string;
   onDownload: (
     format: ExportFormat,
     names: OutputNames,
@@ -448,6 +454,11 @@ export default function FontOutput({
         {exportError && (
           <p className="fw-error" role="alert">
             {exportError}
+          </p>
+        )}
+        {exportNotice && (
+          <p className="fw-saved" role="status">
+            ✓ {exportNotice}
           </p>
         )}
       </form>

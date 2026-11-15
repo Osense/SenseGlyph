@@ -720,6 +720,43 @@ export const JA: Record<string, string> = {
     "文字・整え・名前は購入時のまま固定され、同じフォントはいつでも再ダウンロードできます。直したい場合は新しいプロジェクトに複製して作り直してください。",
   "주문 내용과 결제 후 수정 불가를 확인했고, 디지털 상품 특성상 내려받은 뒤에는 청약 철회가 제한되는 데 동의합니다.":
     "注文内容と購入後は変更できないことを確認し、デジタル商品のためダウンロード後はキャンセルできないことに同意します。",
+  "펜 끝의 버릇까지,\n그대로 폰트가 됩니다.":
+    "ペン先のくせまで、\nそのままフォントに。",
+  "만 자를 쓰고, 스캔하고, 한 글자씩 다듬던 몇 주를 — 태블릿 하나로, 한나절에.":
+    "何千字も書いて、スキャンして、一字ずつ整えていた数週間が、タブレットひとつで半日に。",
+  "만 천 자 대신, 백몇십 자": "一万字ではなく、ほんの少し",
+  "손글씨 폰트 하나에 11,000자 넘게 쓰던 시간은 이제 그만. 자모를 나눠 몇 글자만 쓰면, 나머지 현대 한글은 조합이 채워요.":
+    "手書きフォントのために何千字も書く時間はもういりません。書くのは見本の文字だけ、残りは書きぶりから補います。",
+  "스캔도, 한 글자씩 다듬기도 없이": "スキャンも、一字ずつの手直しもなし",
+  "종이에 쓰고, 스캔하고, 글자마다 윤곽을 손보던 긴 밤이 사라져요. 태블릿에 펜을 대는 순간 바로 글자가 돼요.":
+    "紙に書いてスキャンし、一字ずつ輪郭を直していた長い夜は終わり。タブレットにペンを置いた瞬間、そのまま文字になります。",
+  "써서 받기까지, 가장 짧은 길": "書いて受け取るまで、いちばん短い道",
+  "작업 시간만 놓고 보면 손글씨 폰트를 만드는 가장 빠른 방법일 거예요. 한 달이 걸리던 일이 한나절이면 끝나요.":
+    "作業時間だけで比べれば、手書きフォントを作るいちばん速い方法のはず。ひと月かかっていたことが半日で終わります。",
+  "완벽하진 않아도, 나머진 정돈이": "完璧でなくても、あとは整えが",
+  "조합한 글자가 한 자씩 그린 것만큼 완벽할 순 없어요. 대신 기울기·떨림·자모 균형을 다듬는 후처리가 그 틈을 조용히 메워요.":
+    "組み合わせた文字は、一字ずつ描いたほど完璧ではありません。そのぶん傾き・揺れ・バランスを整える後処理が、すき間を静かに埋めます。",
+  "TTF·OTF·웹폰트, 굵기 3종까지 한 번에. 한글·日本語·English 무엇이든 내 글씨로 내보내요.":
+    "TTF・OTF・Webフォント、太さ3種まで一度に。한글・日本語・English、どれでも自分の字で。",
+  "어디에 써도, 내 목소리 그대로": "どこで使っても、自分の声のまま",
+  "똑같은 기본 글꼴 사이에서 단 하나뿐인 표정. 사람 냄새 나는 글씨는 보는 사람의 마음을 먼저 붙잡아요.":
+    "見慣れた標準フォントの中で、ただひとつの表情。人の温もりがある文字は、見る人の心を先につかみます。",
+  "웹 디자인": "Webデザイン",
+  "화면에 체온을 더해요": "画面にぬくもりを",
+  "가게 운영": "お店づくり",
+  "메뉴판과 간판에 주인장의 손맛": "メニューと看板に店主の味",
+  브랜딩: "ブランディング",
+  "로고와 패키지에 하나뿐인 얼굴": "ロゴとパッケージに唯一の顔",
+  "예술 창작": "アート制作",
+  "작품 캡션까지 작가의 획으로": "作品キャプションまで作家の筆致で",
+  "영상·SNS": "動画・SNS",
+  "자막이 목소리처럼 들려요": "字幕が声のように",
+  "출판·그림책": "出版・絵本",
+  "책장마다 쓴 사람의 숨결": "ページごとに書き手の息づかい",
+  교실: "教室",
+  "선생님 글씨 그대로 학습지": "先生の字のままのプリント",
+  "편지·청첩장": "手紙・招待状",
+  "인쇄해도 마음은 손글씨": "印刷しても心は手書き",
 };
 export const EN: Record<string, string> = {
   " 폰트 이름": " font name",
@@ -1438,4 +1475,42 @@ export const EN: Record<string, string> = {
     "Handwriting, refinements and name are fixed as purchased, and the same font can be re-downloaded any time. To change it, duplicate into a new project and make it again.",
   "주문 내용과 결제 후 수정 불가를 확인했고, 디지털 상품 특성상 내려받은 뒤에는 청약 철회가 제한되는 데 동의합니다.":
     "I have checked the order and that it can't be edited after purchase, and agree that as a digital product it can't be cancelled after download.",
+  "펜 끝의 버릇까지,\n그대로 폰트가 됩니다.":
+    "Every quirk of your pen,\nturned into a font.",
+  "만 자를 쓰고, 스캔하고, 한 글자씩 다듬던 몇 주를 — 태블릿 하나로, 한나절에.":
+    "Weeks of writing thousands of letters, scanning and fixing each one — now an afternoon on a tablet.",
+  "만 천 자 대신, 백몇십 자": "Not 11,000 letters — just over a hundred",
+  "손글씨 폰트 하나에 11,000자 넘게 쓰던 시간은 이제 그만. 자모를 나눠 몇 글자만 쓰면, 나머지 현대 한글은 조합이 채워요.":
+    "No more writing 11,000+ letters for one handwriting font. Write a few parts, and combination fills in the rest.",
+  "스캔도, 한 글자씩 다듬기도 없이": "No scanning, no letter-by-letter cleanup",
+  "종이에 쓰고, 스캔하고, 글자마다 윤곽을 손보던 긴 밤이 사라져요. 태블릿에 펜을 대는 순간 바로 글자가 돼요.":
+    "The long nights of writing on paper, scanning and fixing every outline are over. The moment your pen touches the tablet, it becomes a glyph.",
+  "써서 받기까지, 가장 짧은 길": "From pen to file, the shortest path",
+  "작업 시간만 놓고 보면 손글씨 폰트를 만드는 가장 빠른 방법일 거예요. 한 달이 걸리던 일이 한나절이면 끝나요.":
+    "Measured by working time alone, it's likely the fastest way to make a handwriting font. A month of work, done in an afternoon.",
+  "완벽하진 않아도, 나머진 정돈이": "Not perfect — refinement does the rest",
+  "조합한 글자가 한 자씩 그린 것만큼 완벽할 순 없어요. 대신 기울기·떨림·자모 균형을 다듬는 후처리가 그 틈을 조용히 메워요.":
+    "Combined letters can't be as perfect as ones drawn one by one. Post-processing for slant, jitter and balance quietly fills the gap.",
+  "TTF·OTF·웹폰트, 굵기 3종까지 한 번에. 한글·日本語·English 무엇이든 내 글씨로 내보내요.":
+    "TTF, OTF, web fonts and three weights at once — Korean, Japanese or English, all in your hand.",
+  "어디에 써도, 내 목소리 그대로": "Wherever it goes, it sounds like you",
+  "똑같은 기본 글꼴 사이에서 단 하나뿐인 표정. 사람 냄새 나는 글씨는 보는 사람의 마음을 먼저 붙잡아요.":
+    "One face among identical default fonts. Lettering with a human touch catches the eye — and the heart — first.",
+  "웹 디자인": "Web design",
+  "화면에 체온을 더해요": "Warmth on the screen",
+  "가게 운영": "Running a shop",
+  "메뉴판과 간판에 주인장의 손맛": "The owner's touch on menus and signs",
+  브랜딩: "Branding",
+  "로고와 패키지에 하나뿐인 얼굴":
+    "A one-of-a-kind face for logos and packaging",
+  "예술 창작": "Art",
+  "작품 캡션까지 작가의 획으로": "Captions in the artist's own stroke",
+  "영상·SNS": "Video & social",
+  "자막이 목소리처럼 들려요": "Subtitles that sound like a voice",
+  "출판·그림책": "Books & picture books",
+  "책장마다 쓴 사람의 숨결": "The writer's breath on every page",
+  교실: "Classroom",
+  "선생님 글씨 그대로 학습지": "Worksheets in the teacher's own hand",
+  "편지·청첩장": "Letters & invitations",
+  "인쇄해도 마음은 손글씨": "Printed, yet still handwritten at heart",
 };

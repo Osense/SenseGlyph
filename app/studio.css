@@ -3446,21 +3446,66 @@ button {
   padding: 44px 40px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 440px minmax(0, 1fr);
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
   column-gap: 0;
   row-gap: 28px;
 }
 .sg-login-hero {
   grid-column: 1;
   grid-row: 1;
+  display: grid;
+  gap: 10px;
+  max-width: 420px;
+  margin-right: 24px;
+  opacity: 0.9;
+}
+.sg-login-bg {
+  word-break: keep-all;
+}
+.sg-login-hero p {
   margin: 0;
   white-space: pre-line;
-  font-size: clamp(24px, 3vw, 40px);
+  font-size: clamp(24px, 2.6vw, 38px);
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: -0.02em;
-  max-width: 14em;
-  opacity: 0.9;
+}
+.sg-login-hero small {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.sg-login-uses {
+  grid-column: 1;
+  grid-row: 3;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 14px;
+  max-width: 420px;
+  margin: 0 24px 0 0;
+  padding: 12px 0 0;
+  list-style: none;
+  border-top: 1px dashed var(--line);
+  opacity: 0.85;
+}
+.sg-login-uses + .sg-login-uses {
+  grid-column: 3;
+  justify-self: end;
+  width: 100%;
+  margin: 0;
+}
+.sg-login-uses li {
+  display: grid;
+  gap: 1px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.sg-login-uses b {
+  color: var(--accent);
+  font-weight: 700;
+}
+.sg-login-uses span {
+  color: var(--muted);
 }
 .sg-login-benefits {
   display: contents;
@@ -3613,7 +3658,8 @@ button {
     padding: 28px;
     display: block;
   }
-  .sg-login-benefits {
+  .sg-login-benefits,
+  .sg-login-uses {
     display: none;
   }
 }

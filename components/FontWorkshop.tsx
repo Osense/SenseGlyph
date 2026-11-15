@@ -1077,6 +1077,7 @@ export default function FontWorkshop({
               fallback={fallback}
               onWriteMissing={onWritePremium}
               script={script}
+              style={result?.stats.style}
             />
             <footer className="fw-actions">
               <button

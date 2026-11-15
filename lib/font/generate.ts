@@ -15,7 +15,16 @@ import {
   type OutlineGlyph,
   type Segment,
 } from "./sfnt-writer";
-import { bodySize, mergeInk } from "./layout";
+import { bodySize, isEmBoxedChar, mergeInk } from "./layout";
+import {
+  applyStyle,
+  flattenPath,
+  inferStyle,
+  isNoticeable,
+  NEUTRAL_STYLE,
+  type InferredStyle,
+  type Rings,
+} from "./style-transfer";
 
 type Polygon = number[][];
 
@@ -274,10 +283,39 @@ export function assembleFont(
   glyphs.push(...handwritten);
   // 쓰지 않은 글자(특수문자, 자모 자리가 비어 만들 수 없는 한글 등)는 견본 글꼴 모양으로 채웁니다.
   let filled = 0;
+  let style: InferredStyle = NEUTRAL_STYLE;
   if (fallbacks.length) {
     progress(88, "쓰지 않은 글자를 견본 글꼴로 채우고 있어요");
     const have = new Set(characters);
     const loaded = new Map<FallbackSource, opentype.Font | null>();
+    // 일본어: 직접 쓴 가나·한자와 견본의 같은 글자를 비교해 필체 규칙을 찾는다.
+    if (layout.script === "ja") {
+      const pairs: { mine: Rings; reference: Rings }[] = [];
+      const strokes = [];
+      for (const glyph of handwritten) {
+        const char = String.fromCodePoint(glyph.unicode!);
+        if (!isEmBoxedChar(char, "ja") || !pipeline.direct.has(char)) continue;
+        const reference = fallbackGlyph(
+          char,
+          fallbacks,
+          layout,
+          options.baseline,
+          loaded,
+        );
+        if (!reference) continue;
+        pairs.push({
+          mine: glyph.contours.map((c) => [
+            [c.x, c.y],
+            ...c.segments.map((seg) => [seg[1], seg[2]]),
+          ]),
+          reference: flattenPath(reference.path.commands),
+        });
+        strokes.push(...pipeline.direct.get(char)!);
+      }
+      style = inferStyle(pairs, strokes);
+    }
+    const restyle = isNoticeable(style);
+    const center = { x: square / 2, y: options.baseline - 500 };
     for (const char of fallbackTargets(layout.script)) {
       if (have.has(char)) continue;
       const glyph = fallbackGlyph(
@@ -288,13 +326,36 @@ export function assembleFont(
         loaded,
       );
       if (!glyph) continue;
-      highest = Math.max(highest, glyph.top);
-      lowest = Math.min(lowest, glyph.bottom);
+      let contours = pathContours(glyph.path),
+        top = glyph.top,
+        bottom = glyph.bottom;
+      if (restyle && isEmBoxedChar(char, layout.script)) {
+        const rings = applyStyle(
+          flattenPath(glyph.path.commands),
+          style,
+          center,
+        );
+        contours = rings
+          .map((ring) =>
+            polygonContour(
+              ring.map(([x, y]) => [x, options.baseline - y]),
+              options.baseline,
+            ),
+          )
+          .filter((c): c is Contour => !!c);
+        for (const ring of rings)
+          for (const [, y] of ring) {
+            top = Math.max(top, Math.round(y));
+            bottom = Math.min(bottom, Math.round(y));
+          }
+      }
+      highest = Math.max(highest, top);
+      lowest = Math.min(lowest, bottom);
       glyphs.push({
         name: name(char.codePointAt(0)!),
         unicode: char.codePointAt(0)!,
         advanceWidth: glyph.advanceWidth,
-        contours: pathContours(glyph.path),
+        contours,
       });
       characters.push(char);
       filled++;
@@ -327,6 +388,7 @@ export function assembleFont(
       fallback: filled,
       glyphs: glyphs.length,
       characters,
+      style,
     },
   };
 }

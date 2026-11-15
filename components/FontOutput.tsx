@@ -4,6 +4,7 @@ import { isNativeApp } from "../lib/native";
 import { useT } from "../lib/i18n";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { ExportFormat } from "../lib/font/export-formats";
+import type { InferredStyle } from "../lib/font/style-transfer";
 import {
   isLocalOutputName,
   isEnglishOutputName,
@@ -165,8 +166,11 @@ export default function FontOutput({
   fallback,
   onWriteMissing,
   script = "ko",
+  style,
 }: {
   script?: "ko" | "ja";
+  /** 쓴 글자에서 찾은 필체 규칙(일본어) */
+  style?: InferredStyle;
   family?: string;
   characters: string[];
   status: "empty" | "building" | "stale" | "ready";
@@ -488,6 +492,32 @@ export default function FontOutput({
                 },
               )}
             </p>
+            {script === "ja" && style && style.samples >= 3 && (
+              <p className="fw-style-rules">
+                <b>{t("내 글씨에서 찾은 필체 규칙")}</b>{" "}
+                {t(
+                  "획 굵기 ×{weight} · 가로획 {rise}° 오름 · 세로획 {lean}° 기울임 · 폭 {width}% · 높이 {height}%",
+                  {
+                    weight: style.weight.toFixed(2),
+                    rise: style.rise.toFixed(1),
+                    lean: style.lean.toFixed(1),
+                    width: Math.round(style.width * 100),
+                    height: Math.round(style.height * 100),
+                  },
+                )}
+                <br />
+                {t(
+                  "쓰지 않은 가나·한자는 견본 모양에 이 규칙을 입혀 채웠어요. 필체 한자를 더 쓸수록 규칙이 정확해져요.",
+                )}
+              </p>
+            )}
+            {script === "ja" && (!style || style.samples < 3) && (
+              <p className="fw-style-rules">
+                {t(
+                  "가나·한자를 3자 이상 쓰면 내 필체 규칙(굵기·기울기·비율)을 찾아 쓰지 않은 한자에 입혀요.",
+                )}
+              </p>
+            )}
             {onWriteMissing && (
               <button
                 type="button"

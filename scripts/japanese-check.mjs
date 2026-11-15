@@ -49,7 +49,7 @@ check("첫 글자는 あ", (await page.locator(".sg-char").innerText()) === "あ
 const lists = await page.locator(".sg-lists button").allInnerTexts();
 check(
   "목록: ひらがな·カタカナ·漢字",
-  ["ひらがな", "カタカナ", "漢字 1年"].every((l) =>
+  ["ひらがな", "カタカナ", "필체 한자"].every((l) =>
     lists.some((x) => x.includes(l)),
   ),
   lists.map((l) => l.split("\n")[0]).join(" / "),
@@ -104,13 +104,13 @@ await stroke([
   [650, 330],
   [700, 650],
 ]);
-// 一 (漢字 1年 목록)
-await page.click('.sg-lists button:has-text("漢字 1年")');
+// 一 (필체 한자 목록)
+await page.click('.sg-lists button:has-text("필체 한자")');
 await page.waitForTimeout(200);
 const kanji = await page.locator(".sg-char").innerText();
 check(
-  "한자 목록은 자주 쓰는 1학년 한자부터",
-  "日一人年大".includes(kanji),
+  "한자 목록은 필체 한자는 永부터",
+  kanji === "永",
   kanji,
 );
 await stroke([

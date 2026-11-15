@@ -108,6 +108,8 @@ export interface FontStats {
   fallback?: number;
   glyphs: number;
   characters: string[];
+  /** 쓴 글자에서 찾은 필체 규칙(일본어: 쓰지 않은 가나·한자에 입힘) */
+  style?: import("./style-transfer").InferredStyle;
 }
 /** 폰트 작업자에게 보내는 일: 글자 몫 만들기(병렬) 또는 모아서 파일 쓰기. */
 export type WorkerRequest =

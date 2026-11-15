@@ -136,11 +136,16 @@ export const KATAKANA = [
   "ヴ",
   "ー",
 ];
-/** 1학년 한자: 기본 글자에 들어간다. 2~6학년은 더 쓰면 좋은 글자. */
-export const KANJI_BASIC = [...KANJI_GRADE[1]];
-export const KANJI_MORE = [
-  ...(KANJI_GRADE[2] + KANJI_GRADE[3] + KANJI_GRADE[456]),
+/** 필체를 읽어 낼 한자 24자: 永(영자팔법의 여덟 가지 획)부터, 좌우·상하·에워싸기 구조와 자주 쓰는 부수를 고루 담았다.
+ * 이 글자들에서 찾은 규칙(굵기·기울기·비율)을 쓰지 않은 한자에 입힌다. */
+export const KANJI_BASIC = [
+  ..."永一十人大小口日月木水山中子女心学国道語書花東京",
 ];
+const KANJI_BASIC_SET = new Set(KANJI_BASIC);
+/** 더 쓰고 싶은 사람을 위한 교육한자(학년·빈도순). 쓰면 그 글자는 견본 대신 내 글씨로 들어간다. */
+export const KANJI_MORE = [
+  ...(KANJI_GRADE[1] + KANJI_GRADE[2] + KANJI_GRADE[3] + KANJI_GRADE[456]),
+].filter((c) => !KANJI_BASIC_SET.has(c));
 export const JA_PUNCT = [..."、。「」『』・々〜…【】"];
 
 type Category = (typeof CATEGORIES)[number];

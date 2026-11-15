@@ -442,7 +442,15 @@ export const JA: Record<string, string> = {
  "일본어 폰트 이름에 < > : \" / \\ | ? * 기호나 끝의 마침표는 쓸 수 없어요!": "フォント名に < > : \" / \\ | ? * や末尾のピリオドは使えません！",
  "여기에 이름을 넣어주세요": "ここに名前を入れてください",
  "한국어": "韓国語",
- "G마켓 산스": "Gmarket Sans"
+ "G마켓 산스": "Gmarket Sans",
+ "필체 한자": "筆跡の漢字",
+ "한자 더 쓰기": "漢字をもっと書く",
+ "내 글씨에서 찾은 필체 규칙": "あなたの字から見つけた筆跡のルール",
+ "획 굵기 ×{weight} · 가로획 {rise}° 오름 · 세로획 {lean}° 기울임 · 폭 {width}% · 높이 {height}%": "線の太さ ×{weight}・横画 {rise}° 上がり・縦画 {lean}° 傾き・幅 {width}%・高さ {height}%",
+ "쓰지 않은 가나·한자는 견본 모양에 이 규칙을 입혀 채웠어요. 필체 한자를 더 쓸수록 규칙이 정확해져요.": "書いていないかな・漢字は、見本の形にこのルールを当てはめて補いました。筆跡の漢字を多く書くほどルールが正確になります。",
+ "가나·한자를 3자 이상 쓰면 내 필체 규칙(굵기·기울기·비율)을 찾아 쓰지 않은 한자에 입혀요.": "かな・漢字を3字以上書くと、筆跡のルール（太さ・傾き・比率）を見つけて書いていない漢字に当てはめます。",
+ "몇 글자로 필체 규칙을 찾아요": "数文字から筆跡のルールを見つけます",
+ "필체 한자 24자에서 획 굵기·기울기·비율을 읽어, 쓰지 않은 한자 2천여 자에 입혀요. 永처럼 획이 다양한 글자를 특히 또박또박 써 주세요.": "筆跡の漢字24字から線の太さ・傾き・比率を読み取り、書いていない2千字あまりの漢字に当てはめます。永のように画の種類が多い字は特にていねいに書いてください。"
 };
 export const EN: Record<string, string> = {
  " 폰트 이름": " font name",
@@ -887,5 +895,13 @@ export const EN: Record<string, string> = {
  "일본어 폰트 이름에 < > : \" / \\ | ? * 기호나 끝의 마침표는 쓸 수 없어요!": "The font name can't contain < > : \" / \\ | ? * or end with a period!",
  "여기에 이름을 넣어주세요": "Type a name here",
  "한국어": "Korean",
- "G마켓 산스": "Gmarket Sans"
+ "G마켓 산스": "Gmarket Sans",
+ "필체 한자": "Style kanji",
+ "한자 더 쓰기": "More kanji",
+ "내 글씨에서 찾은 필체 규칙": "Rules found in your handwriting",
+ "획 굵기 ×{weight} · 가로획 {rise}° 오름 · 세로획 {lean}° 기울임 · 폭 {width}% · 높이 {height}%": "Stroke weight ×{weight} · horizontals rise {rise}° · verticals lean {lean}° · width {width}% · height {height}%",
+ "쓰지 않은 가나·한자는 견본 모양에 이 규칙을 입혀 채웠어요. 필체 한자를 더 쓸수록 규칙이 정확해져요.": "Kana and kanji you didn't write were filled from the sample with these rules applied. Writing more style kanji makes the rules more accurate.",
+ "가나·한자를 3자 이상 쓰면 내 필체 규칙(굵기·기울기·비율)을 찾아 쓰지 않은 한자에 입혀요.": "Write at least 3 kana or kanji and your handwriting rules (weight, slant, proportions) will be applied to unwritten kanji.",
+ "몇 글자로 필체 규칙을 찾아요": "A few characters reveal your style",
+ "필체 한자 24자에서 획 굵기·기울기·비율을 읽어, 쓰지 않은 한자 2천여 자에 입혀요. 永처럼 획이 다양한 글자를 특히 또박또박 써 주세요.": "We read stroke weight, slant and proportions from 24 style kanji and apply them to 2,000+ kanji you don't write. Write characters with varied strokes, like 永, especially carefully."
 };

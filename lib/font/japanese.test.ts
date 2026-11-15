@@ -56,11 +56,12 @@ it("has Japanese lists in the requested order", () => {
     "latin-lower",
     "ascii-symbol",
   ]);
-  expect(KANJI_BASIC).toHaveLength(80);
+  expect(KANJI_BASIC).toHaveLength(24);
+  expect(KANJI_BASIC[0]).toBe("永");
   expect(charsetFor("ja").filter((e) => e.category === "kanji")).toHaveLength(
     1026,
   );
-  expect(basicCharsetFor("ja").some((e) => e.char === "学")).toBe(true);
+  expect(basicCharsetFor("ja").some((e) => e.char === "永")).toBe(true);
   expect(basicCharsetFor("ja").some((e) => e.char === "曜")).toBe(false);
   expect(categoryForChar("ゃ")).toBe("hiragana");
   expect(categoryForChar("国")).toBe("kanji");
@@ -116,3 +117,78 @@ it("names a Japanese font in Japanese", () => {
     }),
   ).toThrow();
 }, 60_000);
+
+it("puts the inferred handwriting rules on unwritten kanji", async () => {
+  const { decompress } = await import("woff2-encoder");
+  const { readFileSync } = await import("node:fs");
+  const raw = await decompress(
+    readFileSync("public/fonts/KleeOne-Regular.woff2"),
+  );
+  const bytes = raw.buffer.slice(
+    raw.byteOffset,
+    raw.byteOffset + raw.byteLength,
+  ) as ArrayBuffer;
+  const source = { name: "Klee One", load: () => opentype.parse(bytes) };
+  const line = (
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+    size: number,
+  ): Stroke => ({
+    id: `${x0}-${y0}-${x1}`,
+    order: 0,
+    createdAt: 1,
+    brush: "pen",
+    params: { size, usePressure: false },
+    points: [
+      { x: x0, y: y0, p: 0.5, t: 0 },
+      { x: (x0 + x1) / 2, y: (y0 + y1) / 2, p: 0.5, t: 1 },
+      { x: x1, y: y1, p: 0.5, t: 2 },
+    ],
+  });
+  const glyphs: Record<string, [number, number, number, number][]> = {
+    一: [[150, 500, 850, 500]],
+    二: [
+      [250, 330, 750, 330],
+      [150, 680, 850, 680],
+    ],
+    三: [
+      [250, 250, 750, 250],
+      [300, 500, 700, 500],
+      [150, 760, 850, 760],
+    ],
+    十: [
+      [150, 430, 850, 430],
+      [500, 130, 500, 870],
+    ],
+    口: [
+      [250, 250, 250, 780],
+      [250, 250, 750, 250],
+      [750, 250, 750, 780],
+      [250, 760, 750, 760],
+    ],
+  };
+  const project = newProject();
+  project.settings.script = "ja";
+  for (const [char, lines] of Object.entries(glyphs))
+    project.samples[char] = {
+      char,
+      category: "kanji",
+      strokes: lines.map(([a, b, c, d]) => line(a, b, c, d, 110)),
+      status: "done",
+      updatedAt: 1,
+    };
+  const build = (fallbacks: (typeof source)[]) =>
+    generateFont(
+      { project, preparation: defaultPreparation("わたしの字") },
+      () => {},
+      fallbacks,
+    );
+  const result = build([source]);
+  expect(result.stats.style?.samples).toBeGreaterThanOrEqual(3);
+  expect(result.stats.style!.weight).toBeGreaterThan(1.05);
+  const styled = opentype.parse(result.ttf).charToGlyph("曜");
+  expect(styled.path.commands.length).toBeGreaterThan(10);
+  expect(result.stats.characters).toContain("曜");
+}, 120_000);

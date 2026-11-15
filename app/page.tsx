@@ -97,8 +97,8 @@ function listsFor(script: WritingScript): Partial<Record<ListId, ListDef>> {
       basic: { label: "기본 글자", chars: basicCharsetFor("ja") },
       hiragana: { label: "ひらがな", chars: pick(HIRAGANA) },
       katakana: { label: "カタカナ", chars: pick(KATAKANA) },
-      kanji1: { label: "漢字 1年", chars: pick(KANJI_BASIC) },
-      kanji: { label: "漢字 2〜6年", chars: pick(KANJI_MORE) },
+      kanji1: { label: "필체 한자", chars: pick(KANJI_BASIC) },
+      kanji: { label: "한자 더 쓰기", chars: pick(KANJI_MORE) },
       ...shared,
       premium: {
         label: "특수문자",

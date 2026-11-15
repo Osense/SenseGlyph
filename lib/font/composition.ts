@@ -5,10 +5,18 @@ import {
   correctionAmounts,
   hasCorrection,
   medianPressure,
+  vowelNorms,
+  writerSlant,
 } from "./beautify";
 import { decompose, slotKeys, vowelType } from "../hangul";
 import { activeSeparation, effectiveSample } from "./editing";
 import { cachedJudgement } from "./judge";
+import {
+  blendStrokes,
+  deriveMissingSlots,
+  placeInBox,
+  sameShape,
+} from "./interpolate";
 import {
   referenceGuide,
   referencePart,
@@ -36,6 +44,8 @@ export const PART_COLORS: Record<Part, string> = {
 };
 
 // SPEC 해석: 자동 분리는 위치 상자와 획 중심의 거리만 사용한다. 겹치는 복합 모음은 사용자가 보정한다.
+const ALL_SLOTS = [...new Set(HANGUL.flatMap(slotKeys))];
+
 export function layoutBoxes(char: string): Partial<Record<Part, Box>> {
   const d = decompose(char);
   if (!d) return {};
@@ -186,7 +196,8 @@ function libraryFrom(pools: Map<string, ComponentSample[]>) {
     const confirmed = pool.filter((component) => component.confirmed);
     library.set(key, confirmed[0] ?? pool[0]);
   }
-  return library;
+  // 쓰지 않은 짜임은 가까운 짜임의 내 글씨로 만들어 채운다(조합 보간).
+  return deriveMissingSlots(library, ALL_SLOTS);
 }
 
 /** 정돈 전 단계: 자모 분리 + 칸 밖 글자 맞춰 넣기. 설정 슬라이더와 무관하므로 한 번만 계산해 재사용합니다. */
@@ -227,6 +238,19 @@ export function correctHandwriting(
   const amounts = correctionAmounts(prep.settings);
   if (!hasCorrection(amounts)) return base;
   const pressureTarget = medianPressure([...base.direct.values()].flat());
+  // 내 글씨의 평소 가로·세로 기울기와, 짜임별 모음 기둥 높이·보 너비(글자 사이 일관성)
+  const slant = writerSlant([...base.direct.values()].flat());
+  const vowelOf = (char: string) => {
+    const d = decompose(char);
+    return d ? { type: vowelType(d.jung), jong: d.jong > 0 } : undefined;
+  };
+  const norms = vowelNorms(
+    [...base.parts].flatMap(([char, own]) => {
+      const vowel = vowelOf(char);
+      const jung = own.find((part) => part.part === "jung");
+      return vowel && jung ? [{ vowel, jung: jung.strokes }] : [];
+    }),
+  );
   const direct = new Map<string, Stroke[]>();
   const parts = new Map<string, ComponentSample[]>();
   const pools = new Map<string, ComponentSample[]>();
@@ -242,6 +266,9 @@ export function correctHandwriting(
       partOf,
       boxes: referenceGuide(char, project.settings)?.boxes,
       pressureTarget,
+      slant,
+      vowel: vowelOf(char),
+      norms,
     });
     const byId = new Map(strokes.map((stroke) => [stroke.id, stroke]));
     const corrected =
@@ -275,7 +302,6 @@ export function prepareHandwriting(
   return applyCorrection ? correctHandwriting(base, project, prep) : base;
 }
 
-const ALL_SLOTS = [...new Set(HANGUL.flatMap(slotKeys))];
 export function coverage(
   project: FontProject,
   prep: FontPreparation,
@@ -290,6 +316,7 @@ export function coverage(
   for (let code = 0xac00; code <= 0xd7a3; code++) {
     const char = String.fromCharCode(code);
     if (
+      prep.settings.includeComposed !== false &&
       !available.has(char) &&
       slotKeys(char).every((key) => library.has(key))
     ) {
@@ -297,10 +324,13 @@ export function coverage(
       composed++;
     }
   }
-  const missingSlots = ALL_SLOTS.filter((key) => !library.has(key));
+  // 직접 쓴 표본이 없는 자리(보간으로 만든 자리 포함): 더 써 보면 좋은 글자를 안내할 때 쓴다.
+  const missingSlots = ALL_SLOTS.filter(
+    (key) => !library.has(key) || library.get(key)!.derived,
+  );
   return {
     direct: direct.length,
-    slots: library.size,
+    slots: [...library.values()].filter((c) => !c.derived).length,
     totalSlots: 237,
     composed,
     missingSlots,
@@ -486,15 +516,34 @@ export function composeGlyph(
   return keys.flatMap((key) => {
     const original = anchor?.get(key);
     if (original) return original.strokes;
-    const source = (pools.get(key) ?? []).reduce(
+    const pool = pools.get(key) ?? [];
+    const source = pool.reduce(
       (best, candidate) =>
         sourceRank(candidate) > sourceRank(best) ? candidate : best,
       library.get(key)!,
     );
-    return placeComponent(
-      source.strokes,
-      sourceFrame(pools, source.char),
-      target,
-    );
+    // 다른 짜임에서 옮겨 만든 자모: 정해 둔 자리에 놓는다.
+    if (source.place)
+      return placeInBox(
+        source.strokes,
+        source.place,
+        target ?? { x: 120, y: 120, width: 760, height: 760 },
+      );
+    // 같은 자모를 여러 글자에서 썼다면 획 기본형이 같은 것끼리 섞는다(내 글씨의 평균 모양).
+    const home = sourceFrame(pools, source.char);
+    const others = pool
+      .filter(
+        (c) =>
+          c !== source &&
+          c.char !== source.char &&
+          sameShape(source.strokes, c.strokes),
+      )
+      .sort((a, b) => sourceRank(b) - sourceRank(a))
+      .slice(0, 2)
+      .map((c) => placeComponent(c.strokes, sourceFrame(pools, c.char), home));
+    const blended = others.length
+      ? blendStrokes(source.strokes, others, 0.6, true)
+      : source.strokes;
+    return placeComponent(blended, home, target);
   });
 }

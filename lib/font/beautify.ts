@@ -11,6 +11,7 @@ import { strokesAreSafe } from "../safety";
 import type { CharCategory, Stroke, StrokePoint } from "../types";
 import type { Box, CorrectionDetail, FontBuildSettings, Part } from "./types";
 import { CORRECTION_KEYS } from "./types";
+import { vowelRoles } from "./primitives";
 
 export type CorrectionAmounts = Record<keyof CorrectionDetail, number>;
 export const NO_CORRECTION: CorrectionAmounts = {
@@ -150,6 +151,46 @@ function smoothPoints(points: StrokePoint[], amount: number, size: number) {
 
 const STRAIGHTEN_LIMIT = (14 * Math.PI) / 180;
 
+/** 이 사람이 긋는 가로획·세로획의 평소 기울기(라디안, y 아래가 +). */
+export interface Slant {
+  horizontal: number;
+  vertical: number;
+}
+const DEG = Math.PI / 180;
+/**
+ * 손글씨 전체에서 거의 가로·세로인 곧은 조각의 기울기 중앙값을 구한다.
+ * 한글 손글씨의 가로획은 보통 오른쪽이 살짝 올라가므로 0~7도 오름, 세로획은 ±4도로 묶는다.
+ */
+export function writerSlant(strokes: Stroke[]): Slant {
+  const hs: number[] = [],
+    vs: number[] = [];
+  for (const stroke of strokes) {
+    const points = stroke.points;
+    if (points.length < 2) continue;
+    const vertices = strokeVertices(
+      points,
+      Math.max(8, stroke.params.size * 0.3),
+    );
+    for (let k = 0; k < vertices.length - 1; k++) {
+      const a = points[vertices[k]],
+        b = points[vertices[k + 1]];
+      const dx = b.x - a.x,
+        dy = b.y - a.y;
+      if (Math.hypot(dx, dy) < 80) continue;
+      const angle = Math.atan2(dy, dx);
+      if (Math.abs(Math.sin(angle)) < Math.sin(STRAIGHTEN_LIMIT))
+        hs.push(Math.atan2(dy, Math.abs(dx)) * Math.sign(dx || 1));
+      else if (Math.abs(Math.cos(angle)) < Math.sin(STRAIGHTEN_LIMIT))
+        vs.push(Math.atan2(dx, Math.abs(dy)) * Math.sign(dy || 1));
+    }
+  }
+  const mid = (v: number[]) => (v.length >= 5 ? median(v) : 0);
+  return {
+    horizontal: Math.max(-7 * DEG, Math.min(0, mid(hs))),
+    vertical: Math.max(-4 * DEG, Math.min(4 * DEG, mid(vs))),
+  };
+}
+
 /** 기울기 정돈: 거의 가로·세로인 곧은 구간만 수평·수직 쪽으로 세웁니다.
  * 꺾이는 점(모서리)을 옮기고 그 사이 점은 호 길이에 따라 함께 따라오게 하므로
  * 획이 끊기거나 꺾임이 사라지지 않습니다. 다른 획에 닿아 있는 끝점은 거의 고정합니다. */
@@ -158,6 +199,7 @@ function straightenPoints(
   amount: number,
   size: number,
   anchored: (p: Pt) => boolean,
+  slant: Slant = { horizontal: 0, vertical: 0 },
 ) {
   if (amount <= 0 || points.length < 2) return points;
   const vertices = strokeVertices(points, Math.max(8, size * 0.3));
@@ -187,15 +229,20 @@ function straightenPoints(
     const wa = weightOf(k),
       wb = weightOf(k + 1);
     if (Math.asin(fromHorizontal) <= STRAIGHTEN_LIMIT) {
-      const target = (a.y * wa + b.y * wb) / (wa + wb);
-      shift[k].y += (target - a.y) * amount;
-      shift[k + 1].y += (target - b.y) * amount;
+      // 가로획은 완전한 수평이 아니라 '이 사람이 평소 긋는 기울기'(살짝 오른쪽 위)로 맞춘다.
+      const mid = (a.y * wa + b.y * wb) / (wa + wb);
+      const rise = Math.tan(slant.horizontal) * (b.x - a.x);
+      const share = wa / (wa + wb);
+      shift[k].y += (mid - rise * (1 - share) - a.y) * amount;
+      shift[k + 1].y += (mid + rise * share - b.y) * amount;
       shift[k].ny++;
       shift[k + 1].ny++;
     } else if (Math.asin(fromVertical) <= STRAIGHTEN_LIMIT) {
-      const target = (a.x * wa + b.x * wb) / (wa + wb);
-      shift[k].x += (target - a.x) * amount;
-      shift[k + 1].x += (target - b.x) * amount;
+      const mid = (a.x * wa + b.x * wb) / (wa + wb);
+      const lean = Math.tan(slant.vertical) * (b.y - a.y);
+      const share = wa / (wa + wb);
+      shift[k].x += (mid - lean * (1 - share) - a.x) * amount;
+      shift[k + 1].x += (mid + lean * share - b.x) * amount;
       shift[k].nx++;
       shift[k + 1].nx++;
     }
@@ -359,6 +406,12 @@ export interface BeautifyOptions {
   boxes?: Partial<Record<Part, Box>>;
   /** 전체 손글씨의 필압 중앙값 */
   pressureTarget?: number;
+  /** 이 사람이 긋는 가로·세로획의 평소 기울기 */
+  slant?: Slant;
+  /** 한글 음절: 이 글자의 모음 짜임과 받침 유무(모음 획 맞추기) */
+  vowel?: { type: "V" | "H" | "C"; jong: boolean };
+  /** 모음 기둥 길이·보 너비의 평소 값(같은 짜임끼리) */
+  norms?: VowelNorms;
 }
 
 function apply(strokes: Stroke[], options: BeautifyOptions, scale: number) {
@@ -376,6 +429,7 @@ function apply(strokes: Stroke[], options: BeautifyOptions, scale: number) {
       k(a.straighten),
       stroke.params.size,
       anchored,
+      options.slant,
     );
     const moved = { ...stroke, points };
     return {
@@ -383,6 +437,14 @@ function apply(strokes: Stroke[], options: BeautifyOptions, scale: number) {
       points: evenPressure(moved, k(a.weight), options.pressureTarget ?? NaN),
     };
   });
+  if (options.partOf && options.vowel && options.category === "hangul-syllable")
+    result = harmonizeVowel(
+      result,
+      k(a.layout),
+      options.partOf,
+      options.vowel,
+      options.norms,
+    );
   if (options.partOf && options.boxes && options.category === "hangul-syllable")
     result = arrangeParts(result, k(a.layout), options.partOf, options.boxes);
   return result;
@@ -399,4 +461,159 @@ export function beautifyStrokes(
     if (strokesAreSafe(result, options.category)) return result;
   }
   return strokes;
+}
+
+/* ---------- 모음 획 맞추기 ---------- */
+/** 같은 짜임 모음의 기둥 높이·보 너비의 평소 값. 키: "V:true" (짜임:받침) */
+export type VowelNorms = Map<string, { pillar?: number; beam?: number }>;
+
+function extent(stroke: Stroke) {
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  for (const p of stroke.points) {
+    minX = Math.min(minX, p.x);
+    maxX = Math.max(maxX, p.x);
+    minY = Math.min(minY, p.y);
+    maxY = Math.max(maxY, p.y);
+  }
+  return { minX, minY, maxX, maxY, w: maxX - minX, h: maxY - minY };
+}
+
+/** 모든 글자의 모음에서 기둥 높이·보 너비의 중앙값을 짜임별로 구한다. */
+export function vowelNorms(
+  samples: { vowel: { type: string; jong: boolean }; jung: Stroke[] }[],
+): VowelNorms {
+  const pillars = new Map<string, number[]>(),
+    beams = new Map<string, number[]>();
+  for (const { vowel, jung } of samples) {
+    const key = vowel.type + ":" + vowel.jong;
+    const roles = vowelRoles(jung);
+    for (const stroke of jung) {
+      const role = roles.get(stroke.id);
+      if (role === "pillar")
+        pillars.set(key, [...(pillars.get(key) ?? []), extent(stroke).h]);
+      if (role === "beam")
+        beams.set(key, [...(beams.get(key) ?? []), extent(stroke).w]);
+    }
+  }
+  const norms: VowelNorms = new Map();
+  for (const key of new Set([...pillars.keys(), ...beams.keys()])) {
+    const p = pillars.get(key) ?? [],
+      b = beams.get(key) ?? [];
+    norms.set(key, {
+      ...(p.length >= 3 ? { pillar: median(p) } : {}),
+      ...(b.length >= 3 ? { beam: median(b) } : {}),
+    });
+  }
+  return norms;
+}
+
+/** 획 하나를 한쪽 끝을 고정하고 한 방향으로 늘이거나 줄인다. */
+function stretch(
+  stroke: Stroke,
+  axis: "x" | "y",
+  fixed: number,
+  factor: number,
+): Stroke {
+  if (Math.abs(factor - 1) < 0.005) return stroke;
+  return {
+    ...stroke,
+    points: stroke.points.map((p) => ({
+      ...p,
+      [axis]: fixed + (p[axis] - fixed) * factor,
+    })),
+  };
+}
+
+/**
+ * 모음 정돈(획의 역할을 알고 하는 보정)
+ * - 짝 맞추기: ㅑ·ㅕ의 두 곁줄기 길이, ㅛ·ㅠ의 두 짧은 기둥 길이, ㅐ·ㅔ의 두 기둥 높이를 서로 맞춘다.
+ * - 글자 사이 일관성: 같은 짜임 모음의 기둥 높이·보 너비를 내 글씨의 평소 값 쪽으로 당긴다.
+ * 곁줄기는 기둥(또는 보)에 붙은 끝을 고정하고 늘이므로 모음이 떨어지지 않는다.
+ */
+function harmonizeVowel(
+  strokes: Stroke[],
+  amount: number,
+  partOf: Map<string, Part>,
+  vowel: { type: "V" | "H" | "C"; jong: boolean },
+  norms?: VowelNorms,
+): Stroke[] {
+  if (amount <= 0) return strokes;
+  const jung = strokes.filter((s) => partOf.get(s.id) === "jung");
+  if (jung.length < 2) return strokes;
+  const roles = vowelRoles(jung);
+  const pillars = jung.filter((s) => roles.get(s.id) === "pillar");
+  const beams = jung.filter((s) => roles.get(s.id) === "beam");
+  const branches = jung.filter((s) => roles.get(s.id) === "branch");
+  const changed = new Map<string, Stroke>();
+  const current = (s: Stroke) => changed.get(s.id) ?? s;
+  const reach = amount * 0.6;
+  const limit = (f: number) => Math.max(0.85, Math.min(1.18, f));
+
+  // 1) 기둥 높이: 평소 값 쪽으로(위 끝 고정), 기둥이 둘이면 서로도 맞춘다.
+  const norm = norms?.get(vowel.type + ":" + vowel.jong);
+  if (pillars.length) {
+    const heights = pillars.map((s) => extent(s).h);
+    const mean = heights.reduce((a, b) => a + b, 0) / heights.length;
+    const target = norm?.pillar ? mean + (norm.pillar - mean) * 0.5 : mean;
+    pillars.forEach((s, i) => {
+      if (heights[i] < 40) return;
+      const f = limit(1 + (target / heights[i] - 1) * reach);
+      changed.set(s.id, stretch(s, "y", extent(s).minY, f));
+    });
+  }
+  if (beams.length && norm?.beam) {
+    beams.forEach((s) => {
+      const e = extent(s);
+      if (e.w < 60) return;
+      const f = limit(1 + ((norm.beam! * 0.5 + e.w * 0.5) / e.w - 1) * reach);
+      changed.set(s.id, stretch(s, "x", (e.minX + e.maxX) / 2, f));
+    });
+  }
+
+  // 2) 곁줄기 짝 맞추기: 같은 방향 곁줄기가 둘 이상이면 길이를 평균으로(붙은 끝 고정).
+  const main = [...pillars, ...beams].map(current);
+  const anchorOf = (s: Stroke, axis: "x" | "y") => {
+    const e = extent(s);
+    if (!main.length) return axis === "x" ? e.minX : e.minY;
+    const near = (v: number) =>
+      Math.min(
+        ...main.map((m) => {
+          const me = extent(m);
+          return axis === "x"
+            ? Math.min(
+                Math.abs(v - me.minX),
+                Math.abs(v - me.maxX),
+                Math.abs(v - (me.minX + me.maxX) / 2),
+              )
+            : Math.min(
+                Math.abs(v - me.minY),
+                Math.abs(v - me.maxY),
+                Math.abs(v - (me.minY + me.maxY) / 2),
+              );
+        }),
+      );
+    const lo = axis === "x" ? e.minX : e.minY,
+      hi = axis === "x" ? e.maxX : e.maxY;
+    return near(lo) <= near(hi) ? lo : hi;
+  };
+  const horizontal = branches.filter((s) => extent(s).w > extent(s).h * 1.5);
+  const vertical = branches.filter((s) => extent(s).h > extent(s).w * 1.5);
+  for (const [group, axis] of [
+    [horizontal, "x"],
+    [vertical, "y"],
+  ] as const) {
+    if (group.length < 2) continue;
+    const sizes = group.map((s) => (axis === "x" ? extent(s).w : extent(s).h));
+    const mean = sizes.reduce((a, b) => a + b, 0) / sizes.length;
+    group.forEach((s, i) => {
+      if (sizes[i] < 20) return;
+      const f = limit(1 + (mean / sizes[i] - 1) * reach);
+      changed.set(s.id, stretch(current(s), axis, anchorOf(s, axis), f));
+    });
+  }
+  if (!changed.size) return strokes;
+  return strokes.map((s) => changed.get(s.id) ?? s);
 }

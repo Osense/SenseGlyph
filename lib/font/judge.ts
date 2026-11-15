@@ -7,6 +7,8 @@
 //     (첫 획은 초성, 마지막 획은 받침이 있으면 종성·없으면 중성이 된다.)
 //  2) 자모마다 정해진 획수: 강 = ㄱ(1) + ㅏ(2) + ㅇ(1) → 1획 초성, 2·3획 중성, 4획 종성.
 //     흘려 쓰면 획이 줄 수 있어 범위로 보고, 벗어나면 조금씩 감점한다.
+//  2-1) 획 기본형: 획마다 가로·세로·삐침·점·동그라미·꺾임을 읽고, 자모마다 바른 기본형 줄
+//     (ㄱ=HV, ㅏ=V H, ㅇ=O …)과 얼마나 닮았는지 본다(lib/font/primitives.ts).
 //  3) 자리: 견본 글자의 자모 영역(쓰기 칸에 보이던 자리 그대로 + 쓴 글씨 크기에 맞춘 자리)과
 //     일반적인 한글 짜임(왼쪽 위 초성, 오른쪽·아래 중성, 맨 아래 종성)을 함께 본다.
 // 획순을 아주 다르게 쓰는 사람도 있으므로, 자리만으로 본 결과가 훨씬 그럴듯하면 그쪽을 따른다.
@@ -17,6 +19,7 @@ import {
   type ReferenceSettings,
 } from "./reference";
 import type { Stroke } from "../types";
+import { grammarCost, strokeShape, syllableGrammar } from "./primitives";
 import type { Box, Part } from "./types";
 
 const CHO = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
@@ -105,6 +108,8 @@ export function strokeRanges(
 
 const PARTS: Part[] = ["cho", "jung", "jong"];
 const LOG_FLOOR = 0.04;
+/** 자모 문법이 판정에 미치는 무게 */
+const GRAMMAR_WEIGHT = 2.2;
 
 /** 일반적인 한글 짜임에서 자모가 놓이는 자리(글씨 범위를 0~1로 본 좌표) */
 function typicalBoxes(char: string): Partial<Record<Part, Box>> {
@@ -213,6 +218,7 @@ export function judgeStrokes(
   const scores = strokeScores(char, ordered, reference, manual);
   const k = ranges.length,
     n = ordered.length;
+  const grammar = syllableGrammar(char)!;
   const partIndex = ranges.map((r) => PARTS.indexOf(r.part));
 
   // 자리만 본 판정(획순 무시)
@@ -233,10 +239,14 @@ export function judgeStrokes(
       for (let i = 0; i < n; i++) sums.push(sums[i] + scores[i][p]);
       return sums;
     });
+    // 묶음 점수 = 자리 점수 + 자모 문법(획 기본형 줄)과 닮은 정도 + 획수
+    const shapes = ordered.map((stroke) => strokeShape(stroke).prims);
     const segment = (part: number, from: number, to: number) =>
       prefix[part][to] -
       prefix[part][from] -
-      countPenalty(to - from, ranges[part].range);
+      GRAMMAR_WEIGHT *
+        grammarCost(shapes.slice(from, to).flat(), grammar[part]) -
+      0.5 * countPenalty(to - from, ranges[part].range);
     // best[j][i]: 앞 i 획을 앞 j+1 자모로 나눈 최고 점수
     const best: number[][] = Array.from({ length: k }, () =>
       new Array(n + 1).fill(-Infinity),
@@ -266,10 +276,28 @@ export function judgeStrokes(
     }
   }
   // 획순을 따르는 쪽을 기본으로 하고, 자리만으로 본 결과가 훨씬 그럴듯할 때만(획순을 다르게 쓴 경우) 그쪽을 쓴다.
+  // 두 결과를 같은 잣대(자리 + 자모 문법 + 획수)로 비교한다.
+  const total = (assign: number[]) => {
+    let sum = 0;
+    for (let j = 0; j < k; j++) {
+      const idx = assign
+        .map((p, i) => (p === partIndex[j] ? i : -1))
+        .filter((i) => i >= 0);
+      sum -=
+        GRAMMAR_WEIGHT *
+          grammarCost(
+            idx.flatMap((i) => strokeShape(ordered[i]).prims),
+            grammar[j],
+          ) +
+        0.5 * countPenalty(idx.length, ranges[j].range);
+    }
+    return sum + assign.reduce((s, p, i) => s + scores[i][p], 0);
+  };
+  // 획순대로 나눈 결과를 기본으로 하고, 획순을 무시한 결과가 같은 잣대로 확실히 더 나을 때만 그쪽을 쓴다.
   const useOrdered =
     ordered_ !== null &&
     Number.isFinite(orderedScore) &&
-    freeScore - orderedPlace < 2.5;
+    total(free) - total(ordered_) < 2;
   const chosen = useOrdered ? ordered_! : free;
   if (!useOrdered && n >= k) {
     // 자리만으로 나눠도 빠진 자모가 없게: 그 자모일 가능성이 가장 큰 획을 넘겨준다.

@@ -79,6 +79,10 @@ export interface ComponentSample {
   confirmed?: true;
   strokes: Stroke[];
   box: Box;
+  /** 쓰지 않은 짜임을 다른 짜임의 내 글씨로 만든 표본(lib/font/interpolate.ts) */
+  derived?: true;
+  /** derived 표본을 놓을 자리(글자 범위에 대한 비율) */
+  place?: Box;
 }
 export interface Coverage {
   direct: number;

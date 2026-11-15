@@ -50,8 +50,10 @@ it("exports normalized glyphs with exact tracking increments and custom baseline
   preparation.settings.baseline = 850;
   const result = generateFont({ project, preparation }),
     font = opentype.parse(result.buffer);
-  expect(font.glyphs.length).toBe(4);
-  expect(result.stats.composed).toBe(0);
+  // 겨 하나로도 받침 ㄱ을 초성 ㄱ에서 옮겨 '격'까지 만들 수 있다(조합 보간).
+  expect(result.stats.direct).toBe(1);
+  expect(result.stats.characters).toEqual(["겨", "격"]);
+  expect(font.glyphs.length).toBe(5);
   const basePrep = defaultPreparation("My Hand");
   basePrep.settings.baseline = 850;
   const baseFont = opentype.parse(

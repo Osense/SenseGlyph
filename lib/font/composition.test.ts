@@ -32,7 +32,9 @@ describe("Hangul component assembly", () => {
     const full = completeFixture();
     project.samples["겨"] = full.samples["겨"];
     expect(coverage(project, prep).available).toContain("겨");
+    // 직접 쓴 자모 자리는 2개, 나머지는 보간으로 만든 자리
     expect(coverage(project, prep).slots).toBe(2);
+    expect(coverage(project, prep).available).toContain("격");
     expect(composeGlyph("힣", componentLibrary(project, prep))).toBeNull();
     prep.settings.includeComposed = false;
     expect(coverage(project, prep).composed).toBe(0);
@@ -127,7 +129,7 @@ it("keeps the original upper pair ahead of a confirmed initial-final pair", () =
   const strokes = composeGlyph("좋", library, pools)!;
   expect(strokes[0]).toBe(project.samples["졺"].strokes[0]);
   expect(strokes[1]).toBe(project.samples["졺"].strokes[1]);
-  expect(strokes[2]).toBe(source.strokes[2]);
+  expect(strokes[2].id).toBe(source.strokes[2].id);
 });
 
 it("prefers the same vowel layout when borrowing a final with equal confirmation", () => {

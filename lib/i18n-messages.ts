@@ -867,6 +867,8 @@ export const JA: Record<string, string> = {
   "모두 지우기": "すべて消す",
   "잘 모르겠다면 다 받기": "迷ったら全部",
   "문서에서 굵게·가늘게도 쓰려면": "文書で太字・細字も使うなら",
+  "내 글씨가 빛나는 곳": "わたしの字が輝く場所",
+  "쎈스 글리프 소개": "SenseGlyph の紹介",
 };
 export const EN: Record<string, string> = {
   " 폰트 이름": " font name",
@@ -1736,4 +1738,6 @@ export const EN: Record<string, string> = {
   "모두 지우기": "Clear all",
   "잘 모르겠다면 다 받기": "Not sure? Get them all",
   "문서에서 굵게·가늘게도 쓰려면": "For bold and light in documents",
+  "내 글씨가 빛나는 곳": "Where your handwriting shines",
+  "쎈스 글리프 소개": "About SenseGlyph",
 };

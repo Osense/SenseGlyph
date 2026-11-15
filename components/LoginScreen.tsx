@@ -2,7 +2,9 @@
 // 첫 화면: 쎈스 글리프의 좋은 점을 배경에 띄우고, 가운데 로그인 창.
 // 목업: 구글·카카오·네이버 버튼은 아직 이 기기 안에서만 들어가고, '로그인 없이 시작하기'로 바로 입장할 수 있다.
 // 자체 계정(이메일·비밀번호)은 만들지 않는다.
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { BASE_PATH } from "../lib/base-path";
 import { legalHref } from "./LegalDocument";
@@ -49,14 +51,137 @@ const USES = [
   ["편지·청첩장", "인쇄해도 마음은 손글씨"],
 ];
 
+/** 좁은 화면(휴대폰 세로 등)에서 배경 문구 대신 한 장씩 넘어가는 소개 */
+function PitchSlides() {
+  const t = useT();
+  const slides: { head: string; body: ReactNode; accent?: boolean }[] = [
+    {
+      head: t("만든 폰트의 라이선스, 전부 당신의 것."),
+      body: t(
+        "가게 간판에도, 유튜브 자막에도, 판매하는 굿즈에도. 사용료도 출처 표기도 묻지 않아요.",
+      ),
+      accent: true,
+    },
+    ...BENEFITS.map((b) => ({ head: t(b.head), body: t(b.body) })),
+    ...[USES.slice(0, 4), USES.slice(4)].map((group) => ({
+      head: t("내 글씨가 빛나는 곳"),
+      body: (
+        <span className="mt-0.5 grid grid-cols-2 gap-x-3 gap-y-1">
+          {group.map(([field, line]) => (
+            <span key={field} className="grid leading-snug">
+              <b className="text-[12.5px] font-semibold text-primary">
+                {t(field)}
+              </b>
+              <span className="text-[12px]">{t(line)}</span>
+            </span>
+          ))}
+        </span>
+      ),
+    })),
+  ];
+  const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const touch = useRef<number | null>(null);
+  useEffect(() => {
+    if (paused) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = setTimeout(
+      () => setIndex((i) => (i + 1) % slides.length),
+      4200,
+    );
+    return () => clearTimeout(timer);
+  }, [index, paused, slides.length]);
+  const go = (step: number) => {
+    setPaused(true);
+    setIndex((i) => (i + step + slides.length) % slides.length);
+  };
+  return (
+    <div
+      data-ui
+      className="sg-login-slides grid w-full gap-2.5"
+      aria-roledescription="carousel"
+      aria-label={t("쎈스 글리프 소개")}
+      onTouchStart={(event) => {
+        touch.current = event.touches[0].clientX;
+      }}
+      onTouchEnd={(event) => {
+        if (touch.current === null) return;
+        const dx = event.changedTouches[0].clientX - touch.current;
+        touch.current = null;
+        if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+      }}
+    >
+      <div className="relative h-[118px] overflow-hidden">
+        {slides.map((slide, i) => {
+          const offset = (i - index + slides.length) % slides.length;
+          return (
+            <div
+              key={i}
+              aria-hidden={i !== index}
+              className={cn(
+                "absolute inset-0 grid content-start gap-1.5 border-l-[3px] pl-3.5 transition-[transform,opacity] duration-500 ease-out motion-reduce:transition-none",
+                slide.accent ? "border-primary" : "border-primary/40",
+                offset === 0
+                  ? "translate-x-0 opacity-100"
+                  : offset === slides.length - 1
+                    ? "-translate-x-8 opacity-0"
+                    : "translate-x-8 opacity-0",
+              )}
+            >
+              <strong
+                className={cn(
+                  "text-[16px] leading-snug font-semibold break-keep",
+                  slide.accent ? "text-primary" : "text-foreground",
+                )}
+              >
+                {slide.head}
+              </strong>
+              <span className="text-[13px] leading-relaxed break-keep text-muted-foreground">
+                {slide.body}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-1 pl-3.5" role="tablist">
+        {slides.map((slide, i) => (
+          <button
+            key={i}
+            data-ui
+            type="button"
+            role="tab"
+            aria-selected={i === index}
+            aria-label={`${i + 1}. ${slide.head}`}
+            onClick={() => {
+              setPaused(true);
+              setIndex(i);
+            }}
+            className="grid h-6 cursor-pointer place-items-center px-0.5"
+          >
+            <i
+              className={cn(
+                "block h-1.5 rounded-full transition-all duration-300",
+                i === index ? "w-5 bg-primary" : "w-1.5 bg-border",
+              )}
+            />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function LoginScreen() {
   const t = useT();
   const lang = useLang((state) => state.lang);
   const signIn = useAccount((state) => state.signIn);
   return (
-    <div className="sg-login" lang={lang}>
+    <div
+      className="sg-login max-wide:content-center-safe max-wide:gap-0"
+      lang={lang}
+    >
       <div className="sg-login-bg" aria-hidden="true">
-        <div className="sg-login-hero">
+        <div className="sg-login-hero max-wide:hidden">
           <p>{t("펜 끝의 버릇까지,\n그대로 폰트가 됩니다.")}</p>
           <small>
             {t(
@@ -91,6 +216,22 @@ export default function LoginScreen() {
           </ul>
         ))}
         <span className="sg-login-glyphs">가 あ A 永 한</span>
+      </div>
+      <div
+        data-ui
+        className="sg-login-intro relative grid w-[min(400px,100%)] gap-4 pt-2 pb-5 wide:hidden"
+      >
+        <div className="grid gap-2">
+          <p className="m-0 text-[clamp(24px,7vw,30px)] leading-[1.25] font-bold tracking-[-0.02em] whitespace-pre-line text-foreground">
+            {t("펜 끝의 버릇까지,\n그대로 폰트가 됩니다.")}
+          </p>
+          <small className="text-[13px] leading-relaxed break-keep text-muted-foreground">
+            {t(
+              "만 자를 쓰고, 스캔하고, 한 글자씩 다듬던 몇 주를 — 태블릿 하나로, 한나절에.",
+            )}
+          </small>
+        </div>
+        <PitchSlides />
       </div>
       <section
         data-ui

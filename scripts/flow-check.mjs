@@ -233,6 +233,19 @@ check(
 );
 await page.screenshot({ path: "artifacts/flow-refine.png", fullPage: true });
 await page.click('button:has-text("폰트 만들기 →")');
+// 작업 중단을 누르면 다시 누를 때까지 저절로 다시 만들지 않아야 한다.
+await page.waitForSelector(".sg-work-cancel", { timeout: 20000 });
+await page.click(".sg-work-cancel");
+await page.waitForTimeout(5000);
+check(
+  "폰트 만들기 중단 후 저절로 다시 시작하지 않음",
+  !(await page.locator(".sg-work").count()) &&
+    !(await page.locator(".fw-badge.is-ok").count()) &&
+    (await page
+      .locator('.fw-specimen-card button:has-text("폰트 만들기")')
+      .count()) === 1,
+);
+await page.click('.fw-specimen-card button:has-text("폰트 만들기")');
 await page.waitForSelector(".fw-badge.is-ok", { timeout: 180000 });
 check("폰트 생성 완료", true);
 check(

@@ -277,10 +277,19 @@ export default function FontWorkshop({
     setExportProgress(null);
     setWorkView(null);
   };
+  // 사용자가 '작업 중단'을 누르면, 다시 직접 '폰트 만들기'를 누를 때까지 자동으로 새로 만들지 않는다.
+  // (중단하면 building 이 false 가 되면서 아래의 자동 만들기 효과가 곧바로 다시 시작하던 문제)
+  const [stopped, setStopped] = useState(false);
   /** 폰트 만들기 중단 */
   const cancelBuild = () => {
+    setStopped(true);
     resetResult();
     setWorkView(null);
+  };
+  /** 사용자가 직접 누른 폰트 만들기: 중단 상태를 풀고 만든다 */
+  const buildNow = () => {
+    setStopped(false);
+    build();
   };
   // 작업이 끝나면 작업 창을 닫는다
   useEffect(() => {
@@ -422,12 +431,13 @@ export default function FontWorkshop({
       building ||
       error ||
       draft ||
+      stopped ||
       !report.direct
     )
       return;
     const timer = setTimeout(build, 1500);
     return () => clearTimeout(timer);
-  }, [stage, finishStep, isCurrent, building, error, draft, prep]);
+  }, [stage, finishStep, isCurrent, building, error, draft, prep, stopped]);
   // 내보내기 화면에서 폰트를 만드는 동안은 작업 창을 띄운다(다듬기 화면의 미리 만들기는 조용히).
   const shownExport = useRef(false);
   useEffect(() => {
@@ -449,10 +459,11 @@ export default function FontWorkshop({
       !isCurrent &&
       !building &&
       !error &&
+      !stopped &&
       report.direct
     )
       build();
-  }, [stage, finishStep, isCurrent, building]);
+  }, [stage, finishStep, isCurrent, building, stopped]);
 
   const fallback = useMemo(() => {
     const covered = new Set(report.available);
@@ -1230,7 +1241,7 @@ export default function FontWorkshop({
                 size="lg"
                 onClick={() => {
                   setFinishStep("export");
-                  build();
+                  buildNow();
                 }}
               >
                 {t("폰트 만들기 →")}
@@ -1280,7 +1291,7 @@ export default function FontWorkshop({
               onBuild={() => {
                 setError("");
                 setWorkView("build");
-                build();
+                buildNow();
               }}
               exporting={exporting}
               exportError={exportError}

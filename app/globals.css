@@ -146,3 +146,153 @@
 [data-ink-locked]:disabled {
   opacity: 1;
 }
+
+/* 처음 여는 화면(LoadingScreen) */
+@keyframes sg-sweep {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
+}
+@keyframes sg-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+@keyframes sg-breathe {
+  0%,
+  100% {
+    opacity: 0.7;
+    scale: 0.96;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.04;
+  }
+}
+@keyframes sg-ring {
+  0% {
+    opacity: 0.7;
+    scale: 1;
+  }
+  70%,
+  100% {
+    opacity: 0;
+    scale: 1.28;
+  }
+}
+/* ㅆ 네 획을 차례로 쓰고, 잠깐 머문 뒤 지우고 다시 쓴다 */
+@keyframes sg-write {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  22% {
+    stroke-dashoffset: 0;
+  }
+  78% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  90%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes sg-pop {
+  0%,
+  42% {
+    scale: 0;
+  }
+  50% {
+    scale: 1.35;
+  }
+  56%,
+  78% {
+    scale: 1;
+    opacity: 1;
+  }
+  90%,
+  100% {
+    scale: 1;
+    opacity: 0;
+  }
+}
+@keyframes sg-line {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  4%,
+  21% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  25%,
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+@keyframes sg-dots {
+  0% {
+    content: "";
+  }
+  25% {
+    content: ".";
+  }
+  50% {
+    content: "..";
+  }
+  75%,
+  100% {
+    content: "...";
+  }
+}
+.sg-loading-stroke {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: sg-write 3.2s cubic-bezier(0.55, 0.1, 0.35, 1) infinite both;
+}
+.sg-loading-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sg-pop 3.2s ease-out infinite both;
+}
+.sg-loading-line {
+  opacity: 0;
+  animation: sg-line 9.6s ease-in-out infinite both;
+}
+.sg-loading-dots::after {
+  content: "";
+  display: inline-block;
+  width: 1.2em;
+  text-align: left;
+  animation: sg-dots 1.2s steps(1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sg-loading-stroke {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .sg-loading-dot {
+    animation: none;
+  }
+  .sg-loading-line {
+    animation: none;
+  }
+  .sg-loading-line.is-first {
+    opacity: 1;
+  }
+  .sg-loading-dots::after {
+    animation: none;
+    content: "…";
+  }
+}

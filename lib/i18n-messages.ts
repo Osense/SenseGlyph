@@ -869,6 +869,10 @@ export const JA: Record<string, string> = {
   "문서에서 굵게·가늘게도 쓰려면": "文書で太字・細字も使うなら",
   "내 글씨가 빛나는 곳": "わたしの字が輝く場所",
   "쎈스 글리프 소개": "SenseGlyph の紹介",
+  "종이를 펴는 중": "紙を広げています",
+  "붓을 고르는 중": "筆を選んでいます",
+  "견본 글꼴을 펼치는 중": "見本フォントを開いています",
+  "쓴 글씨를 불러오는 중": "書いた字を読み込んでいます",
 };
 export const EN: Record<string, string> = {
   " 폰트 이름": " font name",
@@ -1740,4 +1744,8 @@ export const EN: Record<string, string> = {
   "문서에서 굵게·가늘게도 쓰려면": "For bold and light in documents",
   "내 글씨가 빛나는 곳": "Where your handwriting shines",
   "쎈스 글리프 소개": "About SenseGlyph",
+  "종이를 펴는 중": "Laying out the paper",
+  "붓을 고르는 중": "Picking a brush",
+  "견본 글꼴을 펼치는 중": "Opening sample fonts",
+  "쓴 글씨를 불러오는 중": "Loading your handwriting",
 };

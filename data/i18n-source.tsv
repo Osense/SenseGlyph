@@ -700,3 +700,7 @@ JSON 가져오기	JSON読み込み	Import JSON
 문서에서 굵게·가늘게도 쓰려면	文書で太字・細字も使うなら	For bold and light in documents
 내 글씨가 빛나는 곳	わたしの字が輝く場所	Where your handwriting shines
 쎈스 글리프 소개	SenseGlyph の紹介	About SenseGlyph
+종이를 펴는 중	紙を広げています	Laying out the paper
+붓을 고르는 중	筆を選んでいます	Picking a brush
+견본 글꼴을 펼치는 중	見本フォントを開いています	Opening sample fonts
+쓴 글씨를 불러오는 중	書いた字を読み込んでいます	Loading your handwriting

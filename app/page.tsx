@@ -14,7 +14,7 @@ import {
 } from "../data/charset";
 import { newProject } from "../lib/defaults";
 import { BASE_PATH } from "../lib/base-path";
-import { APP_NAME, APP_VERSION, CREDIT, MAKER } from "../lib/version";
+import { APP_NAME, APP_VERSION, MAKER } from "../lib/version";
 import { isNativeApp, saveToDevice } from "../lib/native";
 import {
   loadProject,
@@ -57,6 +57,7 @@ import {
   setCountingDisabled,
 } from "../lib/analytics";
 import { gsap } from "gsap";
+import LoadingScreen from "../components/LoadingScreen";
 import {
   ArrowRight,
   Check,
@@ -691,16 +692,7 @@ export default function Page() {
       notify(e instanceof Error ? t(e.message) : t("가져오기 실패"));
     }
   };
-  if (!project || !s)
-    return (
-      <main className="loading">
-        <span className="brand-mark" aria-hidden="true">
-          ㅆ
-        </span>
-        <p>{t("쎈스 글리프를 여는 중…")}</p>
-        <p className="sg-credit">{CREDIT}</p>
-      </main>
-    );
+  if (!project || !s) return <LoadingScreen />;
   const params = s.brushParams[s.activeBrush],
     history = histories[char];
   const isWritten = (entry: CharEntry) =>

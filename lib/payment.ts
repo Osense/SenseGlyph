@@ -16,7 +16,7 @@ export interface Order {
 
 const TEST_CODES = ["권오현"];
 
-export const PRICE = 19900;
+export const PRICE = 14900;
 
 /** 코드 확인: 앞뒤 공백·가운데 공백은 무시 */
 export function redeemCode(code: string) {

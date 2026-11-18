@@ -23,7 +23,13 @@ import {
   startProject,
   duplicateProject,
   switchProject,
+  listProjects,
+  renameStoredProject,
+  copyStoredProject,
+  deleteStoredProject,
+  type ProjectSummary,
 } from "../lib/storage";
+import type { FontProject } from "../lib/types";
 import { useStudio } from "../lib/store";
 import WritingPad from "../components/WritingPad";
 import PixelSizeControl from "../components/PixelSizeControl";
@@ -58,6 +64,14 @@ import {
 } from "../lib/analytics";
 import { gsap } from "gsap";
 import LoadingScreen from "../components/LoadingScreen";
+import HomeScreen from "../components/HomeScreen";
+import {
+  forgetResume,
+  getResume,
+  allResume,
+  setResume,
+  type ResumePoint,
+} from "../lib/resume";
 import { WsnsWordmark } from "../components/WsnsBrand";
 import {
   ArrowRight,
@@ -116,7 +130,6 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import ProjectManager from "../components/ProjectManager";
 import WritingTips, { WRITING_TIPS_KEY } from "../components/WritingTips";
 
 type CharEntry = { char: string; category: CharCategory };
@@ -231,6 +244,10 @@ export default function Page() {
     [toolSheet, setToolSheet] = useState(false),
     [tipsOpen, setTipsOpen] = useState(false),
     [projectsOpen, setProjectsOpen] = useState(false),
+    // 처음 들어오면 메인 화면(내 폰트 목록)부터. ?step= 으로 들어오면 바로 작업 화면.
+    [home, setHome] = useState(true),
+    [homeProjects, setHomeProjects] = useState<ProjectSummary[] | null>(null),
+    [homeBusy, setHomeBusy] = useState(false),
     [fontReviewChar, setFontReviewChar] = useState<string | undefined>(),
     [dark, setDark] = useState(false),
     // 왼손잡이: 도구 줄과 '다음 글자'를 오른쪽(쓰지 않는 손 쪽)으로
@@ -407,7 +424,10 @@ export default function Page() {
       stepParameter <= 4
         ? stepParameter
         : null;
-    if (requestedStep !== null) setStep(requestedStep);
+    if (requestedStep !== null) {
+      setStep(requestedStep);
+      setHome(false);
+    }
     // 앱(안드로이드)은 파일을 앱 안에 담고 있어 오프라인 저장(서비스 워커)이 필요 없다.
     if ("serviceWorker" in navigator && !isNativeApp())
       navigator.serviceWorker.register(BASE_PATH + "/sw.js").catch(() => {});
@@ -512,6 +532,7 @@ export default function Page() {
     value: string,
     create: boolean,
     settings: Partial<ProjectSettings> = {},
+    resume?: ResumePoint,
   ) => {
     if (switching.current) return;
     switching.current = true;
@@ -523,11 +544,14 @@ export default function Page() {
         ? startProject(active, value, settings)
         : switchProject(active, value));
       setProject(next);
-      setIndex(0);
-      setList("basic");
       setTool("pen");
       setProjectsOpen(false);
-      changeStep(create ? 0 : 2);
+      if (resume) applyResume(next, resume);
+      else {
+        setIndex(0);
+        setList("basic");
+        changeStep(create ? 0 : 2);
+      }
       setSaved("기기에 저장됨");
       notify(
         create
@@ -538,6 +562,119 @@ export default function Page() {
       switching.current = false;
     }
   };
+  /** 마지막으로 보던 단계·목록·글자로 돌아간다 */
+  const applyResume = (target: FontProject, point?: ResumePoint) => {
+    const chars = charsetFor(target.settings.script ?? "ko");
+    const lists = listsFor(target.settings.script ?? "ko");
+    const position = point?.char
+      ? chars.findIndex((entry) => entry.char === point.char)
+      : -1;
+    setIndex(position >= 0 ? position : 0);
+    setList(
+      point?.list && (point.list === "review" || point.list in lists)
+        ? (point.list as ListId)
+        : "basic",
+    );
+    changeStep(
+      point &&
+        Number.isInteger(point.step) &&
+        point.step >= 0 &&
+        point.step <= 4
+        ? point.step
+        : 2,
+    );
+  };
+  // 작업 화면에 있는 동안 지금 자리를 프로젝트별로 기억해 둔다.
+  useEffect(() => {
+    if (home || !project) return;
+    setResume(project.id, { step, char, list });
+  }, [home, project?.id, step, char, list]);
+
+  /** 메인 화면 목록 새로 고침(열린 작업은 먼저 저장) */
+  const refreshHome = async () => {
+    const active = useStudio.getState().project;
+    if (active && Object.values(active.samples).length) {
+      persist();
+      await saveChain.current.catch(() => {});
+    }
+    setHomeProjects(await listProjects().catch(() => []));
+  };
+  const goHome = () => {
+    if (busy) return;
+    setHome(true);
+    setToolSheet(false);
+    void refreshHome();
+  };
+  useEffect(() => {
+    if (home && project) void refreshHome();
+  }, [home, !!project]);
+  const homeAction = async (work: () => Promise<void>) => {
+    setHomeBusy(true);
+    try {
+      await work();
+    } catch (error) {
+      notify(
+        error instanceof Error ? t(error.message) : t("작업하지 못했어요"),
+      );
+    } finally {
+      setHomeBusy(false);
+    }
+  };
+  const openFromHome = (id: string) =>
+    homeAction(async () => {
+      const point = getResume(id);
+      if (id === useStudio.getState().project?.id)
+        applyResume(useStudio.getState().project!, point);
+      else await transitionProject(id, false, {}, point ?? { step: 2, at: 0 });
+      setHome(false);
+    });
+  const newFromHome = () =>
+    homeAction(async () => {
+      const active = useStudio.getState().project!;
+      const saved = homeProjects?.some((p) => p.id === active.id);
+      // 아직 아무것도 쓰지 않은 새 작업이 열려 있으면 그대로 시작
+      if (!saved && !Object.values(active.samples).length) {
+        setIndex(0);
+        setList("basic");
+        changeStep(0);
+      } else await transitionProject(t("새 손글씨"), true);
+      setHome(false);
+    });
+  const renameFromHome = (id: string, name: string) =>
+    homeAction(async () => {
+      if (id === useStudio.getState().project?.id) {
+        rename(name);
+        persist();
+        await saveChain.current.catch(() => {});
+      } else await renameStoredProject(id, name);
+      await refreshHome();
+    });
+  const duplicateFromHome = (id: string) =>
+    homeAction(async () => {
+      const source = homeProjects?.find((p) => p.id === id);
+      if (id === useStudio.getState().project?.id) {
+        persist();
+        await saveChain.current.catch(() => {});
+      }
+      const copy = await copyStoredProject(
+        id,
+        t("{name}의 복사본", { name: source?.name ?? "" }),
+      );
+      const point = getResume(id);
+      if (point) setResume(copy.id, point);
+      await refreshHome();
+      notify(t("‘{name}’(으)로 복제했어요.", { name: copy.name }));
+    });
+  const deleteFromHome = (id: string) =>
+    homeAction(async () => {
+      const wasActive = id === useStudio.getState().project?.id;
+      const next = await deleteStoredProject(id);
+      forgetResume(id);
+      if (wasActive) setProject(next ?? newProject());
+      await refreshHome();
+      notify(t("프로젝트를 삭제했어요."));
+    });
+
   useEffect(() => {
     const flush = () => {
       if (document.visibilityState === "hidden") persist();
@@ -608,6 +745,7 @@ export default function Page() {
         session === null ||
         toolSheet ||
         tipsOpen ||
+        home ||
         step !== 2 ||
         busy ||
         (e.target instanceof HTMLElement &&
@@ -645,6 +783,7 @@ export default function Page() {
     navigationChars,
     list,
     step,
+    home,
   ]);
   useEffect(() => {
     if (toastUndo) {
@@ -854,62 +993,68 @@ export default function Page() {
           className="sg-brand group flex min-w-0 shrink-0 items-center gap-2 text-foreground no-underline"
           href="./"
           aria-label={t("쎈스 글리프 처음 화면")}
+          onClick={(event) => {
+            event.preventDefault();
+            goHome();
+          }}
         >
           <WsnsWordmark product={t("쎈스 글리프")} />
         </a>
-        <nav
-          data-ui
-          className="sg-steps order-last flex w-full items-center gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1 wide:order-none wide:mx-auto wide:w-auto"
-          aria-label={t("폰트 만드는 순서")}
-        >
-          {stepsFor(script).map(({ label, step: position }, order) => {
-            const current = viewStep === position,
-              past = position < viewStep;
-            return (
-              <button
-                key={label}
-                data-ui
-                className={cn(
-                  current ? "is-current" : past ? "is-past" : "",
-                  "group/step flex h-10 min-w-0 flex-1 cursor-pointer data-[current=true]:max-[699px]:flex-[2.4] items-center justify-center gap-2 rounded-lg px-3 text-[14px] whitespace-nowrap text-muted-foreground transition-colors hover:bg-card/70 hover:text-foreground disabled:cursor-default disabled:opacity-50 wide:flex-none wide:px-3.5",
-                  current &&
-                    "bg-card font-semibold text-foreground shadow-soft hover:bg-card",
-                  past && "text-foreground/80",
-                )}
-                aria-current={current ? "step" : undefined}
-                data-current={current}
-                data-ink-locked={busy || undefined}
-                disabled={busy}
-                onClick={() => changeStep(position)}
-              >
-                <span
+        {!home && (
+          <nav
+            data-ui
+            className="sg-steps order-last flex w-full items-center gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1 wide:order-none wide:mx-auto wide:w-auto"
+            aria-label={t("폰트 만드는 순서")}
+          >
+            {stepsFor(script).map(({ label, step: position }, order) => {
+              const current = viewStep === position,
+                past = position < viewStep;
+              return (
+                <button
+                  key={label}
+                  data-ui
                   className={cn(
-                    "grid size-5 shrink-0 place-items-center rounded-full font-mono text-[10px] leading-none font-semibold tabular-nums",
-                    current
-                      ? "bg-brand-grad text-white"
-                      : past
-                        ? "bg-primary/15 text-primary"
-                        : "bg-card text-dim",
+                    current ? "is-current" : past ? "is-past" : "",
+                    "group/step flex h-10 min-w-0 flex-1 cursor-pointer data-[current=true]:max-[699px]:flex-[2.4] items-center justify-center gap-2 rounded-lg px-3 text-[14px] whitespace-nowrap text-muted-foreground transition-colors hover:bg-card/70 hover:text-foreground disabled:cursor-default disabled:opacity-50 wide:flex-none wide:px-3.5",
+                    current &&
+                      "bg-card font-semibold text-foreground shadow-soft hover:bg-card",
+                    past && "text-foreground/80",
                   )}
+                  aria-current={current ? "step" : undefined}
+                  data-current={current}
+                  data-ink-locked={busy || undefined}
+                  disabled={busy}
+                  onClick={() => changeStep(position)}
                 >
-                  {past ? (
-                    <Check className="size-3" strokeWidth={3} />
-                  ) : (
-                    order + 1
-                  )}
-                </span>
-                <span
-                  className={cn(
-                    "truncate",
-                    !current && "max-wide:hidden min-[700px]:max-wide:inline",
-                  )}
-                >
-                  {t(label)}
-                </span>
-              </button>
-            );
-          })}
-        </nav>
+                  <span
+                    className={cn(
+                      "grid size-5 shrink-0 place-items-center rounded-full font-mono text-[10px] leading-none font-semibold tabular-nums",
+                      current
+                        ? "bg-brand-grad text-white"
+                        : past
+                          ? "bg-primary/15 text-primary"
+                          : "bg-card text-dim",
+                    )}
+                  >
+                    {past ? (
+                      <Check className="size-3" strokeWidth={3} />
+                    ) : (
+                      order + 1
+                    )}
+                  </span>
+                  <span
+                    className={cn(
+                      "truncate",
+                      !current && "max-wide:hidden min-[700px]:max-wide:inline",
+                    )}
+                  >
+                    {t(label)}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+        )}
         <div className="ml-auto flex shrink-0 items-center gap-1.5 wide:ml-0">
           <span
             className="sg-save mr-1 hidden items-center gap-1.5 font-mono text-[11px] text-muted-foreground wide:inline-flex"
@@ -928,7 +1073,8 @@ export default function Page() {
             className="sg-top-button"
             data-ink-locked={busy || undefined}
             disabled={busy}
-            onClick={() => setProjectsOpen(true)}
+            aria-pressed={home}
+            onClick={goHome}
           >
             <FolderOpen />
             <span className="max-sm:sr-only">{t("내 폰트")}</span>
@@ -963,7 +1109,7 @@ export default function Page() {
           </Button>
         </div>
       </header>
-      {project.purchase && (
+      {project.purchase && !home && (
         <div
           data-ui
           className="sg-locked-bar mx-3 mt-2 flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-wash px-4 py-2.5 text-[13px] text-foreground wide:mx-6"
@@ -992,7 +1138,19 @@ export default function Page() {
         </div>
       )}
 
-      {step < 2 && (
+      {home && (
+        <HomeScreen
+          projects={homeProjects}
+          resume={allResume()}
+          busy={homeBusy || busy}
+          onOpen={openFromHome}
+          onNew={newFromHome}
+          onRename={renameFromHome}
+          onDuplicate={duplicateFromHome}
+          onDelete={deleteFromHome}
+        />
+      )}
+      {step < 2 && !home && (
         <JourneySetup
           step={step}
           settings={s}
@@ -1009,7 +1167,7 @@ export default function Page() {
         />
       )}
 
-      {step === 2 && (
+      {step === 2 && !home && (
         <>
           <section className="sg-write journey-panel">
             <h1 className="sg-visually-hidden" tabIndex={-1}>
@@ -1784,7 +1942,7 @@ export default function Page() {
         </>
       )}
 
-      {step >= 3 && !projectsOpen && (
+      {step >= 3 && !home && (
         <FontWorkshop
           key={project.id}
           stage={viewStep === 3 ? "separation" : "build"}
@@ -1821,19 +1979,12 @@ export default function Page() {
       {accountOpen && (
         <AccountPanel
           currentId={project.id}
-          onOpenProject={(id) => transitionProject(id, false)}
-          onManageProjects={() => setProjectsOpen(true)}
+          onOpenProject={(id) => void openFromHome(id)}
+          onManageProjects={goHome}
           onClose={() => setAccountOpen(false)}
         />
       )}
       {session === null && <LoginScreen />}
-      {projectsOpen && (
-        <ProjectManager
-          current={project}
-          onClose={() => setProjectsOpen(false)}
-          onTransition={transitionProject}
-        />
-      )}
       {toast && (
         <div
           data-ui

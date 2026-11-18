@@ -708,3 +708,27 @@ JSON 가져오기	JSON読み込み	Import JSON
 결제한 폰트는 글씨와 정돈을 고칠 수 없어요. 프로젝트를 복제해서 이어서 작업할까요? 복제본은 결제 전 상태라, 고친 뒤 다시 결제해 내려받을 수 있어요.	購入したフォントは文字や整えを変更できません。プロジェクトを複製して続けますか？複製は購入前の状態なので、直したあと改めて購入してダウンロードできます。	A purchased font can't be edited. Duplicate the project and keep working? The copy starts unpurchased, so you can edit it and purchase again to download.
 그대로 두기	そのままにする	Leave it
 복제해서 이어서 하기	複製して続ける	Duplicate and continue
+작업하지 못했어요	作業できませんでした	Couldn't do that
+‘{name}’(으)로 복제했어요.	「{name}」として複製しました。	Duplicated as ‘{name}’.
+프로젝트를 삭제했어요.	プロジェクトを削除しました。	Project deleted.
+방금	たった今	Just now
+{n}분 전	{n}分前	{n}m ago
+{n}시간 전	{n}時間前	{n}h ago
+{n}일 전	{n}日前	{n}d ago
+{step} · ‘{char}’ 쓰던 중	{step}・「{char}」を書いている途中	{step} · writing ‘{char}’
+{name} 프로젝트 메뉴	{name} のメニュー	{name} menu
+이름 바꾸기	名前を変更	Rename
+복제	複製	Duplicate
+결제한 폰트	購入済み	Purchased
+어디서부터 이어 쓸까요?	どこから続けますか？	Where would you like to pick up?
+첫 손글씨 폰트를 만들어 볼까요?	最初の手書きフォントを作りましょうか？	Shall we make your first handwriting font?
+새 폰트 시작	新しいフォント	New font
+아직 만든 폰트가 없어요. 브러시를 고르고 글자를 쓰기 시작하면 여기에 차곡차곡 보관돼요.	まだフォントがありません。筆を選んで書き始めると、ここに保管されます。	No fonts yet. Pick a brush and start writing — your projects will be kept here.
+첫 폰트 만들기	最初のフォントを作る	Make your first font
+최근 작업	最近の作業	Recent
+이어서 하기	続きから	Continue
+{n}자	{n}字	{n} chars
+프로젝트를 삭제할까요?	プロジェクトを削除しますか？	Delete this project?
+아직 쓴 글자가 없어요	まだ書いた字がありません	Nothing written yet
+브러시 고르기	筆を選ぶ	Choosing a brush
+견본 고르기	見本を選ぶ	Choosing a sample

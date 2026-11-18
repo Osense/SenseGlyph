@@ -1,6 +1,6 @@
 {
   "name": "handwritten-font-studio",
-  "version": "0.2.54",
+  "version": "0.2.55",
   "private": true,
   "scripts": {
     "test:regions-projects": "node scripts/regions-projects-check.mjs",
@@ -23,7 +23,8 @@
     "format": "prettier --write app components lib data config scripts *.json *.ts *.mjs *.md",
     "deploy": "node scripts/deploy-pages.mjs",
     "android:sync": "npm run build && cap sync android",
-    "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug"
+    "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug",
+    "test:home": "node scripts/home-check.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.2",

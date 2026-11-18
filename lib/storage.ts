@@ -23,17 +23,91 @@ export async function saveProject(project: FontProject) {
   await tx.objectStore("meta").put(project.id, "active");
   await tx.done;
 }
-export async function listProjects() {
+export interface ProjectSummary {
+  id: string;
+  name: string;
+  updatedAt: number;
+  createdAt: number;
+  count: number;
+  script: "ko" | "ja";
+  purchased: boolean;
+  /** 목록 카드에 보여 줄 쓴 글자 몇 개 */
+  preview: { char: string; strokes: import("./types").Stroke[] }[];
+}
+export async function listProjects(): Promise<ProjectSummary[]> {
   const db = await database();
   const projects = (await db.getAll("projects")) as FontProject[];
   return projects
     .sort((a, b) => b.updatedAt - a.updatedAt)
-    .map((p) => ({
-      id: p.id,
-      name: p.name,
-      updatedAt: p.updatedAt,
-      count: Object.values(p.samples).filter((s) => s.strokes.length).length,
-    }));
+    .map((p) => {
+      const written = Object.entries(p.samples).filter(
+        ([, s]) => s.strokes.length,
+      );
+      return {
+        id: p.id,
+        name: p.name,
+        updatedAt: p.updatedAt,
+        createdAt: p.createdAt,
+        count: written.length,
+        script: p.settings.script ?? "ko",
+        purchased: !!p.purchase,
+        preview: written
+          .sort((a, b) => (b[1].updatedAt ?? 0) - (a[1].updatedAt ?? 0))
+          .slice(0, 6)
+          .map(([char, s]) => ({ char, strokes: s.strokes })),
+      };
+    });
+}
+/** 지금 열려 있지 않은 프로젝트의 이름 바꾸기 */
+export async function renameStoredProject(id: string, name: string) {
+  const db = await database();
+  const p = (await db.get("projects", id)) as FontProject | undefined;
+  if (!p) return;
+  await db.put("projects", { ...p, name: name.slice(0, 80) });
+}
+/** 보관한 프로젝트를 그대로 복사(결제 기록은 빼고). 열려 있는 작업은 바꾸지 않는다. */
+export async function copyStoredProject(id: string, name: string) {
+  const db = await database();
+  const tx = db.transaction("projects", "readwrite");
+  const projects = (await tx.store.getAll()) as FontProject[];
+  const source = projects.find((p) => p.id === id);
+  if (!source) {
+    tx.abort();
+    throw new Error("프로젝트를 찾을 수 없습니다.");
+  }
+  const base = name.trim().slice(0, 72) || source.name + "의 복사본";
+  let unique = base,
+    number = 2;
+  while (projects.some((p) => p.name === unique))
+    unique = base + " (" + number++ + ")";
+  const { purchase: _purchase, ...rest } = structuredClone(source);
+  void _purchase;
+  const copy: FontProject = {
+    ...rest,
+    id: newProject().id,
+    name: unique,
+    createdAt: Date.now(),
+    // '최근 작업' 자리는 원본에 남도록 바로 뒤 순서로
+    updatedAt: source.updatedAt - 1,
+  };
+  await tx.store.put(copy);
+  await tx.done;
+  return copy;
+}
+/** 아무 프로젝트나 지운다. 지금 열린 작업이면 다음으로 최근 작업을 열린 작업으로 바꾼다. */
+export async function deleteStoredProject(id: string) {
+  const db = await database();
+  const tx = db.transaction(["projects", "meta"], "readwrite");
+  await tx.objectStore("projects").delete(id);
+  let next: FontProject | undefined;
+  if ((await tx.objectStore("meta").get("active")) === id) {
+    const rest = (await tx.objectStore("projects").getAll()) as FontProject[];
+    next = rest.sort((a, b) => b.updatedAt - a.updatedAt)[0];
+    if (next) await tx.objectStore("meta").put(next.id, "active");
+    else await tx.objectStore("meta").delete("active");
+  }
+  await tx.done;
+  return next;
 }
 export async function startProject(
   current: FontProject,

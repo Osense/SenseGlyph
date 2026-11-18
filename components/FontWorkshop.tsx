@@ -996,7 +996,8 @@ export default function FontWorkshop({
             >
               <div
                 data-ui
-                className="fw-controls grid gap-4 in-data-[locked]:pointer-events-none in-data-[locked]:opacity-55"
+                className="fw-controls grid gap-4"
+                data-lock-zone={project.purchase ? "" : undefined}
               >
                 <Panel
                   className="fw-card grid gap-4"
@@ -1201,7 +1202,8 @@ export default function FontWorkshop({
             {script === "ko" && (
               <details
                 data-ui
-                className="fw-more group rounded-xl border border-border bg-card shadow-soft in-data-[locked]:pointer-events-none in-data-[locked]:opacity-55 [&[open]>summary_svg]:rotate-180"
+                data-lock-zone={project.purchase ? "" : undefined}
+                className="fw-more group rounded-xl border border-border bg-card shadow-soft [&[open]>summary_svg]:rotate-180"
               >
                 <summary
                   data-ui

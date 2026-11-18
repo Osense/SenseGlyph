@@ -52,11 +52,11 @@ const description =
   "세상에 당신만의 모양으로 이야기를 건넬 수 있게 되었어요. 태블릿에 글자를 써서 나만의 한글 폰트를 만드는 WSNS studio의 손글씨 폰트 작업실.";
 const siteUrl = "https://osense.github.io/SenseGlyph/";
 const shareImage = {
-  url: new URL("senseglyph-share-v2.png", siteUrl).href,
+  url: new URL("senseglyph-share-v3.png", siteUrl).href,
   width: 1200,
   height: 630,
   type: "image/png",
-  alt: "쎈스 글리프. 내 손으로 쓴 한 획이, 나만의 폰트가 됩니다. WSNS studio 제작.",
+  alt: "쎈스 글리프 — 내 손으로 쓴 한 획이, 나만의 폰트가 됩니다. WSNS studio.",
 };
 
 export const metadata: Metadata = {
@@ -65,13 +65,13 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: `${BASE_PATH}/brand-icon-32.png`,
+        url: `${BASE_PATH}/brand-icon-32.png?v=3`,
         type: "image/png",
         sizes: "32x32",
       },
-      { url: `${BASE_PATH}/brand-icon.svg`, type: "image/svg+xml" },
+      { url: `${BASE_PATH}/brand-icon.svg?v=3`, type: "image/svg+xml" },
     ],
-    apple: [{ url: `${BASE_PATH}/apple-touch-icon.png`, sizes: "180x180" }],
+    apple: [{ url: `${BASE_PATH}/apple-touch-icon.png?v=3`, sizes: "180x180" }],
   },
   openGraph: {
     type: "website",

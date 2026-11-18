@@ -873,6 +873,11 @@ export const JA: Record<string, string> = {
   "붓을 고르는 중": "筆を選んでいます",
   "견본 글꼴을 펼치는 중": "見本フォントを開いています",
   "쓴 글씨를 불러오는 중": "書いた字を読み込んでいます",
+  "이미 결제한 폰트예요": "すでに購入したフォントです",
+  "결제한 폰트는 글씨와 정돈을 고칠 수 없어요. 프로젝트를 복제해서 이어서 작업할까요? 복제본은 결제 전 상태라, 고친 뒤 다시 결제해 내려받을 수 있어요.":
+    "購入したフォントは文字や整えを変更できません。プロジェクトを複製して続けますか？複製は購入前の状態なので、直したあと改めて購入してダウンロードできます。",
+  "그대로 두기": "そのままにする",
+  "복제해서 이어서 하기": "複製して続ける",
 };
 export const EN: Record<string, string> = {
   " 폰트 이름": " font name",
@@ -1748,4 +1753,9 @@ export const EN: Record<string, string> = {
   "붓을 고르는 중": "Picking a brush",
   "견본 글꼴을 펼치는 중": "Opening sample fonts",
   "쓴 글씨를 불러오는 중": "Loading your handwriting",
+  "이미 결제한 폰트예요": "This font is already purchased",
+  "결제한 폰트는 글씨와 정돈을 고칠 수 없어요. 프로젝트를 복제해서 이어서 작업할까요? 복제본은 결제 전 상태라, 고친 뒤 다시 결제해 내려받을 수 있어요.":
+    "A purchased font can't be edited. Duplicate the project and keep working? The copy starts unpurchased, so you can edit it and purchase again to download.",
+  "그대로 두기": "Leave it",
+  "복제해서 이어서 하기": "Duplicate and continue",
 };

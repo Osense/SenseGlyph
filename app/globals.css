@@ -331,3 +331,12 @@
     content: "…";
   }
 }
+
+/* 결제한 프로젝트에서 고치는 칸: 흐리게 보이고, 누르면 복제할지 묻는다(page.tsx guardLocked) */
+[data-lock-zone] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+[data-lock-zone] * {
+  cursor: not-allowed;
+}

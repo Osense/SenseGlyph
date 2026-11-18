@@ -404,7 +404,13 @@ check(
   "결제한 폰트는 결제창 없이 다시 받기",
   await page.locator(".fw-purchased").isVisible(),
 );
-await page.click(".sg-locked-bar button");
+// 고치는 칸을 누르면 막기만 하지 않고 복제할지 묻는다.
+await page.click('.fw-tabs button:has-text("다듬기")');
+await page.waitForSelector(".fw-controls[data-lock-zone]");
+await page.locator(".fw-controls").click({ position: { x: 40, y: 40 } });
+await page.waitForSelector(".sg-lock-ask", { timeout: 5000 });
+check("결제한 폰트를 고치려 하면 복제 안내 팝업", true);
+await page.click(".sg-lock-duplicate");
 await page.waitForSelector(".sg-rename-copy");
 const copyName = await page.locator(".sg-rename-copy input").inputValue();
 check(

@@ -13,7 +13,9 @@ export function Segmented<T extends string>({
   className,
   size = "default",
   locked,
+  "data-lock-zone": lockZone,
 }: {
+  "data-lock-zone"?: string;
   value: T;
   options: readonly { id: T; label: React.ReactNode }[];
   onChange: (id: T) => void;
@@ -29,6 +31,7 @@ export function Segmented<T extends string>({
       data-ui
       role="group"
       aria-label={label}
+      data-lock-zone={lockZone}
       className={cn(
         "sg-segment inline-flex shrink-0 items-center gap-0.5 rounded-xl bg-muted p-1",
         className,

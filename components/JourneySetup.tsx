@@ -46,12 +46,15 @@ export default function JourneySetup({
   script = "ko",
   onScript,
   onLegal,
+  locked,
   leftHanded = false,
   onHand,
 }: {
   leftHanded?: boolean;
   onHand?: (left: boolean) => void;
   onLegal?: () => void;
+  /** 결제한 프로젝트: 견본 바꾸기 잠금 */
+  locked?: boolean;
   script?: WritingScript;
   onScript?: (script: WritingScript) => void;
   hasWriting?: boolean;
@@ -332,6 +335,7 @@ export default function JourneySetup({
       ) : (
         <div
           data-ui
+          data-lock-zone={locked ? "" : undefined}
           className="setup-fonts grid min-w-0 content-start gap-2.5 self-start"
           role="radiogroup"
           aria-label={t("시작 견본 글꼴")}

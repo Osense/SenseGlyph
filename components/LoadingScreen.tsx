@@ -35,23 +35,30 @@ export default function LoadingScreen() {
         <div className="relative motion-safe:animate-[sg-float_3.2s_ease-in-out_infinite]">
           <span
             aria-hidden="true"
-            className="absolute inset-0 rounded-[34px] ring-2 ring-[color-mix(in_oklch,var(--glyph)_45%,transparent)] motion-safe:animate-[sg-ring_3.2s_ease-out_infinite]"
+            className="absolute inset-0 rounded-[34px] ring-2 ring-[color-mix(in_oklch,var(--accent)_45%,transparent)] motion-safe:animate-[sg-ring_3.2s_ease-out_infinite]"
           />
           <svg
             viewBox="0 0 64 64"
             className="relative block size-[clamp(132px,34vw,172px)] drop-shadow-[0_18px_30px_oklch(0.2_0.03_270/0.3)]"
             aria-hidden="true"
           >
-            <rect width="64" height="64" rx="14" fill="#120e0e" />
+            <defs>
+              <linearGradient id="sg-load-grad" x1="0" y1="1" x2="1" y2="0">
+                <stop offset="0" stopColor="#7C5CF0" />
+                <stop offset="1" stopColor="#38BCD8" />
+              </linearGradient>
+            </defs>
+            <rect width="64" height="64" rx="15" fill="url(#sg-load-grad)" />
             <rect
-              x="1.5"
-              y="1.5"
-              width="61"
-              height="61"
-              rx="12.5"
+              x="1"
+              y="1"
+              width="62"
+              height="62"
+              rx="14"
               fill="none"
-              stroke="#3a2628"
-              strokeWidth="1.5"
+              stroke="#fff"
+              strokeOpacity=".22"
+              strokeWidth="2"
             />
             {STROKES.map((d, i) => (
               <path
@@ -61,17 +68,17 @@ export default function LoadingScreen() {
                 className="sg-loading-stroke"
                 style={{ animationDelay: `${i * 0.32}s` }}
                 fill="none"
-                stroke="#ff5a5a"
+                stroke="#fff"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth="5.4"
+                strokeWidth="5.6"
               />
             ))}
             <circle
               cx="51.5"
               cy="14"
               r="3.4"
-              fill="#ffb020"
+              fill="#ff6b6b"
               className="sg-loading-dot"
             />
           </svg>

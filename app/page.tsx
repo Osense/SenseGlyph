@@ -97,6 +97,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -216,6 +224,7 @@ export default function Page() {
     [tool, setTool] = useState<"pen" | "eraser">("pen"),
     [modal, setModal] = useState(false),
     [renameCopy, setRenameCopy] = useState(false),
+    [lockAsk, setLockAsk] = useState(false),
     [legalOpen, setLegalOpen] = useState(false),
     [accountOpen, setAccountOpen] = useState(false),
     [noCount, setNoCount] = useState(false),
@@ -795,9 +804,40 @@ export default function Page() {
   const viewStep = script === "ja" && step === 3 ? 4 : step;
   const sampleName = t(referenceFont(s.referenceFont, script).name);
 
+  /** 결제한 프로젝트를 복제해 결제 전 상태의 새 프로젝트로 이어서 작업 */
+  const duplicateAndContinue = async () => {
+    const active = useStudio.getState().project;
+    if (!active) return;
+    const copy = await duplicateProject(
+      active,
+      t("{name}의 복사본", { name: active.name }),
+    );
+    setProject(copy);
+    setRenameCopy(true);
+    notify(
+      t(
+        "새 프로젝트로 복제했어요. 여기서 고친 뒤 다시 결제해 내려받을 수 있어요.",
+      ),
+    );
+  };
+  // 결제한 프로젝트에서 고치는 칸(data-lock-zone)을 누르면 조용히 막지 않고 복제를 권한다.
+  const lock = project.purchase ? "" : undefined;
+  const guardLocked = (event: React.SyntheticEvent) => {
+    if (!project.purchase) return;
+    const zone = (event.target as Element | null)?.closest?.(
+      "[data-lock-zone]",
+    );
+    if (!zone) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.type === "pointerdown") setLockAsk(true);
+  };
+
   return (
     <main
       ref={stageRoot}
+      onPointerDownCapture={guardLocked}
+      onClickCapture={guardLocked}
       className={
         (dark ? "studio dark" : "studio") +
         " journey sg-step-" +
@@ -944,21 +984,7 @@ export default function Page() {
             type="button"
             size="sm"
             disabled={busy}
-            onClick={async () => {
-              const active = useStudio.getState().project;
-              if (!active) return;
-              const copy = await duplicateProject(
-                active,
-                t("{name}의 복사본", { name: active.name }),
-              );
-              setProject(copy);
-              setRenameCopy(true);
-              notify(
-                t(
-                  "새 프로젝트로 복제했어요. 여기서 고친 뒤 다시 결제해 내려받을 수 있어요.",
-                ),
-              );
-            }}
+            onClick={() => void duplicateAndContinue()}
           >
             <Copy />
             {t("새 프로젝트로 복제해서 고치기")}
@@ -979,6 +1005,7 @@ export default function Page() {
           script={script}
           onScript={chooseScript}
           onLegal={() => setLegalOpen(true)}
+          locked={!!project.purchase}
         />
       )}
 
@@ -993,6 +1020,7 @@ export default function Page() {
                 pressed={tool === "pen"}
                 locked={busy}
                 disabled={busy}
+                data-lock-zone={lock}
                 onClick={() => setTool("pen")}
                 icon={<BrushPreview brush={s.activeBrush} />}
                 label={t(brushLabel ?? "")}
@@ -1001,6 +1029,7 @@ export default function Page() {
                 pressed={tool === "eraser"}
                 locked={busy}
                 disabled={busy}
+                data-lock-zone={lock}
                 onClick={() => setTool(tool === "eraser" ? "pen" : "eraser")}
                 icon={<Eraser />}
                 label={t("지우개")}
@@ -1010,6 +1039,7 @@ export default function Page() {
                 aria-label={t("실행 취소")}
                 locked={busy && !!history?.past.length}
                 disabled={busy || !history?.past.length}
+                data-lock-zone={lock}
                 onClick={() => undo(char)}
                 icon={<Undo2 />}
                 label={t("취소")}
@@ -1018,6 +1048,7 @@ export default function Page() {
                 aria-label={t("다시 실행")}
                 locked={busy && !!history?.future.length}
                 disabled={busy || !history?.future.length}
+                data-lock-zone={lock}
                 onClick={() => redo(char)}
                 icon={<Redo2 />}
                 label={t("다시")}
@@ -1025,6 +1056,7 @@ export default function Page() {
               <RailTool
                 locked={busy && !!strokes.length}
                 disabled={busy || !strokes.length}
+                data-lock-zone={lock}
                 onClick={resetGlyph}
                 icon={<RotateCcw />}
                 label={t("다시쓰기")}
@@ -1112,7 +1144,8 @@ export default function Page() {
               </div>
               <div
                 className="sg-pad-area"
-                data-locked={project.purchase ? "" : undefined}
+                data-locked={lock}
+                data-lock-zone={lock}
                 ref={padArea}
                 style={
                   (s.writingSize
@@ -1302,6 +1335,7 @@ export default function Page() {
                     data-ink-locked={busy || undefined}
                     disabled={busy}
                     aria-pressed={!!project.samples[char]?.needsReview}
+                    data-lock-zone={lock}
                     onClick={() =>
                       markReview(
                         char,
@@ -1821,6 +1855,42 @@ export default function Page() {
           )}
         </div>
       )}
+      <AlertDialog open={lockAsk} onOpenChange={setLockAsk}>
+        <AlertDialogContent
+          className="sg-lock-ask sm:max-w-[440px]"
+          onOverlayClick={() => setLockAsk(false)}
+        >
+          <AlertDialogHeader>
+            <span className="mb-1 grid size-11 place-items-center rounded-xl bg-wash text-primary">
+              <Lock className="size-5" />
+            </span>
+            <AlertDialogTitle className="text-xl">
+              {t("이미 결제한 폰트예요")}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-[14.5px] leading-[1.7] break-keep">
+              {t(
+                "결제한 폰트는 글씨와 정돈을 고칠 수 없어요. 프로젝트를 복제해서 이어서 작업할까요? 복제본은 결제 전 상태라, 고친 뒤 다시 결제해 내려받을 수 있어요.",
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setLockAsk(false)}>
+              {t("그대로 두기")}
+            </Button>
+            <Button
+              className="sg-lock-duplicate"
+              autoFocus
+              onClick={() => {
+                setLockAsk(false);
+                void duplicateAndContinue();
+              }}
+            >
+              <Copy />
+              {t("복제해서 이어서 하기")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <Dialog open={renameCopy} onOpenChange={setRenameCopy}>
         <DialogContent
           className="sg-rename-copy sm:max-w-md"

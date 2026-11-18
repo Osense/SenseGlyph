@@ -583,6 +583,7 @@ export default function SeparationEditor({
           </div>
           <Segmented
             className="editor-modes"
+            data-lock-zone={project.purchase ? "" : undefined}
             label="편집 방식"
             value={mode}
             options={[
@@ -594,7 +595,10 @@ export default function SeparationEditor({
               if (next === "lasso") setZoom(1);
             }}
           />
-          <div className="sg-point-tools">
+          <div
+            className="sg-point-tools"
+            data-lock-zone={project.purchase ? "" : undefined}
+          >
             {mode === "point" && (
               <div className="sg-zoom" role="group" aria-label="편집 칸 확대">
                 <Button
@@ -668,7 +672,10 @@ export default function SeparationEditor({
               </div>
             )}
           </div>
-          <div className="sg-sep-tools">
+          <div
+            className="sg-sep-tools"
+            data-lock-zone={project.purchase ? "" : undefined}
+          >
             <Button
               variant="outline"
               size="icon"
@@ -716,7 +723,10 @@ export default function SeparationEditor({
             </Button>
           </div>
         </div>
-        <div className="sg-sep-canvas">
+        <div
+          className="sg-sep-canvas"
+          data-lock-zone={project.purchase ? "" : undefined}
+        >
           <div className="separation-canvas-frame">
             {showTutorial && tutorial}
             {error && (
@@ -913,6 +923,7 @@ export default function SeparationEditor({
               <div className="separation-assignment-overlay">
                 <div
                   className="quick-assign"
+                  data-lock-zone={project.purchase ? "" : undefined}
                   role="group"
                   aria-label={`선택한 획 한 번에 배정 (${selection.length}획)`}
                   style={

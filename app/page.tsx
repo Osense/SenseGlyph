@@ -1280,7 +1280,7 @@ export default function Page() {
                   </span>
                   <p
                     data-ui
-                    className="mt-1 mb-0 text-[14px] leading-[1.65] break-keep text-foreground/85 max-sm:mt-0.5 max-sm:line-clamp-2 max-sm:text-[12px] max-sm:leading-[1.45]"
+                    className="mt-1 mb-0 text-[14px] leading-[1.65] break-keep text-foreground/85 max-sm:mt-0.5 max-sm:line-clamp-2 max-sm:min-h-[2.9em] max-sm:text-[12px] max-sm:leading-[1.45]"
                   >
                     {characterGuide(char, category, lang)}
                   </p>
@@ -1461,13 +1461,13 @@ export default function Page() {
                 tone={currentIssues.length ? "danger" : "default"}
                 className={cn(
                   "sg-check grid gap-3",
-                  "max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:gap-x-2 max-sm:gap-y-1.5 max-sm:px-3 max-sm:py-2 max-sm:shadow-none",
+                  "min-w-0 max-sm:flex max-sm:flex-nowrap max-sm:items-center max-sm:gap-x-2 max-sm:gap-y-1.5 max-sm:px-3 max-sm:py-2 max-sm:shadow-none",
                   currentIssues.length > 0 && "has-issues",
                 )}
                 aria-label={t("현재 글자 확인")}
               >
-                <div className="sg-check-head flex items-center justify-between gap-2 max-sm:min-w-0 max-sm:flex-1 max-sm:justify-start [&_strong]:max-sm:text-[13px]">
-                  <strong className="flex items-center gap-2 text-sm font-semibold">
+                <div className="sg-check-head flex min-w-0 items-center justify-between gap-2 max-sm:min-w-0 max-sm:flex-1 max-sm:justify-start [&_strong]:max-sm:text-[13px]">
+                  <strong className="flex min-w-0 items-center gap-2 text-sm font-semibold">
                     <i
                       aria-hidden="true"
                       className={cn(
@@ -1479,18 +1479,29 @@ export default function Page() {
                             : "bg-border",
                       )}
                     />
-                    {currentIssues.length
-                      ? t("다시 볼 글자")
-                      : strokes.length
-                        ? t("잘 썼어요")
-                        : t("아직 안 쓴 글자")}
+                    <span className="shrink-0 text-inherit [font-size:inherit]">
+                      {currentIssues.length
+                        ? t("다시 볼 글자")
+                        : strokes.length
+                          ? t("잘 썼어요")
+                          : t("아직 안 쓴 글자")}
+                    </span>
+                    {/* 세로 화면: 이유를 같은 줄에 한 줄로. 경고가 떠도 쓰기 칸이 줄지 않게 */}
+                    {currentIssues.length > 0 && (
+                      <span
+                        className="hidden min-w-0 truncate text-[12px] font-normal text-destructive max-wide:portrait:inline"
+                        title={currentIssues.map((issue) => t(issue.label)).join(" · ")}
+                      >
+                        · {currentIssues.map((issue) => t(issue.label)).join(" · ")}
+                      </span>
+                    )}
                   </strong>
-                  <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-[11px] text-muted-foreground tabular-nums">
+                  <span className="sg-stroke-count rounded-md bg-muted px-2 py-0.5 font-mono text-[11px] text-muted-foreground tabular-nums max-sm:hidden">
                     {t("{n}획", { n: strokes.length })}
                   </span>
                 </div>
                 {currentIssues.length > 0 && (
-                  <ul className="sg-reasons m-0 grid list-none gap-1 p-0 text-[13px] text-destructive max-sm:order-last max-sm:w-full max-sm:text-[12px]">
+                  <ul className="sg-reasons m-0 grid list-none gap-1 p-0 text-[13px] text-destructive max-wide:portrait:hidden">
                     {currentIssues.map((issue) => (
                       <li key={issue.kind} className="flex gap-1.5 break-keep">
                         <span aria-hidden="true">·</span>
@@ -1499,7 +1510,7 @@ export default function Page() {
                     ))}
                   </ul>
                 )}
-                <div className="sg-check-actions flex flex-wrap gap-2 max-sm:flex-nowrap max-sm:gap-1.5 max-sm:[&>button]:h-8 max-sm:[&>button]:flex-none max-sm:[&>button]:px-3 max-sm:[&>button]:text-[12px]">
+                <div className="sg-check-actions flex flex-wrap gap-2 max-sm:shrink-0 max-sm:flex-nowrap max-sm:gap-1.5 max-sm:[&>button]:h-8 max-sm:[&>button]:flex-none max-sm:[&>button]:px-2.5 max-sm:[&>button]:text-[12px]">
                   <Button
                     variant={
                       project.samples[char]?.needsReview ? "soft" : "secondary"

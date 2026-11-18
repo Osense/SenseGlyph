@@ -172,7 +172,7 @@ await stroke([
   [500, 200],
   [520, 990],
 ]);
-const kept = await page.locator(".sg-check-head span").innerText();
+const kept = await page.locator(".sg-check-head .sg-stroke-count").innerText();
 check("점선 밖으로 나간 획도 저장", kept.startsWith("1"), kept);
 check("점선 밖 획 알림 표시", await page.locator(".pad-warning").isVisible());
 await page.waitForTimeout(900);

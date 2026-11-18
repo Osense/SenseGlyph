@@ -4336,6 +4336,7 @@ button {
     min-height: 0;
   }
   .sg-step-2 .sg-side {
+    grid-template-columns: minmax(0, 1fr);
     gap: 6px;
     overflow: visible;
   }
@@ -4421,5 +4422,28 @@ button {
   .sg-sep-hint {
     bottom: 6px;
     font-size: 11px;
+  }
+}
+
+/* 세로 화면: 쓰기 칸 아래 안내(다른 도구 경고 등)는 칸 위에 띄워서, 떠도 쓰기 칸 크기가 그대로이게 */
+@media (max-width: 1000px) and (orientation: portrait) {
+  .sg-stage {
+    position: relative;
+  }
+  .sg-pad-foot .sg-hint {
+    position: absolute;
+    left: 50%;
+    bottom: calc(var(--foot-h, 40px) + 10px);
+    transform: translateX(-50%);
+    z-index: 3;
+    width: max-content;
+    max-width: 92%;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--sheet) 94%, transparent);
+    box-shadow: var(--shadow-soft);
+    font-size: 12px;
+    line-height: 1.4;
+    pointer-events: none;
   }
 }

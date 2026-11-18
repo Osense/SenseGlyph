@@ -46,6 +46,23 @@ for (const [w, h] of [[390, 844], [375, 667]]) {
   for (let i = 1; i <= 10; i++) await p.mouse.move(box.x + box.width * (0.3 + i * 0.04), box.y + box.height * (0.3 + i * 0.04));
   await p.mouse.up();
   await p.waitForTimeout(900);
+  // 다시 볼 글자 경고가 떠도 쓰기 칸 크기는 그대로
+  const before = await p.evaluate(() => document.querySelector(".pad-sheet").getBoundingClientRect().width);
+  await p.click(".sg-check-actions button");
+  await p.waitForTimeout(300);
+  const flagged = await p.locator(".sg-check.has-issues").count();
+  await p.click("#glyph-귀");
+  await p.waitForTimeout(300);
+  const b2 = await p.locator(".input-canvas").boundingBox();
+  await p.mouse.move(b2.x + b2.width * 0.5, b2.y + b2.height * 0.2);
+  await p.mouse.down();
+  for (let i = 1; i <= 12; i++) await p.mouse.move(b2.x + b2.width * 0.5, b2.y + b2.height * (0.2 + i * 0.066));
+  await p.mouse.up();
+  await p.waitForTimeout(900);
+  const after = await p.evaluate(() => document.querySelector(".pad-sheet").getBoundingClientRect().width);
+  check(`${tag} 글자 쓰기: 다시 볼 글자 경고에도 쓰기 칸 그대로`, flagged > 0 && Math.abs(after - before) < 1, `${Math.round(before)} → ${Math.round(after)}px`);
+  check(`${tag} 글자 쓰기: 경고 이유가 한 줄로 보임`, await p.locator(".sg-check-head strong span.truncate").isVisible());
+  check(`${tag} 글자 쓰기: 경고 중에도 스크롤 없음`, await docFits());
   await p.click(".sg-steps button:nth-child(4)");
   await p.waitForSelector(".sg-sep-main");
   if (await p.locator("text=건너뛰고 바로 시작").count()) await p.click("text=건너뛰고 바로 시작");

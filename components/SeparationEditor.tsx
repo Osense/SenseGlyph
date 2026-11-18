@@ -542,14 +542,14 @@ export default function SeparationEditor({
             <Button
               variant="outline"
               size="icon"
-              className="sg-sep-step"
+              className="sg-sep-step max-sm:size-9"
               aria-label="이전 보정 글자"
               disabled={currentIndex <= 0}
               onClick={() => changeChar(-1)}
             >
               <ChevronLeft className="size-5" />
             </Button>
-            <strong className="grid size-12 place-items-center rounded-xl border border-border bg-card text-[32px] leading-none font-semibold shadow-soft">
+            <strong className="grid size-12 place-items-center rounded-xl border border-border bg-card text-[32px] leading-none font-semibold shadow-soft max-sm:size-10 max-sm:rounded-lg max-sm:text-[26px]">
               {char}
             </strong>
             <span className="grid min-w-12 text-xs text-muted-foreground">
@@ -573,7 +573,7 @@ export default function SeparationEditor({
             <Button
               variant="outline"
               size="icon"
-              className="sg-sep-step"
+              className="sg-sep-step max-sm:size-9"
               aria-label="다음 보정 글자"
               disabled={currentIndex >= chars.length - 1}
               onClick={() => changeChar(1)}
@@ -582,7 +582,7 @@ export default function SeparationEditor({
             </Button>
           </div>
           <Segmented
-            className="editor-modes"
+            className="editor-modes max-sm:ml-auto"
             data-lock-zone={project.purchase ? "" : undefined}
             label="편집 방식"
             value={mode}
@@ -679,6 +679,7 @@ export default function SeparationEditor({
             <Button
               variant="outline"
               size="icon"
+              className="max-sm:size-9"
               disabled={!past.length}
               onClick={undo}
               aria-label="보정 실행 취소"
@@ -689,6 +690,7 @@ export default function SeparationEditor({
             <Button
               variant="outline"
               size="icon"
+              className="max-sm:size-9"
               disabled={!future.length}
               onClick={redo}
               aria-label="보정 다시 실행"
@@ -698,7 +700,7 @@ export default function SeparationEditor({
             </Button>
             <Button
               variant="outline"
-              className="sg-sep-text"
+              className="sg-sep-text max-sm:h-9 max-sm:flex-1 max-sm:px-2 max-sm:text-[13px]"
               onClick={() => update({ assignments: {} })}
               title="이 글자의 자모 배정을 처음 자동 결과로 되돌려요"
             >
@@ -707,7 +709,7 @@ export default function SeparationEditor({
             </Button>
             <Button
               variant="outline"
-              className="sg-sep-text sg-sep-rewrite border-primary/50 font-semibold text-primary hover:text-primary"
+              className="sg-sep-text sg-sep-rewrite max-sm:h-9 max-sm:flex-[1.4] max-sm:px-2 max-sm:text-[13px] border-primary/50 font-semibold text-primary hover:text-primary"
               onClick={onWrite}
             >
               <PenLine />이 글자 다시 쓰기
@@ -715,7 +717,7 @@ export default function SeparationEditor({
             <Button
               variant="ghost"
               size="icon"
-              className="sg-sep-help text-muted-foreground"
+              className="sg-sep-help text-muted-foreground max-sm:size-9"
               aria-label="사용법 보기"
               onClick={() => setShowTutorial(true)}
             >

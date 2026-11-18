@@ -1003,7 +1003,7 @@ export default function Page() {
         {!home && (
           <nav
             data-ui
-            className="sg-steps order-last flex w-full items-center gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1 wide:order-none wide:mx-auto wide:w-auto"
+            className="sg-steps order-last flex w-full items-center gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1 max-sm:rounded-lg max-sm:p-0.5 wide:order-none wide:mx-auto wide:w-auto"
             aria-label={t("폰트 만드는 순서")}
           >
             {stepsFor(script).map(({ label, step: position }, order) => {
@@ -1015,7 +1015,7 @@ export default function Page() {
                   data-ui
                   className={cn(
                     current ? "is-current" : past ? "is-past" : "",
-                    "group/step flex h-10 min-w-0 flex-1 cursor-pointer data-[current=true]:max-[699px]:flex-[2.4] items-center justify-center gap-2 rounded-lg px-3 text-[14px] whitespace-nowrap text-muted-foreground transition-colors hover:bg-card/70 hover:text-foreground disabled:cursor-default disabled:opacity-50 wide:flex-none wide:px-3.5",
+                    "group/step flex h-10 min-w-0 flex-1 max-sm:h-8 max-sm:text-[13px] cursor-pointer data-[current=true]:max-[699px]:flex-[2.4] items-center justify-center gap-2 rounded-lg px-3 text-[14px] whitespace-nowrap text-muted-foreground transition-colors hover:bg-card/70 hover:text-foreground disabled:cursor-default disabled:opacity-50 wide:flex-none wide:px-3.5",
                     current &&
                       "bg-card font-semibold text-foreground shadow-soft hover:bg-card",
                     past && "text-foreground/80",
@@ -1255,7 +1255,7 @@ export default function Page() {
               <div className="sg-char-head">
                 <strong
                   data-ui
-                  className="sg-char grid size-[60px] shrink-0 place-items-center rounded-xl border border-border bg-card text-[36px] leading-none font-semibold text-foreground shadow-soft max-sm:size-12 max-sm:text-3xl"
+                  className="sg-char grid size-[60px] shrink-0 place-items-center rounded-xl border border-border bg-card text-[36px] leading-none font-semibold text-foreground shadow-soft max-sm:size-11 max-sm:rounded-lg max-sm:text-[26px]"
                 >
                   {char}
                 </strong>
@@ -1280,13 +1280,13 @@ export default function Page() {
                   </span>
                   <p
                     data-ui
-                    className="mt-1 mb-0 text-[14px] leading-[1.65] break-keep text-foreground/85"
+                    className="mt-1 mb-0 text-[14px] leading-[1.65] break-keep text-foreground/85 max-sm:mt-0.5 max-sm:line-clamp-2 max-sm:text-[12px] max-sm:leading-[1.45]"
                   >
                     {characterGuide(char, category, lang)}
                   </p>
                 </div>
                 <Segmented
-                  className="max-sm:col-span-full max-sm:justify-self-start"
+                  className="max-sm:hidden"
                   label={t("견본 보기")}
                   value={
                     s.sampleMode === "outside" ? "outside" : "inside-faint"
@@ -1339,22 +1339,37 @@ export default function Page() {
                 />
               </div>
               <div className="sg-pad-foot">
+                <Segmented
+                  size="sm"
+                  className="sm:hidden"
+                  label={t("견본 보기")}
+                  value={
+                    s.sampleMode === "outside" ? "outside" : "inside-faint"
+                  }
+                  options={[
+                    { id: "inside-faint", label: t("따라 쓰기") },
+                    { id: "outside", label: t("보고 쓰기") },
+                  ]}
+                  locked={busy}
+                  disabled={busy}
+                  onChange={(id) => update({ sampleMode: id })}
+                />
                 <div
                   data-ui
-                  className="sg-size inline-flex items-center gap-0.5 rounded-full border border-border bg-card p-1 text-xs shadow-soft"
+                  className="sg-size inline-flex items-center gap-0.5 rounded-full border border-border bg-card p-1 text-xs shadow-soft max-sm:p-0.5 max-sm:shadow-none"
                   role="group"
                   aria-label={t("쓰기 칸 크기")}
                 >
                   <span
                     aria-hidden="true"
-                    className="pr-1 pl-2.5 font-medium text-muted-foreground"
+                    className="pr-1 pl-2.5 font-medium text-muted-foreground max-[379px]:hidden"
                   >
                     {t("칸")}
                   </span>
                   <Button
                     variant="ghost"
                     size="icon-xs"
-                    className="size-8 rounded-full"
+                    className="size-8 rounded-full max-sm:size-7"
                     aria-label={t("쓰기 칸 더 작게")}
                     data-ink-locked={busy || undefined}
                     disabled={busy || shownPad <= PAD_SIZES[0]}
@@ -1364,7 +1379,7 @@ export default function Page() {
                   </Button>
                   <button
                     data-ui
-                    className="sg-size-value flex h-8 min-w-16 cursor-pointer items-baseline justify-center gap-0.5 rounded-full bg-muted px-3 font-mono hover:bg-wash"
+                    className="sg-size-value flex h-8 min-w-14 max-sm:h-7 cursor-pointer items-baseline justify-center gap-0.5 rounded-full bg-muted px-3 font-mono hover:bg-wash"
                     aria-label={t("쓰기 칸 크기 자세히")}
                     onClick={() => setToolSheet(true)}
                   >
@@ -1378,7 +1393,7 @@ export default function Page() {
                   <Button
                     variant="ghost"
                     size="icon-xs"
-                    className="size-8 rounded-full"
+                    className="size-8 rounded-full max-sm:size-7"
                     aria-label={t("쓰기 칸 더 크게")}
                     data-ink-locked={busy || undefined}
                     disabled={busy || (!s.writingSize && legacyScale === 1)}
@@ -1388,7 +1403,7 @@ export default function Page() {
                   </Button>
                   <button
                     data-ui
-                    className="h-8 cursor-pointer rounded-full px-3 font-semibold text-muted-foreground hover:text-foreground aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+                    className="h-8 cursor-pointer rounded-full px-3 font-semibold text-muted-foreground hover:text-foreground max-sm:h-7 max-sm:px-2.5 aria-pressed:bg-primary aria-pressed:text-primary-foreground"
                     aria-pressed={
                       !s.writingSize && (s.writingPreset ?? "fill") === "fill"
                     }
@@ -1413,7 +1428,7 @@ export default function Page() {
             </div>
 
             <aside className="sg-side" aria-label={t("이동과 글자 확인")}>
-              <div data-ui className="sg-nav grid grid-cols-2 gap-2">
+              <div data-ui className="sg-nav grid grid-cols-2 gap-2 max-sm:gap-1.5 max-sm:[&>button]:h-9 max-sm:[&>button]:text-[13px]">
                 <Button
                   variant="outline"
                   data-ink-locked={busy || undefined}
@@ -1446,11 +1461,12 @@ export default function Page() {
                 tone={currentIssues.length ? "danger" : "default"}
                 className={cn(
                   "sg-check grid gap-3",
+                  "max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:gap-x-2 max-sm:gap-y-1.5 max-sm:px-3 max-sm:py-2 max-sm:shadow-none",
                   currentIssues.length > 0 && "has-issues",
                 )}
                 aria-label={t("현재 글자 확인")}
               >
-                <div className="sg-check-head flex items-center justify-between gap-2">
+                <div className="sg-check-head flex items-center justify-between gap-2 max-sm:min-w-0 max-sm:flex-1 max-sm:justify-start [&_strong]:max-sm:text-[13px]">
                   <strong className="flex items-center gap-2 text-sm font-semibold">
                     <i
                       aria-hidden="true"
@@ -1474,7 +1490,7 @@ export default function Page() {
                   </span>
                 </div>
                 {currentIssues.length > 0 && (
-                  <ul className="sg-reasons m-0 grid list-none gap-1 p-0 text-[13px] text-destructive">
+                  <ul className="sg-reasons m-0 grid list-none gap-1 p-0 text-[13px] text-destructive max-sm:order-last max-sm:w-full max-sm:text-[12px]">
                     {currentIssues.map((issue) => (
                       <li key={issue.kind} className="flex gap-1.5 break-keep">
                         <span aria-hidden="true">·</span>
@@ -1483,7 +1499,7 @@ export default function Page() {
                     ))}
                   </ul>
                 )}
-                <div className="sg-check-actions flex flex-wrap gap-2">
+                <div className="sg-check-actions flex flex-wrap gap-2 max-sm:flex-nowrap max-sm:gap-1.5 max-sm:[&>button]:h-8 max-sm:[&>button]:flex-none max-sm:[&>button]:px-3 max-sm:[&>button]:text-[12px]">
                   <Button
                     variant={
                       project.samples[char]?.needsReview ? "soft" : "secondary"
@@ -1586,7 +1602,7 @@ export default function Page() {
 
           <footer
             data-ui
-            className="sg-strip grid shrink-0 gap-2 border-t border-divider bg-card/70 px-3 pt-2 pb-2.5 backdrop-blur-sm wide:px-5"
+            className="sg-strip grid shrink-0 gap-2 border-t border-divider bg-card/70 px-3 pt-2 pb-2.5 backdrop-blur-sm wide:px-5 max-sm:gap-1.5 max-sm:px-2.5 max-sm:pt-1.5 max-sm:pb-[max(6px,env(safe-area-inset-bottom))]"
             aria-label={t("글자 모음")}
           >
             <div className="flex min-w-0 items-center justify-between gap-3">
@@ -1606,7 +1622,7 @@ export default function Page() {
                     disabled={busy}
                     onClick={() => selectList(id)}
                     className={cn(
-                      "flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-[13px] whitespace-nowrap text-foreground/85 transition-colors hover:border-primary/40 disabled:cursor-default disabled:opacity-50",
+                      "flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-[13px] whitespace-nowrap max-sm:h-7 max-sm:px-2.5 max-sm:text-[12px] text-foreground/85 transition-colors hover:border-primary/40 disabled:cursor-default disabled:opacity-50",
                       "aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:font-semibold aria-pressed:text-primary-foreground",
                       id === "premium" && "border-dashed",
                     )}
@@ -1696,7 +1712,7 @@ export default function Page() {
                     key={c.char}
                     data-ui
                     className={cn(
-                      "sg-glyph relative grid h-[58px] w-[52px] shrink-0 cursor-pointer snap-center grid-rows-[1fr_auto] justify-items-center rounded-[10px] border border-border bg-card p-0.5 transition-[border-color,box-shadow] hover:border-primary/40 disabled:cursor-default",
+                      "sg-glyph relative grid h-[58px] w-[52px] shrink-0 max-sm:h-[46px] max-sm:w-[42px] max-sm:[&_canvas]:!h-7 max-sm:[&_canvas]:!w-7 max-sm:[&>span]:text-[18px] cursor-pointer snap-center grid-rows-[1fr_auto] justify-items-center rounded-[10px] border border-border bg-card p-0.5 transition-[border-color,box-shadow] hover:border-primary/40 disabled:cursor-default",
                       "[&_canvas]:!h-9 [&_canvas]:!w-9",
                       state === "review" &&
                         "border-destructive/60 bg-destructive-wash",
@@ -2315,11 +2331,12 @@ function RailTool({
       data-ink-locked={locked || undefined}
       className={cn(
         "sg-tool flex shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 text-[11.5px] leading-tight font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:translate-y-px disabled:cursor-default [&_svg]:size-[22px] [&_svg]:shrink-0",
-        "max-wide:portrait:min-h-14 max-wide:portrait:flex-[1_0_64px]",
+        "sm:max-wide:portrait:min-h-14 sm:max-wide:portrait:flex-[1_0_64px]",
+        "max-sm:min-h-11 max-sm:flex-[1_1_0] max-sm:min-w-0 max-sm:gap-0.5 max-sm:rounded-lg max-sm:px-0 max-sm:py-1 max-sm:text-[10px] max-sm:tracking-[-0.04em] max-sm:whitespace-nowrap max-sm:[&_svg]:size-[18px]",
         tone === "default" &&
           "min-h-[62px] border-border bg-card text-muted-foreground shadow-[0_1px_0_rgb(0_0_0/0.03)] hover:border-primary/40 hover:text-foreground disabled:opacity-35 aria-pressed:border-primary aria-pressed:bg-wash aria-pressed:font-semibold aria-pressed:text-primary aria-pressed:shadow-none",
         tone === "primary" &&
-          "my-1 min-h-[88px] border-transparent bg-brand-grad text-[12.5px] font-semibold text-white shadow-[0_10px_22px_-10px_color-mix(in_oklch,var(--accent)_80%,transparent)] hover:brightness-[1.08] disabled:opacity-50 max-wide:portrait:order-first max-wide:portrait:my-0 max-wide:portrait:flex-[1.4_0_88px] [&_svg]:size-7",
+          "my-1 min-h-[88px] border-transparent bg-brand-grad text-[12.5px] font-semibold text-white shadow-[0_10px_22px_-10px_color-mix(in_oklch,var(--accent)_80%,transparent)] hover:brightness-[1.08] disabled:opacity-50 max-wide:portrait:order-first max-wide:portrait:my-0 sm:max-wide:portrait:flex-[1.4_0_88px] [&_svg]:size-7 max-sm:min-h-11 max-sm:flex-[2.3_1_0] max-sm:flex-row max-sm:gap-0.5 max-sm:text-[12px] max-sm:tracking-[-0.03em] max-sm:shadow-none max-sm:[&_svg]:size-4",
         className,
       )}
       {...props}

@@ -756,9 +756,14 @@ export default function FontWorkshop({
           </h1>
           <div
             data-ui
-            className="fw-sep-top flex flex-wrap items-center gap-x-3 gap-y-2"
+            className="fw-sep-top flex flex-wrap items-center gap-x-3 gap-y-2 max-sm:gap-x-1.5 max-sm:gap-y-1"
           >
-            <Button variant="outline" size="sm" onClick={onClose}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="max-sm:h-8 max-sm:px-2.5"
+              onClick={onClose}
+            >
               <ArrowLeft />
               {t("글자 쓰기")}
             </Button>
@@ -800,7 +805,7 @@ export default function FontWorkshop({
               />
             )}
             <span
-              className="fw-sep-stats ml-auto text-[13px] text-muted-foreground max-sm:order-last max-sm:w-full"
+              className="fw-sep-stats ml-auto text-[13px] text-muted-foreground max-sm:order-last max-sm:w-full max-sm:text-[11.5px]"
               role="status"
             >
               {t("살펴본 글자")}{" "}
@@ -817,7 +822,7 @@ export default function FontWorkshop({
             </span>
             <Button
               size="sm"
-              className="h-10 px-4"
+              className="h-10 px-4 max-sm:ml-auto max-sm:h-8 max-sm:px-3"
               disabled={!report.direct}
               onClick={() => {
                 setFinishStep("refine");
@@ -831,7 +836,7 @@ export default function FontWorkshop({
           {writtenHangul.length > 0 && (
             <p
               data-ui
-              className="fw-sep-notice m-0 rounded-lg bg-muted px-3.5 py-2.5 text-[13px] leading-relaxed break-keep text-muted-foreground"
+              className="fw-sep-notice m-0 rounded-lg bg-muted px-3.5 py-2.5 text-[13px] leading-relaxed break-keep text-muted-foreground max-sm:line-clamp-2 max-sm:px-3 max-sm:py-1.5 max-sm:text-[11.5px] max-sm:leading-snug"
               role="note"
             >
               {t(
@@ -919,14 +924,14 @@ export default function FontWorkshop({
     >
       <section
         data-ui
-        className="font-workshop fw mx-auto grid w-full max-w-[1280px] gap-6 px-4 py-6 wide:px-10 wide:py-8"
+        className="font-workshop fw mx-auto grid w-full max-w-[1280px] gap-6 px-4 py-6 wide:px-10 wide:py-8 max-sm:gap-3 max-sm:px-0 max-sm:pt-0 max-sm:pb-0"
         data-locked={project.purchase ? "" : undefined}
         ref={root}
         aria-labelledby="fw-title"
       >
         <header
           data-ui
-          className="fw-head flex flex-wrap items-end justify-between gap-4"
+          className="fw-head flex flex-wrap items-end justify-between gap-4 max-sm:flex-nowrap max-sm:items-center max-sm:gap-2"
         >
           <div className="grid gap-2">
             <Kicker className="step-kicker">
@@ -935,7 +940,7 @@ export default function FontWorkshop({
             <h1
               id="fw-title"
               tabIndex={-1}
-              className="m-0 text-[clamp(26px,2.6vw,36px)] leading-tight font-extrabold tracking-[-0.04em] outline-none"
+              className="m-0 text-[clamp(26px,2.6vw,36px)] leading-tight font-extrabold tracking-[-0.04em] outline-none max-sm:text-[20px]"
             >
               {finishStep === "refine"
                 ? t("폰트를 다듬어요")
@@ -960,7 +965,7 @@ export default function FontWorkshop({
                 aria-current={finishStep === id ? "step" : undefined}
                 disabled={disabled}
                 onClick={() => setFinishStep(id)}
-                className="flex h-9 cursor-pointer items-center gap-2 rounded-lg px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground disabled:cursor-default disabled:opacity-45 aria-[current=step]:bg-card aria-[current=step]:font-semibold aria-[current=step]:text-foreground aria-[current=step]:shadow-soft"
+                className="flex h-9 cursor-pointer items-center gap-2 rounded-lg px-3.5 text-sm font-medium max-sm:h-8 max-sm:gap-1.5 max-sm:px-2.5 max-sm:text-[13px] text-muted-foreground transition-colors hover:text-foreground disabled:cursor-default disabled:opacity-45 aria-[current=step]:bg-card aria-[current=step]:font-semibold aria-[current=step]:text-foreground aria-[current=step]:shadow-soft"
               >
                 <span
                   className={cn(
@@ -1228,10 +1233,11 @@ export default function FontWorkshop({
             )}
             <footer
               data-ui
-              className="fw-actions flex flex-wrap items-center justify-between gap-3 border-t border-divider pt-5"
+              className="fw-actions flex flex-wrap items-center justify-between gap-3 border-t border-divider pt-5 max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:-mx-3 max-sm:flex-nowrap max-sm:gap-2 max-sm:bg-background/95 max-sm:px-3 max-sm:pt-2.5 max-sm:pb-[max(10px,env(safe-area-inset-bottom))] max-sm:backdrop-blur-sm"
             >
               <Button
                 variant="outline"
+                className="max-sm:h-11"
                 onClick={() =>
                   script === "ja" ? onClose() : setStage("separation")
                 }
@@ -1241,6 +1247,7 @@ export default function FontWorkshop({
               </Button>
               <Button
                 size="lg"
+                className="max-sm:h-11 max-sm:flex-1"
                 onClick={() => {
                   setFinishStep("export");
                   buildNow();

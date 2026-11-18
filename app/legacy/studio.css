@@ -4262,3 +4262,164 @@ button {
   font-size: 13px;
   color: var(--muted);
 }
+
+/* ---------- 휴대폰 세로: 글자 쓰기는 한 화면 안에 (스크롤 없이) ----------
+ * 도구 줄 · 글자 안내 · 쓰기 칸 · 이동 · 글자 목록이 모두 보이도록, 쓰기 칸이 남는 높이를 채운다. */
+@media (max-width: 640px) {
+  /* 휴대폰도 화면 높이에 고정: 각 단계 안쪽만 스크롤해서, 아래 고정 버튼이 늘 보이게 */
+  main.studio.journey {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  main.studio.journey > :not(.sg-topbar, .toast, .modal-backdrop, .sg-strip) {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  main.studio.journey.sg-step-2 > .sg-write {
+    overflow: hidden;
+  }
+  .sg-step-2 .sg-write {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 6px;
+    padding: 6px 10px 4px;
+  }
+  .sg-step-2 .sg-rail {
+    gap: 4px;
+    overflow: visible;
+  }
+  .sg-step-2 .sg-rail .sg-tool canvas {
+    width: 30px !important;
+    height: 14px !important;
+  }
+  .sg-step-2 .sg-stage {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 6px;
+  }
+  .sg-step-2 .sg-char-head {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 10px;
+  }
+  .sg-step-2 .sg-pad-area {
+    container-type: size;
+    height: auto;
+    min-height: 140px;
+  }
+  .sg-step-2 .sg-pad-area > .pad {
+    --pad-nav: 34px;
+  }
+  .sg-step-2 .sg-pad-area[data-fixed-size] > .pad {
+    --pad-fit: min(var(--writing-size), 100cqw - 68px, 100cqh);
+    width: calc(var(--pad-fit) + 68px);
+    height: var(--pad-fit);
+  }
+  .sg-step-2 .sg-pad-area:not([data-fixed-size]) > .pad {
+    --pad-fit: min(100cqw - 68px, 100cqh);
+    width: calc(var(--pad-fit) * var(--pad-scale, 1) + 68px);
+    height: calc(var(--pad-fit) * var(--pad-scale, 1));
+    max-height: none;
+  }
+  .sg-step-2 .sg-pad-area .canvas-step-button {
+    width: 30px;
+    min-width: 30px;
+    min-height: 52px;
+    padding: 6px 0;
+    border-radius: 10px;
+  }
+  .sg-step-2 .sg-pad-area .canvas-step-button > small {
+    font-size: 10px;
+  }
+  .sg-step-2 .sg-pad-foot {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 6px;
+    min-height: 0;
+  }
+  .sg-step-2 .sg-side {
+    gap: 6px;
+    overflow: visible;
+  }
+}
+
+/* ---------- 휴대폰 세로: 자모 나누기도 한 화면에 ----------
+ * 머리(돌아가기·목록·다음 단계) → 글자·편집 도구 → 편집 칸(남는 높이) → 글자 띠. */
+@media (max-width: 640px) {
+  .journey .guided-workshop.sg-sep-page {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 10px 6px !important;
+  }
+  .sg-sep-page > .fw.fw-sep {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .sg-sep-page .sg-sep {
+    flex: 1 1 auto;
+    min-height: 260px;
+    display: flex;
+    flex-direction: column;
+  }
+  .sg-sep-page .sg-sep-main {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+    gap: 6px;
+  }
+  .sg-sep-bar {
+    gap: 6px;
+  }
+  .sg-sep-step {
+    width: 36px;
+    min-height: 36px;
+  }
+  .sg-sep .editor-modes {
+    margin-left: auto;
+  }
+  .sg-sep-tools {
+    margin-left: 0;
+    width: 100%;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+  .sg-sep-tools > .sg-sep-text {
+    flex: 1 1 auto;
+    padding: 0 8px;
+    font-size: 13px;
+  }
+  .sg-point-tools {
+    height: auto;
+  }
+  .sg-point-tools:empty {
+    display: none;
+  }
+  .sg-sep .character-slider > button {
+    width: 44px;
+    min-width: 44px;
+    height: 50px;
+  }
+  .sg-sep .character-slider canvas {
+    width: 28px;
+    height: 28px;
+  }
+  .sg-sep .quick-assign button {
+    min-height: 42px;
+    font-size: 15px;
+  }
+  .fw .sg-sep-canvas .separation-canvas-frame {
+    grid-template-columns: 34px minmax(0, 1fr) 34px;
+    width: min(100cqw, calc(100cqh + 76px));
+  }
+  .sg-sep-canvas .canvas-step-button {
+    width: 34px;
+    min-width: 34px;
+    min-height: 52px;
+  }
+  .sg-sep-hint {
+    bottom: 6px;
+    font-size: 11px;
+  }
+}

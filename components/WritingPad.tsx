@@ -79,11 +79,18 @@ export default function WritingPad({
     // the em grid, sample and handwriting are never stretched.
     const ob = new ResizeObserver((es) => {
       const { width, height } = es[0].contentRect;
+      // 양옆 이전·다음 버튼 자리 (휴대폰은 CSS --pad-nav 로 좁힌다)
+      const nav =
+        parseFloat(
+          wrap.current
+            ? getComputedStyle(wrap.current).getPropertyValue("--pad-nav")
+            : "",
+        ) || 52;
       const rail = showOutside ? Math.min(144, Math.max(76, width * 0.26)) : 0;
       setSampleRail(rail);
       const availableWidth = Math.max(
         1,
-        width - (navigation ? 52 + (rail || 52) : 0),
+        width - (navigation ? nav + (rail || nav) : 0),
       );
       setSize(
         Math.floor(

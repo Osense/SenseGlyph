@@ -82,23 +82,23 @@ export default function JourneySetup({
   return (
     <section
       data-ui
-      className="setup-screen journey-panel mx-auto grid min-h-0 w-full max-w-[1280px] flex-1 items-center wide:items-start gap-10 overflow-y-auto px-5 py-8 wide:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] wide:gap-16 wide:px-12 wide:py-10"
+      className="setup-screen journey-panel mx-auto grid min-h-0 w-full max-w-[1280px] flex-1 items-center wide:items-start gap-10 overflow-y-auto px-5 py-8 max-sm:flex max-sm:flex-col max-sm:items-stretch max-sm:gap-3 max-sm:px-3.5 max-sm:pt-3 max-sm:pb-0 wide:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] wide:gap-16 wide:px-12 wide:py-10"
       key={step}
     >
-      <div className="setup-copy grid content-start gap-5 wide:sticky wide:top-0 wide:self-start">
-        <div className="grid gap-3">
+      <div className="setup-copy grid content-start gap-5 wide:sticky wide:top-0 wide:self-start max-sm:contents">
+        <div className="grid gap-3 max-sm:order-1 max-sm:gap-1.5">
           <Kicker className="step-kicker">
             {step === 0 ? t("01 / 손에 맞는 도구") : t("02 / 닮은 글씨 찾기")}
           </Kicker>
           <h1
             tabIndex={-1}
-            className="m-0 text-[clamp(28px,3.1vw,44px)] leading-[1.35] font-extrabold tracking-[-0.04em] whitespace-pre-line text-foreground outline-none"
+            className="m-0 text-[clamp(28px,3.1vw,44px)] leading-[1.35] font-extrabold tracking-[-0.04em] whitespace-pre-line text-foreground outline-none max-sm:text-[21px] max-sm:leading-snug max-sm:whitespace-normal"
           >
             {step === 0
               ? t("원하는 브러시를\n선택하세요.")
               : t("내 글씨와 닮은\n견본을 골라보세요.")}
           </h1>
-          <p className="m-0 max-w-[34em] text-[15px] leading-[1.75] break-keep text-muted-foreground">
+          <p className="m-0 max-w-[34em] text-[15px] leading-[1.75] break-keep text-muted-foreground max-sm:line-clamp-2 max-sm:text-[12.5px] max-sm:leading-[1.55]">
             {step === 0
               ? t(
                   "평소 쓰는 펜처럼 편한 도구로 시작해요. 굵기도 바꾸고, 옆 칸에 가볍게 그어보세요.",
@@ -114,7 +114,7 @@ export default function JourneySetup({
         </div>
         {step === 0 && onScript && (
           <ChoiceGroup
-            className="setup-script"
+            className="setup-script max-sm:order-2"
             label={t("만들 글자")}
             note={
               hasWriting
@@ -140,7 +140,7 @@ export default function JourneySetup({
         )}
         {step === 0 && onHand && (
           <ChoiceGroup
-            className="setup-script setup-hand"
+            className="setup-script setup-hand max-sm:order-3"
             label={t("어느 손으로 쓰세요?")}
             note={t(
               "쓰는 손이 화면을 가리지 않게, 도구와 ‘다음 글자’ 버튼을 반대쪽 손 가까이에 둬요. 설정에서 언제든 바꿀 수 있어요.",
@@ -163,7 +163,7 @@ export default function JourneySetup({
           </ChoiceGroup>
         )}
         {step === 0 ? (
-          <div className="grid gap-4 rounded-xl border border-border bg-card p-4 shadow-soft">
+          <div className="grid gap-4 rounded-xl border border-border bg-card p-4 shadow-soft max-sm:order-5 max-sm:gap-2.5 max-sm:px-3.5 max-sm:py-3">
             <div className="grid gap-2">
               <FieldHead label={t("선의 굵기")} value={params.size} />
               <Slider
@@ -206,7 +206,7 @@ export default function JourneySetup({
             )}
           </div>
         ) : (
-          <div className="setup-sentence grid gap-2">
+          <div className="setup-sentence grid gap-2 max-sm:order-2">
             <Label htmlFor="setup-sentence">{t("비교할 문장")}</Label>
             <Input
               id="setup-sentence"
@@ -217,16 +217,21 @@ export default function JourneySetup({
             />
           </div>
         )}
-        <div className="grid gap-2">
+        <div className="grid gap-2 max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:order-7 max-sm:-mx-3.5 max-sm:gap-1 max-sm:border-t max-sm:border-divider max-sm:bg-background/95 max-sm:px-3.5 max-sm:pt-2.5 max-sm:pb-[max(10px,env(safe-area-inset-bottom))] max-sm:backdrop-blur-sm">
           <Button
             size="xl"
-            className="journey-next w-full justify-between"
+            className="journey-next w-full justify-between max-sm:h-12 max-sm:text-[15px]"
             onClick={next}
           >
             {step === 0 ? t("이 브러시로 할게요") : t("이제 글자 써보기")}
             <ArrowRight className="size-5" />
           </Button>
-          <small className="text-xs leading-relaxed text-muted-foreground">
+          <small
+            className={cn(
+              "text-xs leading-relaxed text-muted-foreground",
+              !(step === 0 && hasWriting) && "max-sm:hidden",
+            )}
+          >
             {step === 0 && hasWriting
               ? t(
                   "이미 쓴 글자가 있어요. 도구를 바꾸면 이후 글자와 모양이 달라질 수 있어요.",
@@ -239,7 +244,7 @@ export default function JourneySetup({
           </small>
         </div>
         {step === 0 && (
-          <p className="m-0 text-xs leading-relaxed text-muted-foreground">
+          <p className="m-0 text-xs leading-relaxed text-muted-foreground max-sm:order-8">
             {t(
               "회원 가입이 없고, 글씨와 폰트는 이 기기 밖으로 나가지 않아요. 방문 횟수만 숫자로 셉니다.",
             )}{" "}
@@ -255,15 +260,15 @@ export default function JourneySetup({
             )}
           </p>
         )}
-        <p className="m-0 font-mono text-[11px] text-dim">
+        <p className="m-0 font-mono text-[11px] text-dim max-sm:order-9 max-sm:pb-4">
           {t("{maker} 제작", { maker: MAKER })} · {t(APP_NAME)} v{APP_VERSION}
         </p>
       </div>
       {step === 0 ? (
-        <div className="brush-experience grid min-w-0 gap-4">
+        <div className="brush-experience grid min-w-0 gap-4 max-sm:contents">
           <div
             data-ui
-            className="setup-brushes grid grid-cols-3 gap-2 sm:grid-cols-6"
+            className="setup-brushes grid grid-cols-3 gap-2 sm:grid-cols-6 max-sm:order-4 max-sm:grid-cols-6 max-sm:gap-1.5"
             role="group"
             aria-label={t("시작 브러시 선택")}
           >
@@ -273,10 +278,10 @@ export default function JourneySetup({
                 data-ui
                 aria-pressed={settings.activeBrush === b.id}
                 onClick={() => update({ activeBrush: b.id })}
-                className="group flex cursor-pointer flex-col items-center gap-1 rounded-xl border border-border bg-card px-1.5 pt-3 pb-2.5 text-center shadow-soft transition-[border-color,background-color,transform] hover:-translate-y-0.5 hover:border-primary/40 aria-pressed:border-primary aria-pressed:bg-wash aria-pressed:shadow-none [&_canvas]:!h-7 [&_canvas]:!w-[60px]"
+                className="group flex cursor-pointer flex-col items-center gap-1 rounded-xl border border-border bg-card px-1.5 pt-3 pb-2.5 text-center shadow-soft transition-[border-color,background-color,transform] hover:-translate-y-0.5 hover:border-primary/40 aria-pressed:border-primary aria-pressed:bg-wash aria-pressed:shadow-none [&_canvas]:!h-7 [&_canvas]:!w-[60px] max-sm:gap-0.5 max-sm:rounded-lg max-sm:px-0.5 max-sm:pt-2 max-sm:pb-1.5 max-sm:shadow-none max-sm:[&_canvas]:!h-5 max-sm:[&_canvas]:!w-10"
               >
                 <BrushPreview brush={b.id} />
-                <strong className="text-[13px] font-semibold text-foreground group-aria-pressed:text-primary">
+                <strong className="text-[13px] font-semibold text-foreground group-aria-pressed:text-primary max-sm:text-[11.5px] max-sm:tracking-[-0.03em] max-sm:whitespace-nowrap">
                   {t(b.label)}
                 </strong>
                 <small className="text-[11px] leading-snug break-keep text-muted-foreground max-sm:hidden">
@@ -285,9 +290,9 @@ export default function JourneySetup({
               </button>
             ))}
           </div>
-          <div className="grid gap-2">
+          <div className="grid gap-2 max-sm:order-6 max-sm:gap-1">
             <div className="flex items-center justify-between">
-              <span className="text-[13px] font-medium text-muted-foreground">
+              <span className="text-[13px] font-medium text-muted-foreground max-sm:text-[12px]">
                 {t("여기에 자유롭게 그어보세요")}
               </span>
               <Button
@@ -301,7 +306,7 @@ export default function JourneySetup({
             </div>
             <div
               data-ui
-              className="brush-trial flex h-[min(42vh,380px)] justify-center overflow-hidden rounded-2xl border border-border bg-card shadow-soft max-sm:h-72"
+              className="brush-trial flex h-[min(42vh,380px)] justify-center overflow-hidden rounded-2xl border border-border bg-card shadow-soft max-sm:h-[clamp(110px,17dvh,200px)] max-sm:rounded-xl"
             >
               <WritingPad
                 key={trial}
@@ -327,7 +332,7 @@ export default function JourneySetup({
                 practice
               />
             </div>
-            <small className="text-xs text-muted-foreground">
+            <small className="text-xs text-muted-foreground max-sm:text-[11px]">
               {t("연습 칸의 획은 폰트에 들어가지 않아요.")}
             </small>
           </div>
@@ -336,7 +341,7 @@ export default function JourneySetup({
         <div
           data-ui
           data-lock-zone={locked ? "" : undefined}
-          className="setup-fonts grid min-w-0 content-start gap-2.5 self-start"
+          className="setup-fonts grid min-w-0 content-start gap-2.5 self-start max-sm:order-6 max-sm:gap-2"
           role="radiogroup"
           aria-label={t("시작 견본 글꼴")}
         >
@@ -350,7 +355,7 @@ export default function JourneySetup({
                 role="radio"
                 aria-checked={checked}
                 onClick={() => update({ referenceFont: f.id })}
-                className="group grid cursor-pointer gap-2 rounded-xl border border-border bg-card px-5 py-4 text-left shadow-soft transition-[border-color,background-color,box-shadow] hover:border-primary/40 aria-checked:border-primary aria-checked:bg-wash aria-checked:shadow-[0_0_0_3px_color-mix(in_oklab,var(--accent)_16%,transparent)]"
+                className="group grid cursor-pointer gap-2 rounded-xl border border-border bg-card px-5 py-4 max-sm:gap-1 max-sm:px-3.5 max-sm:py-2.5 text-left shadow-soft transition-[border-color,background-color,box-shadow] hover:border-primary/40 aria-checked:border-primary aria-checked:bg-wash aria-checked:shadow-[0_0_0_3px_color-mix(in_oklab,var(--accent)_16%,transparent)]"
               >
                 <span className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
                   <span className="truncate">
@@ -370,20 +375,20 @@ export default function JourneySetup({
                   </span>
                 </span>
                 <span
-                  className="font-choice-sentence block truncate text-[clamp(20px,2.1vw,28px)] leading-snug text-foreground"
+                  className="font-choice-sentence block truncate text-[clamp(20px,2.1vw,28px)] leading-snug text-foreground max-sm:text-[19px]"
                   style={{ fontFamily: referenceStack(f.id) }}
                 >
                   {sentence || SENTENCE[script]}
                 </span>
                 {fit === "good" && (
-                  <span className="font-choice-fit is-good text-xs font-medium text-primary">
+                  <span className="font-choice-fit is-good text-xs font-medium text-primary max-sm:text-[11px]">
                     {t(
                       "추천 · 자모 자리가 일정해서 조합한 글자가 고르게 나와요",
                     )}
                   </span>
                 )}
                 {fit === "loose" && (
-                  <span className="font-choice-fit text-xs text-muted-foreground">
+                  <span className="font-choice-fit text-xs text-muted-foreground max-sm:text-[11px]">
                     {t(
                       "글자마다 자모 자리가 달라 조합한 글자가 덜 고를 수 있어요",
                     )}
@@ -411,8 +416,8 @@ function ChoiceGroup({
   children: React.ReactNode;
 }) {
   return (
-    <div data-ui className={cn("grid gap-2", className)}>
-      <span className="text-[13px] font-semibold text-foreground">{label}</span>
+    <div data-ui className={cn("grid gap-2 max-sm:gap-1.5", className)}>
+      <span className="text-[13px] font-semibold text-foreground max-sm:text-[12px]">{label}</span>
       <div
         role="radiogroup"
         aria-label={label}
@@ -421,7 +426,7 @@ function ChoiceGroup({
         {children}
       </div>
       {note && (
-        <small className="text-xs leading-relaxed break-keep text-muted-foreground">
+        <small className="text-xs leading-relaxed break-keep text-muted-foreground max-sm:text-[11px] max-sm:leading-snug">
           {note}
         </small>
       )}
@@ -447,18 +452,18 @@ function ChoiceCard({
       role="radio"
       aria-checked={checked}
       onClick={onClick}
-      className="relative grid cursor-pointer gap-0.5 rounded-xl border border-border bg-card px-4 py-3 pr-9 text-left shadow-soft transition-[border-color,background-color] hover:border-primary/40 aria-checked:border-primary aria-checked:bg-wash aria-checked:shadow-none"
+      className="relative grid cursor-pointer gap-0.5 rounded-xl border border-border bg-card px-4 py-3 pr-9 text-left shadow-soft max-sm:px-3 max-sm:py-2 max-sm:pr-8 max-sm:shadow-none transition-[border-color,background-color] hover:border-primary/40 aria-checked:border-primary aria-checked:bg-wash aria-checked:shadow-none"
     >
-      <strong className="text-[15px] font-semibold text-foreground">
+      <strong className="text-[15px] font-semibold text-foreground max-sm:text-[14px]">
         {title}
       </strong>
-      <small className="text-xs leading-snug break-keep text-muted-foreground">
+      <small className="text-xs leading-snug break-keep text-muted-foreground max-sm:hidden">
         {note}
       </small>
       <span
         aria-hidden="true"
         className={cn(
-          "absolute top-3 right-3 grid size-[18px] place-items-center rounded-full border-2",
+          "absolute top-3 right-3 grid size-[18px] max-sm:top-2.5 max-sm:right-2.5 max-sm:size-4 place-items-center rounded-full border-2",
           checked ? "border-primary bg-primary" : "border-border bg-card",
         )}
       >

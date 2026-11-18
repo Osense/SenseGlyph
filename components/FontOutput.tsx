@@ -421,7 +421,7 @@ export default function FontOutput({
 
       <form
         data-ui
-        className="fw-export-form grid gap-5 rounded-xl border border-border bg-card p-5 shadow-soft"
+        className="fw-export-form grid gap-5 rounded-xl border border-border bg-card p-5 shadow-soft max-sm:gap-4 max-sm:p-4"
         onSubmit={(event) => {
           event.preventDefault();
           start("download");
@@ -764,10 +764,10 @@ export default function FontOutput({
             )}
           </div>
         )}
-        <div className="fw-download-row grid grid-cols-[1fr_auto] gap-2">
+        <div className="fw-download-row grid grid-cols-[1fr_auto] gap-2 max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:-mx-4 max-sm:border-t max-sm:border-divider max-sm:bg-card/95 max-sm:px-4 max-sm:py-2.5 max-sm:backdrop-blur-sm">
           <Button
             size="xl"
-            className="fw-download h-auto min-h-14 min-w-0 py-2.5 leading-snug whitespace-normal data-[blocked]:opacity-60"
+            className="fw-download h-auto min-h-14 max-sm:min-h-12 max-sm:text-[14px] min-w-0 py-2.5 leading-snug whitespace-normal data-[blocked]:opacity-60"
             type="submit"
             data-blocked={!canDownload || undefined}
           >
@@ -794,7 +794,7 @@ export default function FontOutput({
             type="button"
             variant="outline"
             size="xl"
-            className="fw-share h-auto min-h-14 px-4 data-[blocked]:opacity-60"
+            className="fw-share h-auto min-h-14 max-sm:min-h-12 px-4 data-[blocked]:opacity-60"
             data-blocked={!canDownload || undefined}
             onClick={() => start("share")}
           >

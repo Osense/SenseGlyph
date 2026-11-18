@@ -831,7 +831,7 @@ export default function FontWorkshop({
           {writtenHangul.length > 0 && (
             <p
               data-ui
-              className="fw-sep-notice m-0 rounded-lg bg-muted px-3.5 py-2.5 font-serif text-[13px] leading-relaxed break-keep text-muted-foreground"
+              className="fw-sep-notice m-0 rounded-lg bg-muted px-3.5 py-2.5 text-[13px] leading-relaxed break-keep text-muted-foreground"
               role="note"
             >
               {t(
@@ -864,7 +864,7 @@ export default function FontWorkshop({
             />
           ) : (
             <Panel className="fw-empty grid justify-items-start gap-4 p-6">
-              <p className="m-0 font-serif text-[15px] text-muted-foreground">
+              <p className="m-0 text-[15px] text-muted-foreground">
                 {t("아직 쓴 한글이 없어요.")}
               </p>
               <Button onClick={() => onWrite(HANGUL[0])}>
@@ -935,7 +935,7 @@ export default function FontWorkshop({
             <h1
               id="fw-title"
               tabIndex={-1}
-              className="m-0 font-serif text-[clamp(26px,2.6vw,36px)] leading-tight font-normal tracking-[-0.03em] outline-none"
+              className="m-0 text-[clamp(26px,2.6vw,36px)] leading-tight font-extrabold tracking-[-0.04em] outline-none"
             >
               {finishStep === "refine"
                 ? t("폰트를 다듬어요")
@@ -966,7 +966,7 @@ export default function FontWorkshop({
                   className={cn(
                     "grid size-5 place-items-center rounded-full font-mono text-[10px] font-semibold",
                     finishStep === id
-                      ? "bg-primary text-primary-foreground"
+                      ? "bg-brand-grad text-white"
                       : "bg-card text-dim",
                   )}
                 >
@@ -980,7 +980,7 @@ export default function FontWorkshop({
 
         {!report.direct ? (
           <Panel className="fw-empty grid justify-items-start gap-4 p-6">
-            <p className="m-0 font-serif text-[15px] text-muted-foreground">
+            <p className="m-0 text-[15px] text-muted-foreground">
               {t("한 글자 이상 쓰면 폰트를 만들 수 있어요.")}
             </p>
             <Button onClick={() => onWrite(firstChar)}>
@@ -1012,7 +1012,7 @@ export default function FontWorkshop({
                       </span>
                     )}
                   </div>
-                  <p className="m-0 font-serif text-[13.5px] leading-relaxed break-keep text-muted-foreground">
+                  <p className="m-0 text-[13.5px] leading-relaxed break-keep text-muted-foreground">
                     {t(
                       "0%는 쓴 획 그대로예요. 올릴수록 자모 배치와 기울기를 견본 글꼴 쪽으로 정돈하지만, 내 글씨의 획과 개성은 남겨요.",
                     )}

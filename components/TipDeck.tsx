@@ -82,12 +82,12 @@ export default function TipDeck({
             id="sg-tips-title"
             className="flex items-start gap-2.5 text-xl leading-snug font-semibold break-keep"
           >
-            <b className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-primary font-mono text-[13px] text-primary-foreground">
+            <b className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-brand-grad font-mono text-[13px] text-white">
               {index + 1}
             </b>
             {tip.title}
           </h2>
-          <p className="font-serif text-[15px] leading-[1.7] break-keep text-muted-foreground">
+          <p className="text-[15px] leading-[1.7] break-keep text-muted-foreground">
             {tip.body}
           </p>
         </div>
@@ -110,7 +110,7 @@ export default function TipDeck({
               <i
                 className={cn(
                   "block h-2 rounded-full transition-all duration-300",
-                  i === index ? "w-6 bg-primary" : "w-2 bg-border",
+                  i === index ? "w-6 bg-brand-grad" : "w-2 bg-border",
                 )}
               />
             </button>

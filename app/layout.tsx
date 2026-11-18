@@ -7,6 +7,18 @@ import { REFERENCE_FONTS } from "../lib/reference-fonts";
 // deployment base path.
 const FONT_FACES = `
 @font-face {
+  font-family: "JetBrains Mono";
+  src: url("${BASE_PATH}/fonts/JetBrainsMono-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("${BASE_PATH}/fonts/JetBrainsMono-500.woff2") format("woff2");
+  font-weight: 500 700;
+  font-display: swap;
+}
+@font-face {
   font-family: "Noto Serif KR";
   src: url("${BASE_PATH}/fonts/NotoSerifKR.ttf") format("truetype");
   font-weight: 100 900;
@@ -37,14 +49,14 @@ ${REFERENCE_FONTS.map(({ family, file }) => {
 `;
 const title = "쎈스 글리프 — 내 손으로 쓴 한 획이, 나만의 폰트가 됩니다";
 const description =
-  "세상에 당신만의 모양으로 이야기를 건넬 수 있게 되었어요. 태블릿에 글자를 써서 나만의 한글 폰트를 만드는 OSNS.studio의 손글씨 폰트 작업실.";
+  "세상에 당신만의 모양으로 이야기를 건넬 수 있게 되었어요. 태블릿에 글자를 써서 나만의 한글 폰트를 만드는 WSNS studio의 손글씨 폰트 작업실.";
 const siteUrl = "https://osense.github.io/SenseGlyph/";
 const shareImage = {
   url: new URL("senseglyph-share-v2.png", siteUrl).href,
   width: 1200,
   height: 630,
   type: "image/png",
-  alt: "쎈스 글리프. 내 손으로 쓴 한 획이, 나만의 폰트가 됩니다. OSNS.studio 제작.",
+  alt: "쎈스 글리프. 내 손으로 쓴 한 획이, 나만의 폰트가 됩니다. WSNS studio 제작.",
 };
 
 export const metadata: Metadata = {
@@ -80,13 +92,18 @@ export const metadata: Metadata = {
 // 안드로이드 크롬 등은 휴대폰이 다크 모드면 페이지를 강제로 어둡게 칠한다(자동 다크).
 // 앱이 밝은/어두운 화면을 직접 고르므로, 기본은 '밝은 화면만'이라고 알려 강제 어둡게를 막는다.
 export const viewport: Viewport = {
-  themeColor: "#f7f1ef",
+  themeColor: "#f6f7fa",
   colorScheme: "only light",
 };
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" style={{ colorScheme: "only light" }}>
       <head>
+        {/* WSNS studio 공통 글꼴: Pretendard(쓰는 글자만 나눠 받는 동적 서브셋) */}
+        <link
+          rel="stylesheet"
+          href={`${BASE_PATH}/fonts/pretendard/pretendardvariable-dynamic-subset.css`}
+        />
         <style dangerouslySetInnerHTML={{ __html: FONT_FACES }} />
       </head>
       <body>{children}</body>

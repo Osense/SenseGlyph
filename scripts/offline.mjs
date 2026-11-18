@@ -10,7 +10,10 @@ async function walk(dir) {
   return result;
 }
 const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-const assets = (await walk("out")).map((path) => base + path);
+// Pretendard 동적 서브셋(파일 92개)은 미리 다 받지 않고, 처음 쓸 때 받아 둔다(아래 fetch).
+const assets = (await walk("out"))
+  .filter((path) => !path.includes("/fonts/pretendard/woff2-dynamic-subset/"))
+  .map((path) => base + path);
 assets.push(base + "/");
 const cache =
   "hanhoek-" +
@@ -20,6 +23,6 @@ const cache =
     .slice(0, 12);
 await writeFile(
   "out/sw.js",
-  `const CACHE=${JSON.stringify(cache)},ASSETS=${JSON.stringify(assets)};self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('hanhoek-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||new URL(e.request.url).origin!==self.location.origin)return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`,
+  `const CACHE=${JSON.stringify(cache)},ASSETS=${JSON.stringify(assets)};self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('hanhoek-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||new URL(e.request.url).origin!==self.location.origin)return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{if(res.ok&&e.request.url.includes('/fonts/pretendard/')){const copy=res.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));}return res;})));});`,
 );
 console.log("Offline precache:", assets.length, "local assets");

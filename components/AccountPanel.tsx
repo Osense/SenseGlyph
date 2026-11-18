@@ -92,7 +92,7 @@ export default function AccountPanel({
           </SheetTitle>
           <div className="sg-account-head flex items-center gap-3.5">
             <span
-              className="grid size-12 shrink-0 place-items-center rounded-full bg-primary text-xl font-bold text-primary-foreground shadow-soft"
+              className="grid size-12 shrink-0 place-items-center rounded-full bg-brand-grad text-xl font-bold text-white shadow-soft"
               aria-hidden="true"
             >
               {(session?.name ?? "?").slice(0, 1).toUpperCase()}

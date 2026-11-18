@@ -43,7 +43,7 @@ export default function StepQuestion({
           </AlertDialogTitle>
           <AlertDialogDescription
             id="sg-ask-detail"
-            className="font-serif text-[14.5px] leading-[1.7] break-keep"
+            className="text-[14.5px] leading-[1.7] break-keep"
           >
             {ask.detail}
           </AlertDialogDescription>

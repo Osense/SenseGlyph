@@ -251,13 +251,13 @@ export default function LegalNotice({
       className="sg-legal grid gap-5 text-foreground [&_a]:text-primary"
       lang={lang}
     >
-      <Heading className="m-0 font-serif text-[28px] leading-tight font-normal tracking-[-0.02em]">
+      <Heading className="m-0 text-[28px] leading-tight font-bold tracking-[-0.03em]">
         {text.title}
       </Heading>
       <p className="sg-legal-meta m-0 font-mono text-[11px] text-dim">
         {UPDATED[lang]} {LEGAL_UPDATED} · v{APP_VERSION} · {MAKER}
       </p>
-      <p className="m-0 font-serif text-[15px] leading-[1.8] text-foreground/85">
+      <p className="m-0 text-[15px] leading-[1.8] text-foreground/85">
         {text.intro}
       </p>
       {text.sections.map((section) => (

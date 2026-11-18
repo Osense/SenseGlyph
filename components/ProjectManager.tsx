@@ -81,7 +81,7 @@ export default function ProjectManager({
             <Kicker className="step-kicker">{t("나의 작업 보관함")}</Kicker>
             <DialogTitle
               id="projects-title"
-              className="font-serif text-2xl font-normal tracking-[-0.02em]"
+              className="text-2xl font-bold tracking-[-0.03em]"
             >
               {t("새로운 글씨를 시작할까요?")}
             </DialogTitle>

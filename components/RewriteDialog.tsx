@@ -67,12 +67,12 @@ export default function RewriteDialog({
       >
         <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 max-sm:grid-cols-[auto_1fr]">
           <strong
-            className="sg-char grid size-14 place-items-center rounded-xl border border-border bg-card font-serif text-4xl leading-none shadow-soft"
+            className="sg-char grid size-14 place-items-center rounded-xl border border-border bg-card text-4xl leading-none font-semibold shadow-soft"
             id="sg-rewrite-title"
           >
             {char}
           </strong>
-          <p className="m-0 font-serif text-[13.5px] leading-relaxed break-keep text-muted-foreground">
+          <p className="m-0 text-[13.5px] leading-relaxed break-keep text-muted-foreground">
             <b className="font-sans font-semibold text-foreground">
               {t("이 글자만 다시 써요.")}
             </b>{" "}

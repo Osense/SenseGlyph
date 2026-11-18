@@ -29,17 +29,17 @@ export default function LoadingScreen() {
       {/* 은은한 붉은 빛 */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 left-1/2 size-[min(120vw,760px)] -translate-x-1/2 -translate-y-[58%] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--accent)_16%,transparent)_0%,transparent_62%)] motion-safe:animate-[sg-breathe_3.2s_ease-in-out_infinite]"
+        className="pointer-events-none absolute top-1/2 left-1/2 size-[min(120vw,760px)] -translate-x-1/2 -translate-y-[58%] rounded-full bg-[radial-gradient(circle_at_40%_45%,color-mix(in_oklch,var(--accent)_18%,transparent)_0%,transparent_55%),radial-gradient(circle_at_62%_58%,color-mix(in_oklch,var(--accent-2)_16%,transparent)_0%,transparent_55%)] motion-safe:animate-[sg-breathe_3.2s_ease-in-out_infinite]"
       />
       <div className="relative grid w-[min(400px,100%)] justify-items-center gap-8">
         <div className="relative motion-safe:animate-[sg-float_3.2s_ease-in-out_infinite]">
           <span
             aria-hidden="true"
-            className="absolute inset-0 rounded-[34px] ring-2 ring-primary/40 motion-safe:animate-[sg-ring_3.2s_ease-out_infinite]"
+            className="absolute inset-0 rounded-[34px] ring-2 ring-[color-mix(in_oklch,var(--glyph)_45%,transparent)] motion-safe:animate-[sg-ring_3.2s_ease-out_infinite]"
           />
           <svg
             viewBox="0 0 64 64"
-            className="relative block size-[clamp(132px,34vw,172px)] drop-shadow-[0_18px_30px_rgb(60_10_10/0.35)]"
+            className="relative block size-[clamp(132px,34vw,172px)] drop-shadow-[0_18px_30px_oklch(0.2_0.03_270/0.3)]"
             aria-hidden="true"
           >
             <rect width="64" height="64" rx="14" fill="#120e0e" />
@@ -78,11 +78,13 @@ export default function LoadingScreen() {
         </div>
 
         <div className="grid justify-items-center gap-1.5 text-center">
-          <p className="m-0 flex items-end gap-1.5 text-[14px] text-muted-foreground">
-            <span className="font-mono tracking-[0.18em]">OSNS</span>
-            <i className="font-serif leading-none">studio</i>
+          <p className="m-0 text-[14px] font-semibold text-muted-foreground">
+            WSNS studio{" "}
+            <span className="text-brand-grad font-bold">
+              [웨스엔에스 스튜디오]
+            </span>
           </p>
-          <h1 className="m-0 font-serif text-[clamp(30px,8vw,40px)] leading-tight font-normal tracking-[-0.02em]">
+          <h1 className="m-0 text-[clamp(30px,8vw,40px)] leading-tight font-bold tracking-[-0.03em]">
             {t("쎈스 글리프")}
           </h1>
         </div>
@@ -93,7 +95,7 @@ export default function LoadingScreen() {
             role="progressbar"
             aria-label={t("쎈스 글리프를 여는 중…")}
           >
-            <span className="absolute inset-y-0 left-0 w-2/5 rounded-full bg-[linear-gradient(90deg,transparent,var(--accent)_35%,var(--amber)_70%,transparent)] motion-safe:animate-[sg-sweep_1.6s_cubic-bezier(.6,0,.3,1)_infinite] motion-reduce:w-full motion-reduce:bg-primary/60" />
+            <span className="absolute inset-y-0 left-0 w-2/5 rounded-full bg-[linear-gradient(90deg,transparent,var(--accent)_35%,var(--accent-2)_70%,transparent)] motion-safe:animate-[sg-sweep_1.6s_cubic-bezier(.6,0,.3,1)_infinite] motion-reduce:w-full motion-reduce:bg-primary/60" />
           </div>
           <div className="relative h-7 w-full text-center text-[16px] font-medium text-foreground/85">
             <span className="sr-only">{t("쎈스 글리프를 여는 중…")}</span>

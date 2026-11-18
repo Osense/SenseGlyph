@@ -58,6 +58,7 @@ import {
 } from "../lib/analytics";
 import { gsap } from "gsap";
 import LoadingScreen from "../components/LoadingScreen";
+import { WsnsWordmark } from "../components/WsnsBrand";
 import {
   ArrowRight,
   Check,
@@ -814,26 +815,11 @@ export default function Page() {
           href="./"
           aria-label={t("쎈스 글리프 처음 화면")}
         >
-          <span className="flex items-end gap-1" aria-hidden="true">
-            <img
-              src={BASE_PATH + "/logo/osns-crayon.svg"}
-              alt=""
-              className="h-[22px] w-auto"
-            />
-            <i className="font-serif text-[15px] leading-none text-foreground/80 italic">
-              studio
-            </i>
-          </span>
-          <span className="text-dim max-sm:hidden" aria-hidden="true">
-            /
-          </span>
-          <span className="hidden text-[15px] font-semibold tracking-tight sm:inline">
-            {t("쎈스 글리프")}
-          </span>
+          <WsnsWordmark product={t("쎈스 글리프")} />
         </a>
         <nav
           data-ui
-          className="sg-steps order-last flex w-full items-center gap-1 overflow-x-auto rounded-xl bg-muted p-1 wide:order-none wide:mx-auto wide:w-auto"
+          className="sg-steps order-last flex w-full items-center gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1 wide:order-none wide:mx-auto wide:w-auto"
           aria-label={t("폰트 만드는 순서")}
         >
           {stepsFor(script).map(({ label, step: position }, order) => {
@@ -860,7 +846,7 @@ export default function Page() {
                   className={cn(
                     "grid size-5 shrink-0 place-items-center rounded-full font-mono text-[10px] leading-none font-semibold tabular-nums",
                     current
-                      ? "bg-primary text-primary-foreground"
+                      ? "bg-brand-grad text-white"
                       : past
                         ? "bg-primary/15 text-primary"
                         : "bg-card text-dim",
@@ -929,7 +915,7 @@ export default function Page() {
             title={t(session?.name ?? "게스트")}
           >
             <span
-              className="grid size-8 place-items-center rounded-full bg-primary text-[13px] font-bold text-primary-foreground ring-2 ring-card"
+              className="grid size-8 place-items-center rounded-full bg-brand-grad text-[13px] font-bold text-white ring-2 ring-card"
               aria-hidden="true"
             >
               {(session?.name ?? "?").slice(0, 1).toUpperCase()}
@@ -1079,7 +1065,7 @@ export default function Page() {
               <div className="sg-char-head">
                 <strong
                   data-ui
-                  className="sg-char grid size-[60px] shrink-0 place-items-center rounded-xl border border-border bg-card font-serif text-[38px] leading-none text-foreground shadow-soft max-sm:size-12 max-sm:text-3xl"
+                  className="sg-char grid size-[60px] shrink-0 place-items-center rounded-xl border border-border bg-card text-[36px] leading-none font-semibold text-foreground shadow-soft max-sm:size-12 max-sm:text-3xl"
                 >
                   {char}
                 </strong>
@@ -1104,7 +1090,7 @@ export default function Page() {
                   </span>
                   <p
                     data-ui
-                    className="mt-1 mb-0 font-serif text-[14px] leading-[1.65] break-keep text-foreground/85"
+                    className="mt-1 mb-0 text-[14px] leading-[1.65] break-keep text-foreground/85"
                   >
                     {characterGuide(char, category, lang)}
                   </p>
@@ -1623,7 +1609,7 @@ export default function Page() {
                       </button>
                     ))}
                   </div>
-                  <p className="m-0 font-serif text-[13px] leading-relaxed text-muted-foreground">
+                  <p className="m-0 text-[13px] leading-relaxed text-muted-foreground">
                     {t(
                       "한 폰트는 한 가지 도구로 쓰면 글자 모양이 고르게 나와요.",
                     )}
@@ -1702,7 +1688,7 @@ export default function Page() {
                   <h3 className="m-0 font-mono text-[11px] font-medium tracking-[0.08em] text-dim uppercase">
                     {t("쓰기 칸 크기 (고급)")}
                   </h3>
-                  <p className="m-0 font-serif text-[13px] leading-relaxed text-muted-foreground">
+                  <p className="m-0 text-[13px] leading-relaxed text-muted-foreground">
                     {t(
                       "쓰기 칸 아래의 − · + 버튼은 정해진 단계로 바꾸고, 여기서는 10px 단위로 정할 수 있어요. 같은 숫자면 어느 기기에서나 비슷한 크기예요. 지금 화면에서는 {px}px까지 커질 수 있어요.",
                       { px: padFit },
@@ -2112,7 +2098,7 @@ function RailTool({
         tone === "default" &&
           "min-h-[62px] border-border bg-card text-muted-foreground shadow-[0_1px_0_rgb(0_0_0/0.03)] hover:border-primary/40 hover:text-foreground disabled:opacity-35 aria-pressed:border-primary aria-pressed:bg-wash aria-pressed:font-semibold aria-pressed:text-primary aria-pressed:shadow-none",
         tone === "primary" &&
-          "my-1 min-h-[88px] border-primary bg-primary text-[12.5px] font-semibold text-primary-foreground shadow-[inset_0_-3px_0_rgb(0_0_0/0.16),0_6px_16px_-6px_rgb(200_40_20/0.55)] hover:bg-primary-strong disabled:opacity-50 max-wide:portrait:order-first max-wide:portrait:my-0 max-wide:portrait:flex-[1.4_0_88px] [&_svg]:size-7",
+          "my-1 min-h-[88px] border-transparent bg-brand-grad text-[12.5px] font-semibold text-white shadow-[0_10px_22px_-10px_color-mix(in_oklch,var(--accent)_80%,transparent)] hover:brightness-[1.08] disabled:opacity-50 max-wide:portrait:order-first max-wide:portrait:my-0 max-wide:portrait:flex-[1.4_0_88px] [&_svg]:size-7",
         className,
       )}
       {...props}
@@ -2142,7 +2128,7 @@ function SettingGroup({
         {children}
       </div>
       {foot && (
-        <p className="m-0 font-serif text-[13px] leading-relaxed text-muted-foreground">
+        <p className="m-0 text-[13px] leading-relaxed text-muted-foreground">
           {foot}
         </p>
       )}

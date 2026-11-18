@@ -89,13 +89,13 @@ export default function JourneySetup({
           </Kicker>
           <h1
             tabIndex={-1}
-            className="m-0 font-serif text-[clamp(28px,3.1vw,44px)] leading-[1.35] font-normal tracking-[-0.03em] whitespace-pre-line text-foreground outline-none"
+            className="m-0 text-[clamp(28px,3.1vw,44px)] leading-[1.35] font-extrabold tracking-[-0.04em] whitespace-pre-line text-foreground outline-none"
           >
             {step === 0
               ? t("원하는 브러시를\n선택하세요.")
               : t("내 글씨와 닮은\n견본을 골라보세요.")}
           </h1>
-          <p className="m-0 max-w-[34em] font-serif text-[15px] leading-[1.75] break-keep text-muted-foreground">
+          <p className="m-0 max-w-[34em] text-[15px] leading-[1.75] break-keep text-muted-foreground">
             {step === 0
               ? t(
                   "평소 쓰는 펜처럼 편한 도구로 시작해요. 굵기도 바꾸고, 옆 칸에 가볍게 그어보세요.",

@@ -549,7 +549,7 @@ export default function SeparationEditor({
             >
               <ChevronLeft className="size-5" />
             </Button>
-            <strong className="grid size-12 place-items-center rounded-xl border border-border bg-card font-serif text-[32px] leading-none font-normal shadow-soft">
+            <strong className="grid size-12 place-items-center rounded-xl border border-border bg-card text-[32px] leading-none font-semibold shadow-soft">
               {char}
             </strong>
             <span className="grid min-w-12 text-xs text-muted-foreground">

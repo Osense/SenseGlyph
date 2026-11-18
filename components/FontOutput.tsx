@@ -400,7 +400,7 @@ export default function FontOutput({
             })()}
           </>
         ) : (
-          <p className="fw-note m-0 rounded-xl bg-muted px-5 py-8 text-center font-serif text-[15px] text-muted-foreground">
+          <p className="fw-note m-0 rounded-xl bg-muted px-5 py-8 text-center text-[15px] text-muted-foreground">
             {t("아직 만든 폰트가 없어요.")}
           </p>
         )}

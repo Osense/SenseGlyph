@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { BASE_PATH } from "../lib/base-path";
+import { WsnsMark, WsnsPron } from "./WsnsBrand";
 import { legalHref } from "./LegalDocument";
 import { useAccount } from "../lib/account";
 import { useLang, useT } from "../lib/i18n";
@@ -180,6 +180,15 @@ export default function LoginScreen() {
       className="sg-login max-wide:content-center-safe max-wide:gap-0"
       lang={lang}
     >
+      {/* WSNS 사이트 첫 화면처럼: 옅은 격자 + 바이올렛·시안 빛 */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 [background-image:linear-gradient(to_right,color-mix(in_oklch,var(--ink)_6%,transparent)_1px,transparent_1px),linear-gradient(to_bottom,color-mix(in_oklch,var(--ink)_6%,transparent)_1px,transparent_1px)] [background-size:44px_44px] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,#000_40%,transparent_100%)]"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-40 left-1/2 h-[480px] w-[min(980px,140vw)] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklch,var(--accent)_22%,transparent),transparent),radial-gradient(closest-side,color-mix(in_oklch,var(--accent-2)_18%,transparent),transparent)] [background-position:30%_50%,70%_50%] [background-repeat:no-repeat] [background-size:60%_100%,60%_100%] blur-2xl"
+      />
       <div className="sg-login-bg" aria-hidden="true">
         <div className="sg-login-hero max-wide:hidden">
           <p>{t("펜 끝의 버릇까지,\n그대로 폰트가 됩니다.")}</p>
@@ -238,22 +247,18 @@ export default function LoginScreen() {
         className="sg-login-card relative grid w-[min(400px,100%)] gap-3 rounded-2xl border border-border bg-card px-7 pt-7 pb-5 text-card-foreground shadow-lift"
         aria-labelledby="sg-login-title"
       >
-        <div className="flex items-end gap-1.5 text-[13px] text-muted-foreground">
-          <img
-            src={BASE_PATH + "/logo/osns-crayon.svg"}
-            alt="OSNS"
-            className="h-[18px] w-auto"
-          />
-          <i className="font-serif leading-none">studio</i>
-          <span className="text-dim">/</span>
-          <span className="font-medium text-foreground">
-            {t("쎈스 글리프")}
-          </span>
+        <div className="grid justify-items-center gap-2 pb-1 text-center">
+          <WsnsMark className="h-[64px]" />
+          <WsnsPron className="text-[12px]" />
         </div>
-        <div className="grid gap-1.5 pt-2 pb-1">
+        <div className="grid gap-1.5 pb-1 text-center">
+          <p className="m-0 text-[13px] font-medium text-muted-foreground">
+            {t("쎈스 글리프")}{" "}
+            <span className="font-semibold text-glyph">Sense Glyph</span>
+          </p>
           <h1
             id="sg-login-title"
-            className="m-0 font-serif text-[28px] leading-tight font-normal tracking-[-0.02em]"
+            className="m-0 text-[26px] leading-tight font-extrabold tracking-[-0.04em]"
           >
             {t("로그인")}
           </h1>

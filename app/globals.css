@@ -24,58 +24,71 @@
 /* 브랜드 색(시그니처 크레용 레드)은 그대로. 대화창처럼 body 로 띄우는 요소도 같은 색을
  * 쓰도록 :root 에도 둔다. 어두운 화면은 html 과 main 에 .dark 가 붙는다. */
 :root {
-  --font-ui: "IBM Plex Sans", "Noto Sans KR", system-ui, sans-serif;
+  /* WSNS studio 톤: 차가운 회백색 바탕 · Pretendard · 바이올렛→시안 브랜드 그라데이션.
+   * 제품 색(쎈스 글리프 = 크레용 레드)은 --glyph 로 남겨 아이콘·제품 이름에만 쓴다. */
+  --font-ui:
+    "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic",
+    sans-serif;
   --font-mono:
-    "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --font-text: "Gowun Batang", "Noto Serif KR", serif;
-  --display-face: var(--font-text);
-  --paper: #f7f1ef;
-  --sheet: #fffaf8;
-  --panel: #fffaf8;
-  --ink: #1f1515;
-  --muted: #76585b;
-  --dim: #8f7174;
-  --line: #e4d3d1;
-  --divider: #ecdedc;
-  --accent: #d93a26;
-  --accent-strong: #b92d1b;
-  --amber: #b27100;
-  --on-accent: #fffaf8;
-  --active-wash: #f7e1dd;
-  --soft: #f2e8e6;
-  --danger: #c0392b;
-  --danger-wash: #fbe5e1;
-  --ok: #2f7254;
-  --ok-wash: #e4f1e8;
-  --warn-wash: #fff6e3;
-  --radius: 12px;
+    "JetBrains Mono", "Pretendard Variable", Pretendard, ui-monospace,
+    SFMono-Regular, Menlo, monospace;
+  --font-text: var(--font-ui);
+  --display-face: var(--font-ui);
+  --paper: oklch(0.975 0.004 270);
+  --sheet: oklch(1 0 0);
+  --panel: oklch(1 0 0);
+  --ink: oklch(0.2 0.015 270);
+  --muted: oklch(0.5 0.015 270);
+  --dim: oklch(0.62 0.015 270);
+  --line: oklch(0.9 0.006 270);
+  --divider: oklch(0.93 0.005 270);
+  --accent: oklch(0.56 0.2 285);
+  --accent-strong: oklch(0.5 0.2 285);
+  --accent-2: oklch(0.7 0.14 210);
+  --brand-grad: linear-gradient(100deg, var(--accent) 0%, var(--accent-2) 100%);
+  --glyph: oklch(0.63 0.2 25);
+  --amber: oklch(0.7 0.16 62);
+  --on-accent: oklch(0.99 0 0);
+  --active-wash: oklch(0.96 0.025 285);
+  --soft: oklch(0.955 0.006 270);
+  --danger: oklch(0.58 0.2 27);
+  --danger-wash: oklch(0.965 0.025 25);
+  --ok: oklch(0.6 0.14 160);
+  --ok-wash: oklch(0.96 0.035 160);
+  --warn-wash: oklch(0.97 0.03 75);
+  --radius: 14px;
   --shadow-soft:
-    0 1px 2px rgb(60 20 20 / 0.05), 0 8px 24px -12px rgb(60 20 20 / 0.18);
-  --shadow-lift:
-    0 2px 4px rgb(60 20 20 / 0.06), 0 24px 48px -16px rgb(60 20 20 / 0.28);
+    0 1px 2px oklch(0.2 0.02 270 / 0.05),
+    0 8px 24px -12px oklch(0.2 0.02 270 / 0.12);
+  --shadow-lift: 0 18px 50px -12px oklch(0.2 0.03 270 / 0.28);
+  --scrim: oklch(0.2 0.02 270 / 0.45);
 }
 .dark {
-  --paper: #120e0e;
-  --sheet: #1d1315;
-  --panel: #180f11;
-  --ink: #f4ecea;
-  --muted: #b99598;
-  --dim: #a68488;
-  --line: #3a2628;
-  --divider: #2a1b1d;
-  --accent: #ff5a5a;
-  --accent-strong: #ff7a72;
-  --amber: #ffb020;
-  --on-accent: #120e0e;
-  --active-wash: #2a1719;
-  --soft: #221517;
-  --danger: #ff8f80;
-  --danger-wash: #3a1d1e;
-  --ok: #8fd6ad;
-  --ok-wash: #16271e;
-  --warn-wash: #2b2112;
-  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
-  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.4), 0 24px 48px -16px rgb(0 0 0 / 0.7);
+  --paper: oklch(0.14 0.008 270);
+  --sheet: oklch(0.18 0.01 270);
+  --panel: oklch(0.18 0.01 270);
+  --ink: oklch(0.97 0.003 270);
+  --muted: oklch(0.72 0.015 270);
+  --dim: oklch(0.6 0.014 270);
+  --line: oklch(1 0 0 / 12%);
+  --divider: oklch(1 0 0 / 8%);
+  --accent: oklch(0.7 0.17 285);
+  --accent-strong: oklch(0.76 0.15 285);
+  --accent-2: oklch(0.8 0.12 210);
+  --glyph: oklch(0.7 0.18 25);
+  --amber: oklch(0.78 0.14 70);
+  --on-accent: oklch(0.99 0 0);
+  --active-wash: oklch(0.27 0.05 285);
+  --soft: oklch(0.22 0.012 270);
+  --danger: oklch(0.7 0.17 25);
+  --danger-wash: oklch(0.27 0.05 25);
+  --ok: oklch(0.74 0.14 160);
+  --ok-wash: oklch(0.26 0.04 160);
+  --warn-wash: oklch(0.29 0.05 70);
+  --shadow-soft: 0 1px 0 oklch(1 0 0 / 4%) inset;
+  --shadow-lift: 0 24px 60px -12px oklch(0 0 0 / 0.6);
+  --scrim: oklch(0.08 0.01 270 / 0.7);
 }
 
 @theme {
@@ -96,6 +109,9 @@
   --color-popover-foreground: var(--ink);
   --color-primary: var(--accent);
   --color-primary-strong: var(--accent-strong);
+  --color-brand-2: var(--accent-2);
+  --color-glyph: var(--glyph);
+  --color-scrim: var(--scrim);
   --color-primary-foreground: var(--on-accent);
   --color-secondary: var(--soft);
   --color-secondary-foreground: var(--ink);
@@ -130,6 +146,25 @@
   * {
     @apply border-border outline-ring/50;
   }
+  body {
+    font-family: var(--font-ui);
+    font-feature-settings: "ss01", "ss02";
+    word-break: keep-all;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--accent) 25%, transparent);
+  }
+}
+
+@utility bg-brand-grad {
+  background-image: var(--brand-grad);
+}
+@utility text-brand-grad {
+  background-image: linear-gradient(90deg, #7c5cf0, #38bcd8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 @keyframes sg-flow {

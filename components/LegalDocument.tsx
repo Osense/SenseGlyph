@@ -65,13 +65,13 @@ export function LegalDocument({
   const Heading = headingLevel === 1 ? "h1" : "h2";
   return (
     <article data-ui className={legalArticle} lang={lang}>
-      <Heading className="m-0 font-serif text-[28px] leading-tight font-normal tracking-[-0.02em]">
+      <Heading className="m-0 text-[28px] leading-tight font-bold tracking-[-0.03em]">
         {doc.title}
       </Heading>
       <p className="sg-legal-meta m-0 font-mono text-[11px] text-dim">
         {EFFECTIVE[lang]} {LEGAL_EFFECTIVE} · v{APP_VERSION} · {MAKER}
       </p>
-      <p className="m-0 font-serif text-[15px] leading-[1.8] text-foreground/85">
+      <p className="m-0 text-[15px] leading-[1.8] text-foreground/85">
         {fill(doc.intro)}
       </p>
       {doc.sections.map((section) => (

@@ -991,7 +991,7 @@ export default function Page() {
         <a
           data-ui
           className="sg-brand group flex min-w-0 shrink-0 items-center gap-2 text-foreground no-underline"
-          href="https://wes-ns.vercel.app/"
+          href="https://wsns.studio/"
           target="_blank"
           rel="noopener"
           aria-label={t("쎈스 글리프 — WSNS studio 홈페이지")}

@@ -65,8 +65,8 @@ check(
   resumed === lastChar,
   `${resumed} / ${lastChar}`,
 );
-// 머리글 로고를 누르면 메인 화면
-await page.click(".sg-brand");
+// 머리글 '내 폰트'를 누르면 메인 화면 (로고는 WSNS studio 홈페이지로 이동)
+await page.click('.sg-top-button:has-text("내 폰트")');
 await page.waitForSelector(".sg-home-recent");
 // 복제
 await page.click(".sg-home-recent .sg-home-menu");

@@ -298,22 +298,22 @@ try {
   const downloaded = page.waitForEvent("download");
   await download.click();
   const file = await downloaded;
-  assert.equal(file.suggestedFilename(), "OSNS 여정손글씨.otf");
+  assert.equal(file.suggestedFilename(), "WSNS 여정손글씨.otf");
   await file.saveAs("artifacts/journey-test.otf");
   const bytes = await readFile("artifacts/journey-test.otf");
   const font = opentype.parse(
     bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
   );
   assert.equal(font.glyphs.length, 11175);
-  assert.equal(font.names.fontFamily.en, "OSNS JourneyHandTest");
-  assert.equal(font.names.fontFamily.ko, "OSNS 여정손글씨");
+  assert.equal(font.names.fontFamily.en, "WSNS JourneyHandTest");
+  assert.equal(font.names.fontFamily.ko, "WSNS 여정손글씨");
   const glyph = font.charToGlyph("겨"),
     bounds = glyph.getBoundingBox();
   assert.equal(glyph.advanceWidth - (bounds.x2 - bounds.x1), -120);
   assert.equal(glyph.leftSideBearing, -60);
   assert.ok(font.charToGlyphIndex("힣") > 0);
   check(
-    "font generation is reused across tabs, and promo-gated OTF uses both OSNS names and current metrics",
+    "font generation is reused across tabs, and promo-gated OTF uses both WSNS names and current metrics",
   );
   await checkout.getByRole("button", { name: "닫기", exact: true }).click();
   await page.reload();

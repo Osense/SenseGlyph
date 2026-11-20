@@ -107,8 +107,8 @@ it("names a Japanese font in Japanese", () => {
     script: "ja",
   });
   const font = opentype.parse(named);
-  expect(font.names.fontFamily.ja).toBe("OSNS わたしの字");
-  expect(font.names.fontFamily.en).toBe("OSNS MyHand");
+  expect(font.names.fontFamily.ja).toBe("WSNS わたしの字");
+  expect(font.names.fontFamily.en).toBe("WSNS MyHand");
   expect(() =>
     nameOutputFont(result.ttf, {
       korean: "나의손글씨",

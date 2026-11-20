@@ -16,7 +16,8 @@ export const isLocalOutputName = (name: string, script: "ko" | "ja" = "ko") =>
       !name.endsWith(".")
     : isKoreanOutputName(name);
 
-export const OUTPUT_PREFIX = "OSNS ";
+/** 쎈스 글리프로 만든 폰트 표시. 파일 이름과 폰트 이름 앞에 붙는다. */
+export const OUTPUT_PREFIX = "WSNS ";
 export const isKoreanOutputName = (name: string) =>
   /[가-힣]/.test(name) &&
   !/\s/.test(name) &&

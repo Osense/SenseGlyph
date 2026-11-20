@@ -499,6 +499,12 @@ export default function FontOutput({
             )}
           </div>
         </div>
+        <p className="fw-prefix-note m-0 text-xs leading-relaxed break-keep text-muted-foreground">
+          {t(
+            "폰트 이름과 파일 이름 앞에는 {prefix}가 붙어요. 폰트의 권리는 모두 만든 사람에게 있지만, 나눠 주거나 이름을 바꿀 때도 {prefix}는 되도록 남겨 주세요.",
+            { prefix: OUTPUT_PREFIX.trim() },
+          )}
+        </p>
         {purchase ? (
           <p className="fw-purchased m-0 flex gap-2 rounded-lg bg-wash px-3.5 py-3 text-[13px] leading-relaxed text-foreground">
             <Lock className="mt-0.5 size-4 shrink-0 text-primary" />

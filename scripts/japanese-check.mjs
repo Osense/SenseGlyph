@@ -152,7 +152,7 @@ const font = opentype.parse(
 );
 check(
   "일본어 이름",
-  font.names.fontFamily.ja === "OSNS わたしの字",
+  font.names.fontFamily.ja === "WSNS わたしの字",
   font.names.fontFamily.ja,
 );
 const has = (c) => font.charToGlyphIndex(c) > 0;

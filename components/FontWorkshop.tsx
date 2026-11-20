@@ -366,8 +366,8 @@ export default function FontWorkshop({
         ...prep,
         settings: {
           ...prep.settings,
-          familyName: "OSNS Preview",
-          englishFamilyName: "OSNS Preview",
+          familyName: "WSNS Preview",
+          englishFamilyName: "WSNS Preview",
         },
       },
       fallbackFonts: fallbackFontUrls(project.settings.referenceFont, script),

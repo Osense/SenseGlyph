@@ -20,15 +20,15 @@ it("names Light, Regular and Bold as one family with matching flags", () => {
       weight: 300,
       bold: false,
       sub: "Regular",
-      family: "OSNS MyHand Light",
+      family: "WSNS MyHand Light",
     },
     Regular: {
       weight: 400,
       bold: false,
       sub: "Regular",
-      family: "OSNS MyHand",
+      family: "WSNS MyHand",
     },
-    Bold: { weight: 700, bold: true, sub: "Bold", family: "OSNS MyHand" },
+    Bold: { weight: 700, bold: true, sub: "Bold", family: "WSNS MyHand" },
   } as const;
   for (const style of ["Light", "Regular", "Bold"] as const) {
     const buffer = nameOutputFont(result.ttf, names, style);
@@ -36,9 +36,9 @@ it("names Light, Regular and Bold as one family with matching flags", () => {
     const font = opentype.parse(buffer);
     expect(font.names.fontFamily.en).toBe(expected[style].family);
     expect(font.names.fontSubfamily.en).toBe(expected[style].sub);
-    expect(font.names.postScriptName.en).toBe("OSNSMyHand-" + style);
+    expect(font.names.postScriptName.en).toBe("WSNSMyHand-" + style);
     if (style !== "Regular") {
-      expect((font.names as any).preferredFamily.en).toBe("OSNS MyHand");
+      expect((font.names as any).preferredFamily.en).toBe("WSNS MyHand");
       expect((font.names as any).preferredSubfamily.en).toBe(style);
     }
     const os2 = new DataView(sfntTable(buffer, "OS/2").buffer);
@@ -58,7 +58,7 @@ it("packs three weights into one zip", async () => {
   const zip = await convertFont({
     ...pair,
     format: "weights",
-    filename: "OSNS 내손글씨",
+    filename: "WSNS 내손글씨",
     names,
     light: pair,
     bold: pair,
@@ -67,8 +67,8 @@ it("packs three weights into one zip", async () => {
   expect(files).toEqual([
     "LICENSE.txt",
     ...["Bold", "Light", "Regular"].flatMap((s) => [
-      `OSNS 내손글씨-${s}.otf`,
-      `OSNS 내손글씨-${s}.ttf`,
+      `WSNS 내손글씨-${s}.otf`,
+      `WSNS 내손글씨-${s}.ttf`,
     ]),
   ]);
 }, 60_000);

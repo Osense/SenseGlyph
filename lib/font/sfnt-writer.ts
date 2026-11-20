@@ -765,7 +765,7 @@ export function writeFonts(
     w.i16(0);
     for (let i = 0; i < 10; i++) w.u8(0); // panose
     for (const r of ranges) w.u32(r);
-    w.tag("OSNS");
+    w.tag("WSNS"); // 제작 도구 표시(achVendID)
     w.u16(0x40); // REGULAR
     w.u16(Math.min(0xffff, Math.min(...codes)));
     w.u16(Math.min(0xffff, Math.max(...codes)));

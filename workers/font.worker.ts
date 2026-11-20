@@ -16,7 +16,7 @@ async function fallbackSources(
   fonts: BuildRequest["fallbackFonts"] = [],
 ): Promise<FallbackSource[]> {
   const sources: FallbackSource[] = [];
-  for (const { name, url } of fonts) {
+  for (const { name, url, frame } of fonts) {
     try {
       const response = await fetch(url);
       if (!response.ok) continue;
@@ -31,7 +31,7 @@ async function fallbackSources(
         ) as ArrayBuffer;
       }
       const bytes = buffer;
-      sources.push({ name, load: () => opentype.parse(bytes) });
+      sources.push({ name, frame, load: () => opentype.parse(bytes) });
     } catch {
       /* 견본을 못 받으면 그 견본만 건너뜁니다. */
     }

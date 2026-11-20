@@ -98,7 +98,11 @@ export interface Coverage {
 }
 export interface BuildRequest {
   /** 쓰지 않은 글자를 채울 견본 글꼴 파일 주소(앞에서부터 우선) */
-  fallbackFonts?: { name: string; url: string }[];
+  fallbackFonts?: {
+    name: string;
+    url: string;
+    frame?: readonly [number, number, number, number];
+  }[];
   /** false면 기본형 글자(한글·숫자·기호·영문)만 넣습니다. */
   includePremium?: boolean;
   project: FontProject;

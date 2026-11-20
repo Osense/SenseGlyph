@@ -71,7 +71,11 @@ function fallbackFontUrls(referenceId?: string, script: WritingScript = "ko") {
     new URL(BASE_PATH + "/fonts/" + file, window.location.href).href;
   const chosen = referenceFont(referenceId, script);
   return [
-    { name: chosen.name, url: url(chosen.file) },
+    {
+      name: chosen.name,
+      url: url(chosen.file),
+      frame: "frame" in chosen ? chosen.frame : undefined,
+    },
     // 일본어 견본에 없는 글자는 Klee One으로
     ...(script === "ja" && chosen.id !== "ja-klee"
       ? [{ name: "Klee One", url: url("KleeOne-Regular.woff2") }]

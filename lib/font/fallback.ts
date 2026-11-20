@@ -16,6 +16,9 @@ import type { LayoutPlan } from "./layout";
 export interface FallbackSource {
   name: string;
   load: () => opentype.Font | null;
+  /** 탈네모 견본: 글자마다 가운데로 옮기지 않고 모든 한글을 이 틀(글꼴 단위 x0·y0·x1·y1)에 둔다.
+   * 받침 없는 글자는 위에 붙고 아래가 비는 타자기 짜임과 고정 너비가 그대로 남는다. */
+  frame?: readonly [number, number, number, number];
 }
 
 /** 폰트를 채울 대상: 앱에서 쓰는 모든 글자 + (한글) 현대 한글 11,172자 / (일본어) 나머지 상용한자·전각 기호 */
@@ -133,8 +136,17 @@ export function fallbackGlyph(
     }
     const k = plan.bodySize / referenceHangulSize(font);
     const hangul = categoryForChar(char).startsWith("hangul");
-    const centerY = (box.y1 + box.y2) / 2;
-    const tx = (x: number) => Math.round((x - box.x1) * k + plan.sideBearing);
+    const frame =
+      source.frame && hangul
+        ? {
+            x1: source.frame[0],
+            y1: source.frame[1],
+            x2: source.frame[2],
+            y2: source.frame[3],
+          }
+        : box;
+    const centerY = (frame.y1 + frame.y2) / 2;
+    const tx = (x: number) => Math.round((x - frame.x1) * k + plan.sideBearing);
     const ty = (y: number) =>
       Math.round(
         hangul
@@ -155,7 +167,9 @@ export function fallbackGlyph(
       path,
       advanceWidth: Math.max(
         1,
-        Math.round((box.x2 - box.x1) * k + plan.sideBearing * 2),
+        Math.round(
+          (Math.max(box.x2, frame.x2) - frame.x1) * k + plan.sideBearing * 2,
+        ),
       ),
       top: ty(box.y2),
       bottom: ty(box.y1),

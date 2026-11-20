@@ -2,7 +2,7 @@ import { JA_PUNCT, SPECIAL_SYMBOLS } from "../data/charset";
 import { t } from "./i18n";
 import { METRICS } from "../config/metrics";
 import type { CharCategory, ProjectSettings } from "./types";
-import { referenceStack } from "./reference-fonts";
+import { referenceFont, referenceStack } from "./reference-fonts";
 import { referenceFit, referenceUsesFallback } from "./font/reference";
 import {
   categoryForChar,
@@ -133,6 +133,27 @@ export function drawSample(
       500 - mine.width / 2,
       500 + (ref.actualBoundingBoxAscent - ref.actualBoundingBoxDescent) / 2,
     );
+    ctx.globalAlpha = 1;
+    return;
+  }
+  // 탈네모 견본: 글자마다 가운데로 옮기지 않고, 한글 전체의 공통 틀을 칸 가운데에 둔다.
+  // (받침 없는 글자는 위에 붙고 아래가 빈다. 자모 판정 자료도 같은 틀로 만든다.)
+  const chosen = referenceFont(settings?.referenceFont);
+  if (
+    "frame" in chosen &&
+    /^[가-힣]$/.test(char) &&
+    !referenceUsesFallback(char, settings?.referenceFont)
+  ) {
+    const [x0, y0, x1, y1] = chosen.frame;
+    const scale = sampleFontSize(
+      (x1 - x0) * 0.84,
+      (y1 - y0) * 0.84,
+      true,
+      referenceFit(char, settings?.referenceFont),
+    );
+    const k = (840 * scale) / 1000;
+    ctx.font = 840 * scale + "px " + family;
+    ctx.fillText(char, 500 - ((x0 + x1) / 2) * k, 500 + ((y0 + y1) / 2) * k);
     ctx.globalAlpha = 1;
     return;
   }

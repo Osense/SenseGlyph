@@ -557,6 +557,42 @@ def jamo_priors(glyphs, cmap):
     return priors
 
 
+# 탈네모 견본(reference-fonts.ts 에 frame: [x0, y0, x1, y1] 이 있는 글꼴): 모든 글자를 같은 틀에 둔다.
+FIXED_FRAMES = {k: tuple(float(v) for v in f.split(','))
+                for k, f in re.findall(r'id:\s*"([^"]+)"[^}]*?frame:\s*\[([^\]]+)\]',
+                                        Path('lib/reference-fonts.ts').read_text(encoding='utf-8'))}
+
+
+def to_fixed_frame(entry, glyph_box, frame):
+    """글자 범위 기준으로 만든 정보(size·boxes·regions)를 공통 틀 기준으로 옮긴다."""
+    gx0, gy0, gx1, gy1 = glyph_box; fx0, fy0, fx1, fy1 = frame
+    gw, gh, fw, fh = gx1 - gx0, gy1 - gy0, fx1 - fx0, fy1 - fy0
+    boxes = {}
+    for name, (bx, by, bw, bh) in entry['boxes'].items():
+        x = gx0 + bx * gw; top = gy1 - by * gh  # 글꼴 좌표
+        boxes[name] = [round((x - fx0) / fw, 5), round((fy1 - top) / fh, 5), round(bw * gw / fw, 5), round(bh * gh / fh, 5)]
+    rle = entry['regions']; flat = []
+    for i in range(0, len(rle), 2): flat += [rle[i + 1]] * rle[i]
+    old = np.array(flat, dtype=np.uint8).reshape(N, N)
+    cell = lambda c, n: (c + 0.5 - 1) / (n - 3)  # 저장 격자 칸 가운데 → 0~1(rasterise 와 같은 여백)
+    new = np.zeros((N, N), dtype=np.uint8)
+    for r in range(N):
+        fy = fy1 - cell(r, N) * fh
+        gr = (gy1 - fy) / gh * (N - 3) + 1 - 0.5
+        for c in range(N):
+            fx = fx0 + cell(c, N) * fw
+            gc = (fx - gx0) / gw * (N - 3) + 1 - 0.5
+            inside = 0 <= gr < N and 0 <= gc < N
+            value = old[int(np.clip(round(gr), 0, N - 1)), int(np.clip(round(gc), 0, N - 1))]
+            new[r, c] = value if inside else ((value - 1) % 3) + 1  # 틀 밖은 가까운 영역만, 잉크 없음
+    out = new.ravel(); runs = []; last = int(out[0]); count = 0
+    for value in out:
+        if value == last: count += 1
+        else: runs.extend([count, last]); last = int(value); count = 1
+    runs.extend([count, last])
+    return {'size': [round(fw, 4), round(fh, 4)], 'fit': entry['fit'], 'boxes': boxes, 'regions': runs}
+
+
 def build_font(job):
     key, file, chars, preview = job
     font = TTFont('public/fonts/' + file)
@@ -568,6 +604,10 @@ def build_font(job):
             continue
         try:
             output[char], image = build(char, glyphs, cmap, priors)
+            if key in FIXED_FRAMES:
+                pts = np.array([p for c in outline(glyphs, cmap, char) for p in c], dtype=float)
+                box = (*pts.min(axis=0), *pts.max(axis=0))
+                output[char] = to_fixed_frame(output[char], box, FIXED_FRAMES[key])
         except ValueError as error:
             if key == 'fallback':
                 raise ValueError(f'{key}: {char}: {error}') from error
@@ -575,6 +615,9 @@ def build_font(job):
             continue
         if preview:
             previews[char] = image
+    if key in FIXED_FRAMES and output:  # 틀 전체에 맞춘 다이아몬드 여유: 모든 글자가 같은 크기로 그려지게
+        fit = max(e['fit'] for e in output.values())
+        for e in output.values(): e['fit'] = fit
     print(key, len(output), flush=True)
     return key, output, previews
 

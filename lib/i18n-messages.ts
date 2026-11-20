@@ -734,7 +734,9 @@ export const JA: Record<string, string> = {
  "아직 쓴 글자가 없어요": "まだ書いた字がありません",
  "브러시 고르기": "筆を選ぶ",
  "견본 고르기": "見本を選ぶ",
- "폰트 이름과 파일 이름 앞에는 {prefix}가 붙어요. 폰트의 권리는 모두 만든 사람에게 있지만, 나눠 주거나 이름을 바꿀 때도 {prefix}는 되도록 남겨 주세요.": "フォント名とファイル名の先頭には {prefix} が付きます。フォントの権利はすべて作った人のものですが、配布したり名前を変えたりするときも、{prefix} はできるだけ残してください。"
+ "폰트 이름과 파일 이름 앞에는 {prefix}가 붙어요. 폰트의 권리는 모두 만든 사람에게 있지만, 나눠 주거나 이름을 바꿀 때도 {prefix}는 되도록 남겨 주세요.": "フォント名とファイル名の先頭には {prefix} が付きます。フォントの権利はすべて作った人のものですが、配布したり名前を変えたりするときも、{prefix} はできるだけ残してください。",
+ "네모를 벗어난 타자기 글씨": "四角を抜け出したタイプライター文字",
+ "WSNS 사각탈출": "WSNS 四角脱出"
 };
 export const EN: Record<string, string> = {
  " 폰트 이름": " font name",
@@ -1471,5 +1473,7 @@ export const EN: Record<string, string> = {
  "아직 쓴 글자가 없어요": "Nothing written yet",
  "브러시 고르기": "Choosing a brush",
  "견본 고르기": "Choosing a sample",
- "폰트 이름과 파일 이름 앞에는 {prefix}가 붙어요. 폰트의 권리는 모두 만든 사람에게 있지만, 나눠 주거나 이름을 바꿀 때도 {prefix}는 되도록 남겨 주세요.": "Font and file names start with {prefix}. Every right to the font is yours, but please keep {prefix} at the front where you can, even when you share or rename it."
+ "폰트 이름과 파일 이름 앞에는 {prefix}가 붙어요. 폰트의 권리는 모두 만든 사람에게 있지만, 나눠 주거나 이름을 바꿀 때도 {prefix}는 되도록 남겨 주세요.": "Font and file names start with {prefix}. Every right to the font is yours, but please keep {prefix} at the front where you can, even when you share or rename it.",
+ "네모를 벗어난 타자기 글씨": "Typewriter letters out of the square",
+ "WSNS 사각탈출": "WSNS Sagaktalchul"
 };

@@ -3,8 +3,8 @@
 명조 자모(고운바탕, OFL)를 떼어 내어 옛 세벌식 타자기의 규칙대로 찍는다.
 - 초성 2벌: 왼쪽(세로·섞인 모음과 함께, ‘긩’ 짜임) / 위(가로 모음과 함께, ‘긍’ 짜임). 같은 벌 안에서는
   어느 모음과 만나도 모양·자리가 같다.
-- 중성 2벌(공병우 세벌식 타자기처럼): 받침 없는 글자의 긴 모음 / 받침 있는 글자의 짧은 모음.
-  세로 모음(ㅏ ㅐ ㅑ ㅒ ㅓ ㅔ ㅕ ㅖ ㅣ)과 가로 모음(ㅗ ㅛ ㅜ ㅠ ㅡ)은 ‘아·소’(긴)·‘앙·송’(짧은) 짜임에서 떼어 온다.
+- 중성 1벌: 받침 유무와 상관없이 같은 모양·같은 자리. 세로 모음(ㅏ ㅐ ㅑ ㅒ ㅓ ㅔ ㅕ ㅖ ㅣ)은 ‘앙·엉…’,
+  가로 모음(ㅗ ㅛ ㅜ ㅠ ㅡ)은 ‘송·숭…’ 짜임에서 떼어 온다.
   섞인 모음은 타자기처럼 ‘짧은 가로 모음 + 세로 모음’을 겹쳐 만든다: ㅘ의 ㅏ는 ㅏ와 똑같다.
 - 종성 1벌(‘아+받침’ 짜임). 받침은 모양을 그대로 두고 그 글자의 초성·중성 바로 아래에 놓는다.
   받침이 없으면 아래가 비어 글자 아래 끝이 들쭉날쭉한 탈사각이 된다. 모든 글자 너비가 같다.
@@ -191,6 +191,16 @@ def clearance(g, others):
     return min((g.distance(o) for o in others if not o.is_empty), default=1e9)
 
 
+def bar_middle(g):
+    """가로획이 가장 넓게 지나가는 높이"""
+    x0, y0, x1, y1 = g.bounds
+    best, best_y = -1, y0
+    for y in range(int(y0), int(y1), 3):
+        a = g.intersection(rect(x0 - 1, y, x1 + 1, y + 3)).area
+        if a > best: best, best_y = a, y
+    return best_y + 1.5
+
+
 def snug(g, others, axis, gap=GAP, lo=-260, hi=260):
     """g 를 axis 방향(x: 오른쪽이 +, y: 아래가 -)으로 옮겨 others 모두에 gap 만큼 떨어져 바짝 붙인다.
     x: 가장 왼쪽 자리, y: 가장 높은 자리. 옮긴 거리를 돌려준다."""
@@ -220,27 +230,28 @@ def make_jamo():
     left_all = [cho[(i, "left")] for i in range(len(CHO))]
     top_all = [cho[(i, "top")] for i in range(len(CHO))]
 
+    # 모음 1벌: 받침 유무와 상관없이 같은 모양·같은 자리(타자기)
     jung = {}
-    for final in (False, True):
-        vertical = {}
-        for v in VERTICAL:  # 왼쪽 초성 어느 것과도 닿지 않게 오른쪽으로
-            g = vertical_vowel(v, final)
-            dx = min(snug(g, left_all, "x"), RIGHT_EDGE - g.bounds[2])  # 글자 너비를 넘지 않게
-            g = affinity.translate(g, dx, 0)
-            if clearance(g, left_all) < GAP:  # 너비 안에서 안 떨어지면 왼쪽 가지 끝만 줄인다(넓은 겹자음 옆 ㅓ·ㅔ)
-                g = trim_left(g, left_all)
-            vertical[v] = g
-            jung[(v, final)] = vertical[v]
-        for v in HORIZONTAL:  # 위 초성 어느 것과도 닿지 않게 아래로
-            g = horizontal_vowel(v, final)
-            jung[(v, final)] = affinity.translate(g, 0, snug(g, top_all, "y"))
-        for v, (h, vv) in MIXED.items():  # 섞인 모음: 세로 모음은 그대로, 짧은 가로 모음만 왼쪽 초성 아래로
-            stem = vertical[vv]
-            bar = placed_bar(h, stem, final)
-            bar = affinity.translate(bar, 0, snug(bar, left_all, "y"))
-            if final and stem.bounds[1] > bar.bounds[1] + 10:
-                stem = jung[(vv, False)]  # 짧은 기둥이 가로 모음까지 내려오지 않으면 긴 기둥을 쓴다
-            jung[(v, final)] = union([bar, stem])
+    for v in VERTICAL:  # 왼쪽 초성 어느 것과도 닿지 않게 오른쪽으로
+        g = vertical_vowel(v, True)
+        dx = min(snug(g, left_all, "x"), RIGHT_EDGE - g.bounds[2])  # 글자 너비를 넘지 않게
+        g = affinity.translate(g, dx, 0)
+        if clearance(g, left_all) < GAP:  # 너비 안에서 안 떨어지면 왼쪽 가지 끝만 줄인다(넓은 겹자음 옆 ㅓ·ㅔ)
+            g = trim_left(g, left_all)
+        jung[v] = g
+    for v in HORIZONTAL:  # 위 초성 어느 것과도 닿지 않게 아래로
+        g = horizontal_vowel(v, True)
+        jung[v] = affinity.translate(g, 0, snug(g, top_all, "y"))
+    for v, (h, vv) in MIXED.items():
+        # 섞인 모음 = 짧은 가로 모음 + 세로 모음(모양 그대로). 가로 모음은 왼쪽 초성 아래에 붙이고,
+        # 세로 모음이 가로획까지 내려오지 않으면 세로 모음을 모양 그대로 아래로 옮긴다.
+        stem = jung[vv]
+        bar = placed_bar(h, stem, True)
+        bar = affinity.translate(bar, 0, snug(bar, left_all, "y"))
+        reach = bar_middle(bar) - 15
+        if stem.bounds[1] > reach:
+            stem = affinity.translate(stem, 0, reach - stem.bounds[1])
+        jung[v] = union([bar, stem])
     jong = {}
     for ti in range(1, len(JONG)):
         ps = pieces(syllable(IEUNG, 0, ti))
@@ -267,9 +278,7 @@ def build():
     glyphs = {".notdef": notdef.glyph(), "space": TTGlyphPen(None).glyph()}
     cmap_out = {0x20: "space", 0x3000: "space"}
     for (i, f), g in cho.items(): glyphs[f"cho{i}.{f}"] = tt_glyph(g)
-    for i, v in enumerate(JUNG):
-        glyphs[f"jung{i}"] = tt_glyph(jung[(v, False)])
-        glyphs[f"jung{i}.j"] = tt_glyph(jung[(v, True)])
+    for i, v in enumerate(JUNG): glyphs[f"jung{i}"] = tt_glyph(jung[v])
     for ti, g in jong.items(): glyphs[f"jong{ti}"] = tt_glyph(g)
 
     parts_of_char = {}
@@ -278,10 +287,10 @@ def build():
         ci, vi, ti = n // 588, (n // 28) % 21, n % 28
         v = JUNG[vi]
         form = "top" if v in HORIZONTAL else "left"
-        comps = [(f"cho{ci}.{form}", 0), (f"jung{vi}" + (".j" if ti else ""), 0)]
-        geoms = [cho[(ci, form)], jung[(v, bool(ti))]]
+        comps = [(f"cho{ci}.{form}", 0), (f"jung{vi}", 0)]
+        geoms = [cho[(ci, form)], jung[v]]
         if ti:
-            dy = round(min(lows_cho[(ci, form)], lows_jung[(v, True)]) - JONG_GAP - jong[ti].bounds[3])
+            dy = round(min(lows_cho[(ci, form)], lows_jung[v]) - JONG_GAP - jong[ti].bounds[3])
             comps.append((f"jong{ti}", dy)); geoms.append(affinity.translate(jong[ti], 0, dy))
         pen = TTGlyphPen(glyphs)
         for name, dy in comps: pen.addComponent(name, (1, 0, 0, 1, 0, dy))

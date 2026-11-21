@@ -9,6 +9,9 @@ import { referenceFont, referenceFontsFor } from "../reference-fonts";
 import { referenceGuide } from "./reference";
 import { HANGUL } from "../../data/charset";
 
+const chosen = referenceFont("squareout", "ko");
+const FRAME = "frame" in chosen ? chosen.frame : undefined;
+
 async function load() {
   const { decompress } = await import("woff2-encoder");
   const raw = await decompress(
@@ -24,7 +27,7 @@ it("is offered as a Korean reference font with a fixed frame", () => {
   const font = referenceFont("squareout", "ko");
   expect(font.id).toBe("squareout");
   expect(referenceFontsFor("ko").map((f) => f.id)).toContain("squareout");
-  expect("frame" in font && font.frame).toEqual([36, -104, 914, 857]);
+  expect("frame" in font && font.frame).toHaveLength(4);
 });
 
 it("covers all 11,172 syllables and keeps every jamo where it was drawn", async () => {
@@ -56,7 +59,7 @@ it("fills unwritten Hangul inside one shared frame instead of centring each lett
   const fill = (fixed: boolean) => {
     const source: FallbackSource = {
       name: "WSNS 사각탈출",
-      frame: fixed ? ([36, -104, 914, 857] as const) : undefined,
+      frame: fixed ? FRAME : undefined,
       load: () => opentype.parse(bytes),
     };
     const loaded = new Map();

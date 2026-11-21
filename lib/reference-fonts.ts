@@ -52,17 +52,18 @@ export const REFERENCE_FONTS = [
     name: "갈무리11",
     file: "Galmuri11.woff2",
   },
-  // WSNS가 직접 만든 탈네모 견본(OFL). 자모가 짝에 따라 모양을 바꾸지 않아 조합이 예측대로 나온다.
+  // WSNS 탈네모 견본(OFL): 고운바탕의 명조 자모를 세벌식 타자기처럼 정해진 자리에 놓았다.
+  // 자모가 짝에 따라 모양을 바꾸지 않아 조합이 예측대로 나온다.
   // scripts/build-sagaktalchul.py 로 만든다.
   {
     id: "squareout",
     family: "WSNS Sagaktalchul",
-    label: "네모를 벗어난 타자기 글씨",
+    label: "네모를 벗어난 타자기 명조",
     name: "WSNS 사각탈출",
     file: "WSNS-Sagaktalchul.woff2",
     /** 탈네모: 글자마다 가운데로 옮기지 않고 모든 한글을 같은 틀에 둔다(견본 그리기·자모 판정·빈 글자 채우기).
      * frame = 한글 11,172자 전체의 범위(글꼴 단위, x0·y0·x1·y1, y 위쪽) */
-    frame: [36, -104, 914, 857],
+    frame: [15, -330, 915, 883],
   },
   // 일본어 견본(OFL, 가나·상용한자 2,136자로 줄인 파일)
   {

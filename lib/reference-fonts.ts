@@ -58,12 +58,12 @@ export const REFERENCE_FONTS = [
   {
     id: "squareout",
     family: "WSNS Sagaktalchul",
-    label: "네모를 벗어난 타자기 명조",
+    label: "잉크 번진 타자기 픽셀",
     name: "WSNS 사각탈출",
     file: "WSNS-Sagaktalchul.woff2",
     /** 탈네모: 글자마다 가운데로 옮기지 않고 모든 한글을 같은 틀에 둔다(견본 그리기·자모 판정·빈 글자 채우기).
      * frame = 한글 11,172자 전체의 범위(글꼴 단위, x0·y0·x1·y1, y 위쪽) */
-    frame: [45, -551, 955, 860],
+    frame: [50, -550, 950, 875],
   },
   // 일본어 견본(OFL, 가나·상용한자 2,136자로 줄인 파일)
   {

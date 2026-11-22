@@ -375,7 +375,11 @@ export default function JourneySetup({
                   </span>
                 </span>
                 <span
-                  className="font-choice-sentence block truncate text-[clamp(20px,2.1vw,28px)] leading-snug text-foreground max-sm:text-[19px]"
+                  className={cn(
+                    "font-choice-sentence block truncate text-[clamp(20px,2.1vw,28px)] leading-snug text-foreground max-sm:text-[19px]",
+                    // 탈네모 견본: 받침이 아래로 길게 내려와서 줄 높이를 넉넉히(잘리지 않게)
+                    "frame" in f && "pt-0.5 pb-[0.45em] leading-[1.6]",
+                  )}
                   style={{ fontFamily: referenceStack(f.id) }}
                 >
                   {sentence || SENTENCE[script]}

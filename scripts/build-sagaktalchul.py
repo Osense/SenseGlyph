@@ -1,4 +1,7 @@
-"""WSNS 사각탈출 — 쎈스 글리프 견본용 탈사각(세벌식 타자기식) 명조 한글.
+"""WSNS 사각탈출 — 쎈스 글리프 견본용 탈사각(세벌식 타자기식) 픽셀 명조 한글.
+
+타자기 활자가 종이에 찍힌 느낌: 모든 자모를 한 픽셀 격자(PX)에 찍고, 글쇠(자모)마다 잉크 상태가 달라
+어떤 글쇠는 진하게 번지고 어떤 글쇠는 흐리게 찍힌다(같은 글쇠는 어느 글자에서나 같다).
 
 명조 자모(고운바탕, OFL)를 떼어 내어 옛 세벌식 타자기의 규칙대로 찍는다.
 - 초성 1벌·중성 1벌·종성 1벌. 셋 다 모든 글자에서 같은 자리에 찍힌다(합성할 때 옮기지 않는다).
@@ -214,7 +217,7 @@ def tt_glyph(geom):
     pen = TTGlyphPen(None)
     for g in getattr(geom, "geoms", [geom]):
         if g.is_empty: continue
-        g = orient(g.simplify(0.5), sign=-1.0)  # 바깥 시계, 구멍 반시계(TrueType)
+        g = orient(g.simplify(0.1), sign=-1.0)  # 바깥 시계, 구멍 반시계(TrueType)
         for ring in [g.exterior, *g.interiors]:
             pts = [(round(x), round(y)) for x, y in ring.coords[:-1]]
             pts = [q for i, q in enumerate(pts) if q != pts[i - 1]]
@@ -305,8 +308,55 @@ def make_jamo():
     return cho, jung, jong
 
 
+# ---------------------------------------------------------------- 픽셀 + 잉크(타자기 활자 느낌)
+PX = 25            # 픽셀 한 칸(글꼴 단위). 모든 자모가 같은 격자에 찍힌다
+FILL = 0.42        # 칸이 이만큼 덮이면 찍는다
+import random
+
+
+def pixelize(geom, seed):
+    """자모를 픽셀 격자에 찍는다. 글쇠마다 잉크 상태가 달라 진하게 번지거나 흐리게 찍힌다.
+    같은 글쇠는 어느 글자에서나 똑같이 찍힌다(seed 고정)."""
+    if geom.is_empty: return geom
+    x0, y0, x1, y1 = geom.bounds
+    c0, r0 = int(x0 // PX) - 1, int(y0 // PX) - 1
+    c1, r1 = int(x1 // PX) + 2, int(y1 // PX) + 2
+    S = 4  # 칸마다 4×4 표본
+    W, H = (c1 - c0) * S, (r1 - r0) * S
+    img = Image.new("L", (W, H), 0); d = ImageDraw.Draw(img)
+    tp = lambda x, y: ((x / PX - c0) * S, (r1 - y / PX) * S)
+    for g in getattr(geom, "geoms", [geom]):
+        d.polygon([tp(x, y) for x, y in g.exterior.coords], fill=255)
+        for h in g.interiors: d.polygon([tp(x, y) for x, y in h.coords], fill=0)
+    a = (np.asarray(img) > 127).reshape(r1 - r0, S, c1 - c0, S).mean(axis=(1, 3))
+    on = a >= FILL
+    seed = sum((i + 1) * ord(ch) for i, ch in enumerate(str(seed)))
+    rnd = random.Random(seed)
+    ink = rnd.random()
+    rows, cols = on.shape
+    def edge(r, c):
+        return any(not (0 <= r + dr < rows and 0 <= c + dc < cols and on[r + dr, c + dc])
+                   for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)))
+    if ink < 0.22:    # 진하게: 덜 덮인 칸까지 번진다
+        on |= (a >= 0.18) & (np.random.default_rng(seed).random(a.shape) < 0.55)
+    elif ink > 0.80:  # 흐리게: 가장자리 칸이 조금 빠진다
+        drop = [(r, c) for r in range(rows) for c in range(cols) if on[r, c] and edge(r, c) and a[r, c] < 0.8]
+        for r, c in drop:
+            if rnd.random() < 0.35: on[r, c] = False
+    cells = [rect((c0 + c) * PX, (r1 - r - 1) * PX, (c0 + c + 1) * PX, (r1 - r) * PX)
+             for r in range(rows) for c in range(cols) if on[r, c]]
+    return unary_union(cells).buffer(0)
+
+
+def pixel_jamo(cho, jung, jong):
+    cho = {k: pixelize(g, f"cho{k}") for k, g in cho.items()}
+    jung = {k: pixelize(g, f"jung{k}") for k, g in jung.items()}
+    jong = {k: pixelize(g, f"jong{k}") for k, g in jong.items()}
+    return cho, jung, jong
+
+
 def build():
-    cho, jung, jong = make_jamo()
+    cho, jung, jong = pixel_jamo(*make_jamo())
     notdef = TTGlyphPen(None)
     for bx in [((100, -60), (100, 800), (900, 800), (900, -60)), ((170, 10), (830, 10), (830, 730), (170, 730))]:
         notdef.moveTo(bx[0]); [notdef.lineTo(p) for p in bx[1:]]; notdef.closePath()

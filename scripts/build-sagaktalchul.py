@@ -37,7 +37,9 @@ SOURCE = Path("public/fonts/GowunBatang-Regular.woff")
 OUT = Path("public/fonts/WSNS-Sagaktalchul.woff2")
 ADV = 1000
 GAP = 34          # 자모 사이 최소 틈(글꼴 단위)
-JONG_GAP = 40     # 받침과 그 위 자모 사이
+JONG_GAP = 30     # 받침과 그 위 자모 사이
+TICK_UP = 112      # ㅗ·ㅛ 기둥: 가로획 가운데에서 위로 이만큼까지
+TICK_DOWN = 120    # ㅜ·ㅠ 기둥: 가로획 가운데에서 아래로 이만큼까지
 RIGHT_EDGE = 955  # 모음이 넘지 않을 오른쪽 끝(글자 너비 1000)
 
 CHO = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ"
@@ -263,9 +265,13 @@ def make_jamo():
     cho_right = max(g.bounds[2] for g in chos)
     cho_bottom = min(g.bounds[1] for g in chos)
 
-    # 가로 모음 높이: ㅗ·ㅛ 기둥 끝이 초성 아래로 GAP 만큼 떨어지게
-    horizontal = {v: horizontal_vowel(v, True) for v in HORIZONTAL}
-    bars = {h: short_bar(h, True) for h in "ㅗㅜㅡ"}
+    # 가로 모음: ㅗ·ㅛ·ㅜ·ㅠ 기둥을 짧게 잘라(TICK) 초성·중성·종성이 오밀조밀 모이게.
+    # 가로획은 ㅗ 기둥 끝이 초성 아래로 GAP 만큼 떨어지는 높이에 둔다.
+    def short_ticks(g):
+        mid = bar_middle(g); x0, y0, x1, y1 = g.bounds
+        return g.intersection(rect(x0 - 1, mid - TICK_DOWN, x1 + 1, mid + TICK_UP))
+    horizontal = {v: short_ticks(horizontal_vowel(v, True)) for v in HORIZONTAL}
+    bars = {h: short_ticks(short_bar(h, True)) for h in "ㅗㅜㅡ"}
     rise = max(g.bounds[3] - bar_middle(g) for g in [*horizontal.values(), *bars.values()])
     bar_y = cho_bottom - GAP - rise
     jung = {}

@@ -5,6 +5,7 @@ import {
   correctionAmounts,
   hasCorrection,
   medianPressure,
+  ownLayouts,
   vowelNorms,
   writerSlant,
 } from "./beautify";
@@ -12,7 +13,7 @@ import { decompose, slotKeys, vowelType } from "../hangul";
 import { activeSeparation, effectiveSample } from "./editing";
 import { cachedJudgement } from "./judge";
 import { arrangePieces, relationsOf, type Piece } from "./relations";
-import { alignPieces, averagePieces } from "./balance";
+import { alignPieces, averagePieces, ownChoOffset } from "./balance";
 import {
   blendStrokes,
   deriveMissingSlots,
@@ -253,20 +254,28 @@ export function correctHandwriting(
       return vowel && jung ? [{ vowel, jung: jung.strokes }] : [];
     }),
   );
+  // 내 평소 자모 배치(같은 짜임끼리의 중앙값). 자모 배치 정돈은 견본 글꼴이 아니라 이쪽으로 당긴다.
+  const own = ownLayouts(
+    [...base.parts].flatMap(([char, list]) =>
+      decompose(char) ? [{ layout: layoutKey(char), parts: list }] : [],
+    ),
+  );
   const direct = new Map<string, Stroke[]>();
   const parts = new Map<string, ComponentSample[]>();
   const pools = new Map<string, ComponentSample[]>();
   for (const [char, fitted] of base.direct) {
     const sample = project.samples[char];
-    const own = base.parts.get(char) ?? [];
+    const mine = base.parts.get(char) ?? [];
     const partOf = new Map<string, Part>();
-    for (const part of own)
+    for (const part of mine)
       for (const stroke of part.strokes) partOf.set(stroke.id, part.part);
     const strokes = beautifyStrokes(fitted, {
       amounts,
       category: sample.category,
       partOf,
-      boxes: referenceGuide(char, project.settings)?.boxes,
+      boxes:
+        (decompose(char) && own.get(layoutKey(char))) ||
+        referenceGuide(char, project.settings)?.boxes,
       pressureTarget,
       slant,
       vowel: vowelOf(char),
@@ -275,8 +284,8 @@ export function correctHandwriting(
     const byId = new Map(strokes.map((stroke) => [stroke.id, stroke]));
     const corrected =
       strokes === fitted
-        ? own
-        : own.map((part) => ({
+        ? mine
+        : mine.map((part) => ({
             ...part,
             strokes: part.strokes.map(
               (stroke) => byId.get(stroke.id) ?? stroke,
@@ -463,6 +472,30 @@ function placeComponent(
   }));
 }
 
+/** 내 글씨에서 가로·섞임 모음 위 초성이 짧은 기둥보다 치우친 정도(한 번만 계산) */
+const choOffsets = new WeakMap<Map<string, ComponentSample[]>, number | undefined>();
+function choOffsetOf(pools: Map<string, ComponentSample[]>) {
+  if (choOffsets.has(pools)) return choOffsets.get(pools);
+  const byChar = new Map<string, { cho?: Stroke[]; jung?: Stroke[] }>();
+  for (const pool of pools.values())
+    for (const c of pool) {
+      if (c.derived || c.part === "jong") continue;
+      const d = decompose(c.char);
+      if (!d || vowelType(d.jung) === "V") continue;
+      const entry = byChar.get(c.char) ?? {};
+      entry[c.part] = c.strokes;
+      byChar.set(c.char, entry);
+    }
+  const value = ownChoOffset(
+    [...byChar].flatMap(([char, { cho, jung }]) => {
+      const frame = sourceFrame(pools, char);
+      return cho && jung && frame ? [{ cho, jung, frame }] : [];
+    }),
+  );
+  choOffsets.set(pools, value);
+  return value;
+}
+
 /** Exact contextual slots already share the same writing layout and em coordinates. */
 export function composeGlyph(
   char: string,
@@ -566,7 +599,13 @@ export function composeGlyph(
   // 자리만 맞춘 조각들을 내 글씨에서 배운 관계(간격·맞춤·크기)대로 다시 쌓는다(lib/font/relations.ts).
   const arranged = arrangePieces(char, averaged, relationsOf(pools), target);
   // 균형 보정 2: 초성–모음 기둥 맞춤, 받침 가운데(강도만큼)
-  return alignPieces(char, arranged, target, balance).flatMap(
+  return alignPieces(
+    char,
+    arranged,
+    target,
+    balance,
+    choOffsetOf(pools),
+  ).flatMap(
     (piece) => piece.strokes,
   );
 }

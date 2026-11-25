@@ -90,7 +90,7 @@ const PRESETS = [
   { value: 25, label: "살짝" },
   { value: 50, label: "단정하게" },
   { value: 80, label: "많이" },
-  { value: 100, label: "견본처럼" },
+  { value: 100, label: "가장 고르게" },
 ];
 const DETAIL_LABELS: Record<
   (typeof CORRECTION_KEYS)[number],
@@ -98,18 +98,18 @@ const DETAIL_LABELS: Record<
 > = {
   layout: {
     label: "자모 배치",
-    note: "초성·중성·종성의 위치와 비율을 견본 쪽으로",
+    note: "초성·중성·종성의 위치와 비율을 내가 평소 쓰는 배치로",
   },
   straighten: {
     label: "기울기",
     note: "거의 가로·세로인 획만 반듯하게",
   },
   smooth: { label: "떨림", note: "획의 잔떨림을 부드럽게" },
-  size: { label: "글자 크기", note: "작게 쓴 글자를 보통 크기 쪽으로" },
+  size: { label: "글자 크기", note: "같은 짜임 글자끼리 크기·폭을 고르게" },
   weight: { label: "굵기 고르게", note: "획마다 다른 필압을 고르게" },
   balance: {
     label: "자모 균형",
-    note: "다른 글자에서 빌려 온 자모의 크기·위치를 평균에 맞추고, 초성을 모음 기둥에 맞춰요",
+    note: "다른 글자에서 빌려 온 자모의 크기·위치를 평균에 맞추고, 크게 어긋난 초성·받침만 바로잡아요",
   },
 };
 
@@ -142,7 +142,8 @@ export default function FontWorkshop({
   // 프로젝트 이름을 바꿔도(결제 후 이름 기록 포함) 만들어 둔 폰트가 무효가 되지 않게
   // 기본값은 프로젝트가 바뀔 때만 새로 만든다.
   const defaults = useMemo(
-    () => defaultPreparation(project.name),
+    // 이미 결제한 프로젝트는 예전 기본값(정돈 0) 그대로 다시 받게 한다.
+    () => defaultPreparation(project.name, project.purchase ? 0 : undefined),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [project.id],
   );
@@ -1024,7 +1025,7 @@ export default function FontWorkshop({
                   </div>
                   <p className="m-0 text-[13.5px] leading-relaxed break-keep text-muted-foreground">
                     {t(
-                      "0%는 쓴 획 그대로예요. 올릴수록 자모 배치와 기울기를 견본 글꼴 쪽으로 정돈하지만, 내 글씨의 획과 개성은 남겨요.",
+                      "0%는 쓴 획 그대로예요. 올릴수록 글자마다 들쭉날쭉한 크기·폭·자모 배치를 내가 평소 쓰는 모양으로 고르게 맞춰요. 견본 글꼴을 따라 하지 않으니 내 글씨의 맛은 그대로 남아요.",
                     )}
                   </p>
                   <Segmented

@@ -24,14 +24,13 @@ const PRICING: Docs = {
         title: "상품",
         items: [
           "한글 폰트 1벌: {price} (부가가치세 포함)",
-          "일본어 폰트 1벌(일본어 팩): {price} (부가가치세 포함)",
           "결제 단위: 프로젝트(폰트) 하나당 한 번이에요. 추가 요금이나 정기 결제는 없어요.",
         ],
       },
       {
         title: "포함 내용",
         items: [
-          "쓴 글자와, 쓴 자모를 조합해 만든 현대 한글 11,172자(일본어 프로젝트는 쓴 가나·한자 등)",
+          "쓴 글자와, 쓴 자모를 조합해 만든 현대 한글 11,172자",
           "굵기 3종(Light·Regular·Bold)과 TTF·OTF·웹폰트(WOFF2) 형식",
           "같은 폰트는 계정에서 기간 제한 없이 다시 내려받을 수 있어요(계정 기능을 연 뒤부터).",
           "쓰지 않은 글자는 고른 견본 글꼴(SIL OFL 1.1)의 모양으로 채워지고, 내려받기 전에 경고로 알려 드려요.",
@@ -70,14 +69,13 @@ const PRICING: Docs = {
         title: "商品",
         items: [
           "ハングルフォント1書体：{price}（付加価値税込み）",
-          "日本語フォント1書体（日本語パック）：{price}（付加価値税込み）",
           "お支払い単位：プロジェクト（フォント）1つにつき1回です。追加料金や定期課金はありません。",
         ],
       },
       {
         title: "含まれるもの",
         items: [
-          "書いた文字と、書いた字母を組み合わせた現代ハングル11,172字（日本語プロジェクトは書いた仮名・漢字など）",
+          "書いた文字と、書いた字母を組み合わせた現代ハングル11,172字",
           "太さ3種（Light・Regular・Bold）と TTF・OTF・ウェブフォント（WOFF2）形式",
           "同じフォントはアカウントから期限なく再ダウンロードできます（アカウント機能の提供開始後）。",
           "書かなかった文字は、選んだ見本フォント（SIL OFL 1.1）の形で補われ、ダウンロード前に警告でお知らせします。",
@@ -116,14 +114,13 @@ const PRICING: Docs = {
         title: "Product",
         items: [
           "Korean (Hangul) font: {price} (VAT included)",
-          "Japanese font (Japanese pack): {price} (VAT included)",
           "One payment per project (font). No extra fees or subscriptions.",
         ],
       },
       {
         title: "What's included",
         items: [
-          "The characters you wrote, plus all 11,172 modern Hangul syllables composed from the parts you wrote (for Japanese projects, the kana, kanji and other characters you wrote)",
+          "The characters you wrote, plus all 11,172 modern Hangul syllables composed from the parts you wrote",
           "Three weights (Light, Regular, Bold) in TTF, OTF and web font (WOFF2) formats",
           "Unlimited re-downloads of the same font from your account (once accounts are available).",
           "Characters you did not write are filled in from the chosen sample font (SIL OFL 1.1), and you are warned before downloading.",

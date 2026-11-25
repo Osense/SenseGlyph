@@ -119,11 +119,12 @@ it("leaves composition untouched at strength 0", () => {
   expect(zero).toEqual(plain);
 });
 
-it("aligns the initial consonant over the ㅜ stem of ㅟ", () => {
+it("pulls a far-off borrowed initial toward the ㅜ stem of ㅟ", () => {
   const before = offset(0),
     after = offset(1);
-  expect(after.dx).toBeLessThan(before.dx);
-  expect(after.dx).toBeLessThan(25);
+  // 평소 자리(귀·퓌: 기둥 위)에서 크게 벗어난 만큼만 옮긴다. 글자 폭 10% 안의 차이는 손글씨 맛으로 둔다.
+  expect(after.dx).toBeLessThan(before.dx - 50);
+  expect(after.dx).toBeLessThan(80);
   // 초성이 보(ㅡ) 위에 앉고 오른쪽 기둥과 떨어져 있다
   expect(after.gap).toBeGreaterThan(0);
   expect(after.pillarGap).toBeGreaterThan(0);

@@ -334,7 +334,55 @@ const union = (boxes: Box[]): Box | null => {
   return { x: left, y: top, width: right - left, height: bottom - top };
 };
 
-/** 자모 배치: 견본 글꼴의 자모 상자를 내 글자 크기에 맞춘 뒤, 각 자모의 위치·비율을 그쪽으로 당깁니다. */
+/**
+ * 내 글씨의 평소 자모 배치: 같은 짜임(세로·가로·섞임 모음 × 받침 유무)으로 쓴 글자들에서
+ * 자모마다 글자 범위에 대한 위치·크기(0~1)의 중앙값. 글자마다 들쭉날쭉한 배치를
+ * 견본 글꼴이 아니라 '내가 평소 쓰는 배치'로 당기기 위해 쓴다.
+ */
+export type OwnLayouts = Map<string, Partial<Record<Part, Box>>>;
+export function ownLayouts(
+  written: { layout: string; parts: { part: Part; strokes: Stroke[] }[] }[],
+): OwnLayouts {
+  const groups = new Map<string, Map<Part, Box[]>>();
+  for (const { layout, parts } of written) {
+    const boxes = parts
+      .map((p) => ({ part: p.part, box: centerBounds(p.strokes) }))
+      .filter((p): p is { part: Part; box: Box } => !!p.box);
+    const frame = union(boxes.map((p) => p.box));
+    if (!frame || frame.width < 40 || frame.height < 40 || boxes.length < 2)
+      continue;
+    const group = groups.get(layout) ?? new Map<Part, Box[]>();
+    for (const { part, box } of boxes)
+      group.set(part, [
+        ...(group.get(part) ?? []),
+        {
+          x: (box.x - frame.x) / frame.width,
+          y: (box.y - frame.y) / frame.height,
+          width: box.width / frame.width,
+          height: box.height / frame.height,
+        },
+      ]);
+    groups.set(layout, group);
+  }
+  const out: OwnLayouts = new Map();
+  for (const [layout, group] of groups) {
+    const boxes: Partial<Record<Part, Box>> = {};
+    for (const [part, list] of group) {
+      // 세 글자 이상 써야 '평소 배치'로 본다
+      if (list.length < 3) continue;
+      boxes[part] = {
+        x: median(list.map((b) => b.x)),
+        y: median(list.map((b) => b.y)),
+        width: median(list.map((b) => b.width)),
+        height: median(list.map((b) => b.height)),
+      };
+    }
+    if (Object.keys(boxes).length >= 2) out.set(layout, boxes);
+  }
+  return out;
+}
+
+/** 자모 배치: 목표 자모 상자(내 평소 배치, 없으면 견본 글꼴)를 내 글자 크기에 맞춘 뒤, 각 자모의 위치·비율을 그쪽으로 당깁니다. */
 function arrangeParts(
   strokes: Stroke[],
   amount: number,

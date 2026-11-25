@@ -27,7 +27,16 @@ await page.addInitScript(() =>
 );
 const errors = [];
 page.on("pageerror", (error) => errors.push(error.message));
+// 일본어는 숨은 기능: 그냥 열면 '만들 글자' 고르기가 보이지 않아야 한다
 await page.goto(BASE + "/?step=0");
+await page.waitForSelector(".setup-hand");
+await page.waitForTimeout(400);
+if (await page.locator('[role="radio"]:has-text("日本語")').count()) {
+  console.log("✗ 일본어 선택이 숨겨지지 않음");
+  process.exit(1);
+}
+console.log("✓ 일본어 선택이 숨겨져 있음");
+await page.goto(BASE + "/?step=0&labs=ja");
 await page.waitForSelector(".setup-script");
 await page.click('.setup-script [role="radio"]:has-text("日本語")');
 await page.waitForTimeout(300);

@@ -57,6 +57,7 @@ import StepQuestion, { type StepAsk } from "../components/StepQuestion";
 import LoginScreen from "../components/LoginScreen";
 import AccountPanel from "../components/AccountPanel";
 import { useAccount } from "../lib/account";
+import { applyLabsFromUrl, labEnabled } from "../lib/labs";
 import {
   countingDisabled,
   countVisit,
@@ -263,7 +264,11 @@ export default function Page() {
   const lang = useLang((state) => state.lang);
   const uiChoice = useUiChoice();
   const session = useAccount((state) => state.session);
+  // 일본어 만들기는 숨은 기능(?labs=ja). 이미 일본어 프로젝트를 연 사람은 한글로 돌아갈 수 있게 선택지를 남긴다.
+  const [jaLab, setJaLab] = useState(false);
   useEffect(() => {
+    applyLabsFromUrl();
+    setJaLab(labEnabled("ja"));
     useAccount.getState().load();
     useLang.getState().detect();
     setNoCount(countingDisabled());
@@ -1159,7 +1164,7 @@ export default function Page() {
           hasWriting={usedBrushes.size > 0}
           dark={dark}
           script={script}
-          onScript={chooseScript}
+          onScript={jaLab || script === "ja" ? chooseScript : undefined}
           onLegal={() => setLegalOpen(true)}
           locked={!!project.purchase}
         />

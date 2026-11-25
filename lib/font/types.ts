@@ -129,11 +129,18 @@ export type WorkerReply =
   | { type: "result"; ttf: ArrayBuffer; otf: ArrayBuffer; stats: FontStats }
   | { type: "error"; message: string };
 
-export function defaultPreparation(name: string): FontPreparation {
+/** 새 프로젝트의 정돈 강도. 정돈은 견본이 아니라 내 평소 글씨 쪽으로 고르게 맞추므로
+ * 중간 강도(단정하게)가 쓴 그대로보다 내 글씨에 더 가깝고 본문에서도 고르게 보인다. */
+export const DEFAULT_CORRECTION = 50;
+
+export function defaultPreparation(
+  name: string,
+  correction = DEFAULT_CORRECTION,
+): FontPreparation {
   return {
     separations: {},
     settings: {
-      correction: 0,
+      correction,
       bodySize: 840,
       familyName: name || "나의 손글씨",
       letterSpacing: 0,

@@ -166,6 +166,49 @@ const O_MIXED = new Set([9, 10, 11]);
 const U_MIXED = new Set([14, 15, 16]);
 const EU_I = 19;
 
+/** 가로·섞임 모음에서 ㅗ·ㅜ의 짧은 기둥 가운데 x(못 읽으면 보·왼쪽 잉크 가운데) */
+function stemOf(parts: ReturnType<typeof vowelParts>, strokes: Stroke[]) {
+  const pillarX = parts.pillars.length
+    ? Math.min(...parts.pillars.map((p) => p.x))
+    : Infinity;
+  const stems = parts.branchesV.filter((b) => centerX(b) < pillarX);
+  const leftBeam = parts.beams.length
+    ? parts.beams.reduce((m, b) => (b.width > m.width ? b : m))
+    : null;
+  // 기둥 왼쪽에 있는 모음 잉크(ㅗ·ㅜ·ㅡ 부분). 보·곁가지를 못 읽었을 때(한 획으로 이어 쓴 ㅜ 등) 대신 쓴다.
+  const leftInk = frameOf(
+    strokes.filter((stroke) => {
+      const f = frameOf([stroke]);
+      return !!f && centerX(f) < pillarX;
+    }),
+  );
+  const stemX = stems.length
+    ? mean(stems.map(centerX))
+    : leftBeam
+      ? centerX(leftBeam)
+      : leftInk
+        ? centerX(leftInk)
+        : null;
+  return { pillarX, stems, leftBeam, leftInk, stemX };
+}
+
+/**
+ * 내가 쓴 가로·섞임 모음 글자에서, 초성 가운데가 짧은 기둥보다 얼마나 왼쪽·오른쪽에 있는지
+ * (글자 폭에 대한 비율의 중앙값). 세 글자 이상일 때만 돌려준다.
+ */
+export function ownChoOffset(
+  written: { cho: Stroke[]; jung: Stroke[]; frame: Frame }[],
+): number | undefined {
+  const values: number[] = [];
+  for (const { cho, jung, frame } of written) {
+    const a = frameOf(cho);
+    const { stemX } = stemOf(vowelParts(jung), jung);
+    if (!a || stemX === null || frame.width < 60) continue;
+    values.push((centerX(a) - stemX) / frame.width);
+  }
+  return values.length >= 3 ? median(values) : undefined;
+}
+
 /**
  * 초성·중성·종성의 맞춤을 강도만큼 바로잡는다. 고정 조각(짝 글자에서 그대로 온 것)은
  * 움직이지 않고, 둘 다 고정이면 그대로 둔다.
@@ -175,6 +218,8 @@ export function alignPieces(
   pieces: Piece[],
   frame: Frame | null,
   amount: number,
+  /** 내 글씨에서 초성이 짧은 기둥보다 치우친 정도(글자 폭 비율, ownChoOffset) */
+  ownOffset?: number,
 ): Piece[] {
   const d = decompose(char);
   if (!d || amount <= 0) return pieces;
@@ -204,28 +249,18 @@ export function alignPieces(
     const a = frameOf(cho.strokes)!;
     // 가로 모음·섞임 모음: 초성 가운데를 ㅗ·ㅜ의 짧은 기둥(곁가지 세로획) 위로
     if (type === "H" || type === "C") {
-      const pillarX = parts.pillars.length
-        ? Math.min(...parts.pillars.map((p) => p.x))
-        : Infinity;
-      const stems = parts.branchesV.filter((b) => centerX(b) < pillarX);
-      const leftBeam = parts.beams.length
-        ? parts.beams.reduce((m, b) => (b.width > m.width ? b : m))
-        : null;
-      // 기둥 왼쪽에 있는 모음 잉크(ㅗ·ㅜ·ㅡ 부분). 보·곁가지를 못 읽었을 때(한 획으로 이어 쓴 ㅜ 등) 대신 쓴다.
-      const leftInk = frameOf(
-        jung.strokes.filter((stroke) => {
-          const f = frameOf([stroke]);
-          return !!f && centerX(f) < pillarX;
-        }),
+      const { pillarX, stems, leftBeam, leftInk, stemX } = stemOf(
+        parts,
+        jung.strokes,
       );
-      const stemX = stems.length
-        ? mean(stems.map(centerX))
-        : leftBeam
-          ? centerX(leftBeam)
-          : leftInk
-            ? centerX(leftInk)
-            : null;
-      let dx = stemX === null ? 0 : stemX - centerX(a);
+      // 초성 가운데를 짧은 기둥에서 '내가 평소 두는 만큼' 떨어진 자리로(평소 값이 없으면 기둥 위).
+      // 다른 글자에서 빌려 온 초성이 엉뚱하게 치우친 것을 바로잡되, 초성을 왼쪽에 두는 버릇은 남긴다.
+      // 평소에서 글자 폭의 10% 넘게 벗어난 만큼만 옮긴다(작은 차이는 손글씨 맛으로 둔다).
+      const off =
+        stemX === null ? 0 : stemX + (ownOffset ?? 0) * width - centerX(a);
+      const tolerance = 0.1 * width;
+      let dx =
+        Math.abs(off) <= tolerance ? 0 : off - Math.sign(off) * tolerance;
       let dy = 0;
       if (type === "C") {
         // 섞임 모음: 초성이 오른쪽 기둥을 침범하지 않게
@@ -243,7 +278,8 @@ export function alignPieces(
           : U_MIXED.has(d.jung) || d.jung === EU_I
             ? beamTop
             : null;
-        if (seat !== null) dy = seat - gapY - (a.y + a.height);
+        // 겹칠 때만 위로 올린다. 이미 떠 있는 초성을 보 쪽으로 끌어내리면 자모가 붙어 뭉친다.
+        if (seat !== null) dy = Math.min(0, seat - gapY - (a.y + a.height));
       }
       shiftCho(dx, dy);
       // 섞임 모음에서 초성이 기둥과 겹칠 만큼 크면 가로로 살짝 줄인다
@@ -287,11 +323,9 @@ export function alignPieces(
     let dy = 0;
     const overlap = upper.y + upper.height + gapY - j.y;
     if (overlap > 0) dy = overlap;
-    jong.strokes = moveBy(
-      jong.strokes,
-      clamp(targetX - centerX(j), -width * 0.2, width * 0.2) * amount,
-      clamp(dy, 0, height * 0.2) * amount,
-    );
+    // 받침의 가로 자리는 쓴 그대로 둔다(가운데로 끌면 내 글씨 맛이 사라진다). 위 글자와 겹칠 때만 내린다.
+    void targetX;
+    jong.strokes = moveBy(jong.strokes, 0, clamp(dy, 0, height * 0.2) * amount);
   }
   return out;
 }

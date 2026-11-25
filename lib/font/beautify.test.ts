@@ -54,7 +54,7 @@ describe("handwriting correction", () => {
   it("returns the written strokes untouched at strength 0", () => {
     const project = completeFixture();
     const original = JSON.stringify(project);
-    const prep = defaultPreparation("test");
+    const prep = defaultPreparation("test", 0);
     const result = prepareHandwriting(project, prep, true);
     for (const [char, strokes] of result.direct)
       expect(strokes).toBe(project.samples[char].strokes);

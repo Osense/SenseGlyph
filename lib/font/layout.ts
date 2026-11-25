@@ -2,6 +2,7 @@ import { METRICS } from "../../config/metrics";
 import { categoryForChar, DIAMOND_RADIUS, isEmBoxed } from "../safety";
 import { JA_PUNCT } from "../../data/charset";
 import type { WritingScript } from "../types";
+import { decompose, vowelType } from "../hangul";
 import polygonClipping, {
   type MultiPolygon,
   type Ring,
@@ -24,6 +25,10 @@ export interface InkBounds {
 export interface LayoutPlan {
   bodySize: number;
   typicalHangulSize: number;
+  /** 짜임(세로·가로·섞임 모음 × 받침)별 쓴 글자 크기의 중앙값. 크기 고르기는 같은 짜임끼리 맞춘다. */
+  typicalByLayout?: Map<string, number>;
+  /** 짜임별 쓴 글자 폭의 중앙값(폭 고르기) */
+  widthByLayout?: Map<string, number>;
   hangulScale: number;
   latinScale: number;
   symbolScale: number;
@@ -204,6 +209,12 @@ function median(values: number[], fallback: number) {
     mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
+/** 한글 음절의 짜임: 모음 모양(V·H·C) + 받침 유무 */
+function syllableLayout(char: string) {
+  const d = decompose(char);
+  return d ? vowelType(d.jung) + (d.jong ? "j" : "") : null;
+}
+
 export function bodySize(settings: FontBuildSettings) {
   return settings.bodySize ?? 840;
 }
@@ -224,6 +235,27 @@ export function createLayoutPlan(
     .map((item) => Math.max(item.bounds.width, item.bounds.height))
     .filter((size) => size > 40);
   const typicalHangulSize = median(hangul, DIAMOND_RADIUS - 22);
+  // 같은 짜임끼리의 보통 크기: '이'와 '뷁'처럼 짜임이 다르면 원래 크기가 다르므로 섞어 맞추지 않는다.
+  const byLayout = new Map<string, number[]>();
+  const widths = new Map<string, number[]>();
+  for (const item of measurements) {
+    const key = syllableLayout(item.char);
+    const size = Math.max(item.bounds.width, item.bounds.height);
+    if (key && size > 40) {
+      byLayout.set(key, [...(byLayout.get(key) ?? []), size]);
+      widths.set(key, [...(widths.get(key) ?? []), item.bounds.width / size]);
+    }
+  }
+  const widthByLayout = new Map(
+    [...widths]
+      .filter(([, list]) => list.length >= 3)
+      .map(([key, list]) => [key, median(list, 1)]),
+  );
+  const typicalByLayout = new Map(
+    [...byLayout]
+      .filter(([, sizes]) => sizes.length >= 3)
+      .map(([key, sizes]) => [key, median(sizes, typicalHangulSize)]),
+  );
   const sizeOf = (test: (category: string) => boolean) =>
     measurements
       .filter((item) => test(categoryForChar(item.char)))
@@ -282,6 +314,8 @@ export function createLayoutPlan(
   return {
     bodySize: target,
     typicalHangulSize,
+    typicalByLayout,
+    widthByLayout,
     hangulScale,
     latinScale,
     symbolScale,
@@ -359,19 +393,30 @@ export function layoutGlyph(
       : plan.latinScale;
   if (hangul) {
     const own = Math.max(1, bounds.width, bounds.height);
-    if (
-      category === "hangul-syllable" &&
-      plan.sizeEvening > 0 &&
-      own < plan.typicalHangulSize
-    )
-      scale *= Math.min(
-        1.25,
-        (plan.typicalHangulSize / own) ** (plan.sizeEvening * 0.8),
+    if (category === "hangul-syllable" && plan.sizeEvening > 0) {
+      // 같은 짜임 글자의 보통 크기 쪽으로(커도 작아도) 강도만큼 맞춘다. 한 번에 0.8~1.25배까지만.
+      const layout = syllableLayout(char);
+      const typical =
+        (layout && plan.typicalByLayout?.get(layout)) ||
+        plan.typicalHangulSize;
+      scale *= Math.max(
+        0.8,
+        Math.min(1.25, (typical / own) ** (plan.sizeEvening * 0.8)),
       );
+    }
     scale = Math.min(scale, plan.bodySize / own);
   }
+  // 폭 고르기: 같은 짜임 글자의 보통 가로세로비 쪽으로 가로만 살짝(0.9~1.1배)
+  let sx = 1;
+  if (category === "hangul-syllable" && plan.sizeEvening > 0) {
+    const layout = syllableLayout(char);
+    const ratio = layout && plan.widthByLayout?.get(layout);
+    const own = bounds.width / Math.max(1, bounds.width, bounds.height);
+    if (ratio && own > 0.2)
+      sx = Math.max(0.9, Math.min(1.1, (ratio / own) ** (plan.sizeEvening * 0.6)));
+  }
   const cy = (bounds.top + bounds.bottom) / 2;
-  const referenceWidth = bounds.width * scale;
+  const referenceWidth = bounds.width * scale * sx;
   const contentWidth =
     category === "digit"
       ? Math.max(plan.digitInkWidth, referenceWidth)
@@ -379,7 +424,7 @@ export function layoutGlyph(
   const left = plan.sideBearing + (contentWidth - referenceWidth) / 2;
   const paths = source.map((polygon) =>
     polygon.map(([x, y]) => [
-      Math.round(left + (x - bounds.left) * scale),
+      Math.round(left + (x - bounds.left) * scale * sx),
       Math.round(
         hangul
           ? 500 + (y - cy) * scale

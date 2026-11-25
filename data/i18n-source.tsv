@@ -1,7 +1,7 @@
  폰트 이름	 フォント名	 font name
 '{place}' 폴더에 {name} 백업을 저장했어요.	「{place}」フォルダに {name} のバックアップを保存しました。	Saved the backup {name} to the '{place}' folder.
 '{place}' 폴더에 {name} 파일을 저장했어요.	「{place}」フォルダに {name} を保存しました。	Saved {name} to the '{place}' folder.
-0%는 쓴 획 그대로예요. 올릴수록 자모 배치와 기울기를 견본 글꼴 쪽으로 정돈하지만, 내 글씨의 획과 개성은 남겨요.	0% は書いた線そのままです。上げるほど配置や傾きを見本フォントに近づけますが、あなたの線と個性は残ります。	0% keeps your strokes exactly as written. Higher values tidy layout and slant toward the sample font while keeping your strokes and character.
+0%는 쓴 획 그대로예요. 올릴수록 글자마다 들쭉날쭉한 크기·폭·자모 배치를 내가 평소 쓰는 모양으로 고르게 맞춰요. 견본 글꼴을 따라 하지 않으니 내 글씨의 맛은 그대로 남아요.	0% は書いた線そのままです。上げるほど、文字ごとにばらつく大きさ・幅・字母の配置を、あなたがふだん書く形にそろえます。見本フォントには寄せないので、あなたの字の味はそのまま残ります。	0% keeps your strokes exactly as written. Higher values even out size, width and jamo layout to match how you usually write. Nothing is pulled toward the sample font, so your handwriting keeps its character.
 01 / 손에 맞는 도구	01 / 手になじむ道具	01 / The right tool
 02 / 닮은 글씨 찾기	02 / 似た字を探す	02 / Find a similar style
 JSON 가져오기 ↑	JSON 読み込み ↑	Import JSON ↑
@@ -302,7 +302,7 @@ WOFF2 폰트를 만들지 못했습니다.	WOFF2 フォントを作れません�
 자모 배치	字母の配置	Jamo layout
 자모 자리가 비어 있거나 쓰지 않은 글자예요.	字母がそろっていないか、書いていない文字です。	Jamo missing, or not written.
 자모 확인	字母の確認	Check jamo
-작게 쓴 글자를 보통 크기 쪽으로	小さく書いた字をふつうの大きさに近づける	Bring small characters toward normal size
+같은 짜임 글자끼리 크기·폭을 고르게	同じ組み方の文字どうしで大きさ・幅をそろえる	Even out size and width among syllables of the same shape
 잘 모르겠다면 다 받기 →	迷ったら全部 →	Not sure? Get everything →
 잘 썼어요	よく書けました	Looks good
 잠시 후 다시 눌러 주세요.	少ししてからもう一度押してください。	Please try again in a moment.
@@ -333,7 +333,7 @@ WOFF2 폰트를 만들지 못했습니다.	WOFF2 フォントを作れません�
 책에 쓰는 명조	本で使う明朝	Book serif
 첫 글자 쓰러 가기 →	最初の字を書く →	Write your first character →
 초·중·종성 배정 확인 필요	初声・中声・終声の割り当てを確認	Check jamo assignment
-초성·중성·종성의 위치와 비율을 견본 쪽으로	初声・中声・終声の位置と比率を見本に近づける	Move jamo positions and proportions toward the sample
+초성·중성·종성의 위치와 비율을 내가 평소 쓰는 배치로	初声・中声・終声の位置と比率を、ふだんの自分の配置に	Move jamo positions and proportions toward your usual layout
 최신 설정으로 만든 폰트	最新の設定で作ったフォント	Built with the latest settings
 추천	おすすめ	Recommended
 추천!	おすすめ！	Recommended!
@@ -460,8 +460,8 @@ G마켓 산스	Gmarket Sans	Gmarket Sans
 기기 성능에 따라 시간이 걸릴 수 있어요. 태블릿·휴대폰은 컴퓨터보다 조금 더 걸려요.	端末の性能によって時間がかかることがあります。タブレット・スマホはパソコンより少し長くかかります。	This may take a while depending on your device. Tablets and phones take a bit longer than computers.
 작업 중단	中止	Stop
 자모 균형	字母のバランス	Jamo balance
-다른 글자에서 빌려 온 자모의 크기·위치를 평균에 맞추고, 초성을 모음 기둥에 맞춰요	ほかの字から借りた字母の大きさ・位置を平均に合わせ、初声を母音の柱にそろえます	Averages the size and position of borrowed jamo and lines the initial consonant up with the vowel stem
-견본처럼	見本のように	Like the sample
+다른 글자에서 빌려 온 자모의 크기·위치를 평균에 맞추고, 크게 어긋난 초성·받침만 바로잡아요	ほかの文字から借りた字母の大きさ・位置を平均に合わせ、大きくずれた初声・パッチムだけを直します	Match borrowed jamo to their average size and position, and fix only initials and finals that are clearly off
+가장 고르게	いちばん均一に	Most even
 획 끝을 다듬는 중	線の端を整え中	Trimming stroke ends
 자모끼리 인사시키는 중	字母どうしをあいさつさせ中	Introducing jamo to each other
 초성을 모음 기둥에 줄 세우는 중	初声を母音の柱にそろえ中	Lining initials up with vowel stems
@@ -591,7 +591,7 @@ Google 사용자	Google ユーザー	Google user
 작업 시간만 놓고 보면 손글씨 폰트를 만드는 가장 빠른 방법일 거예요. 한 달이 걸리던 일이 한나절이면 끝나요.	作業時間だけで比べれば、手書きフォントを作るいちばん速い方法のはず。ひと月かかっていたことが半日で終わります。	Measured by working time alone, it's likely the fastest way to make a handwriting font. A month of work, done in an afternoon.
 완벽하진 않아도, 나머진 정돈이	完璧でなくても、あとは整えが	Not perfect — refinement does the rest
 조합한 글자가 한 자씩 그린 것만큼 완벽할 순 없어요. 대신 기울기·떨림·자모 균형을 다듬는 후처리가 그 틈을 조용히 메워요.	組み合わせた文字は、一字ずつ描いたほど完璧ではありません。そのぶん傾き・揺れ・バランスを整える後処理が、すき間を静かに埋めます。	Combined letters can't be as perfect as ones drawn one by one. Post-processing for slant, jitter and balance quietly fills the gap.
-TTF·OTF·웹폰트, 굵기 3종까지 한 번에. 한글·日本語·English 무엇이든 내 글씨로 내보내요.	TTF・OTF・Webフォント、太さ3種まで一度に。한글・日本語・English、どれでも自分の字で。	TTF, OTF, web fonts and three weights at once — Korean, Japanese or English, all in your hand.
+TTF·OTF·웹폰트, 굵기 3종까지 한 번에. 한글 11,172자와 영문·숫자까지 내 글씨로 내보내요.	TTF・OTF・Webフォント、太さ3種まで一度に。ハングル11,172字と英数字まで自分の字で。	TTF, OTF, web fonts and three weights at once — all 11,172 Hangul syllables plus Latin letters and numbers, in your hand.
 어디에 써도, 내 목소리 그대로	どこで使っても、自分の声のまま	Wherever it goes, it sounds like you
 똑같은 기본 글꼴 사이에서 단 하나뿐인 표정. 사람 냄새 나는 글씨는 보는 사람의 마음을 먼저 붙잡아요.	見慣れた標準フォントの中で、ただひとつの表情。人の温もりがある文字は、見る人の心を先につかみます。	One face among identical default fonts. Lettering with a human touch catches the eye — and the heart — first.
 웹 디자인	Webデザイン	Web design

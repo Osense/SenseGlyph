@@ -736,7 +736,10 @@ export const JA: Record<string, string> = {
  "견본 고르기": "見本を選ぶ",
  "폰트 이름과 파일 이름 앞에는 {prefix}가 붙어요. 폰트의 권리는 모두 만든 사람에게 있지만, 나눠 주거나 이름을 바꿀 때도 {prefix}는 되도록 남겨 주세요.": "フォント名とファイル名の先頭には {prefix} が付きます。フォントの権利はすべて作った人のものですが、配布したり名前を変えたりするときも、{prefix} はできるだけ残してください。",
  "잉크 번진 타자기 픽셀": "インクのにじんだタイプライター・ピクセル",
- "WSNS 사각탈출": "WSNS 四角脱出"
+ "WSNS 사각탈출": "WSNS 四角脱出",
+ "이 견본은 {brush}{ro} 따라 쓰면 획이 견본과 가장 비슷해요.": "この見本は{brush}でなぞると、線がいちばん見本に近くなります。",
+ "{brush}{ro} 바꾸기": "{brush}に切り替える",
+ "같은 자모를 쓴 다른 글자와 모양이 많이 달라요": "同じ字母を書いたほかの文字と形が大きく違います"
 };
 export const EN: Record<string, string> = {
  " 폰트 이름": " font name",
@@ -1475,5 +1478,8 @@ export const EN: Record<string, string> = {
  "견본 고르기": "Choosing a sample",
  "폰트 이름과 파일 이름 앞에는 {prefix}가 붙어요. 폰트의 권리는 모두 만든 사람에게 있지만, 나눠 주거나 이름을 바꿀 때도 {prefix}는 되도록 남겨 주세요.": "Font and file names start with {prefix}. Every right to the font is yours, but please keep {prefix} at the front where you can, even when you share or rename it.",
  "잉크 번진 타자기 픽셀": "Ink-bled typewriter pixels",
- "WSNS 사각탈출": "WSNS Sagaktalchul"
+ "WSNS 사각탈출": "WSNS Sagaktalchul",
+ "이 견본은 {brush}{ro} 따라 쓰면 획이 견본과 가장 비슷해요.": "Trace this sample with the {brush} to get strokes closest to it.",
+ "{brush}{ro} 바꾸기": "Switch to {brush}",
+ "같은 자모를 쓴 다른 글자와 모양이 많이 달라요": "This jamo looks very different from the same jamo in your other letters"
 };

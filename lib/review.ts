@@ -3,12 +3,19 @@ import { slotKeys } from "./hangul";
 import { strokesAreSafe } from "./safety";
 import { separateSample } from "./font/composition";
 import { effectiveStrokes } from "./font/editing";
+import { jamoOutliers } from "./font/outliers";
 import type { FontProject, GlyphSample } from "./types";
 import type { Separation } from "./font/types";
 import type { ReferenceSettings } from "./font/reference";
 
 export type ReviewKind =
-  "unsafe" | "skipped" | "empty" | "components" | "manual" | "invalid";
+  | "unsafe"
+  | "skipped"
+  | "empty"
+  | "components"
+  | "manual"
+  | "invalid"
+  | "outlier";
 export interface ReviewIssue {
   kind: ReviewKind;
   label: string;
@@ -83,5 +90,18 @@ export function projectIssues(project: FontProject | null) {
       );
       if (issues.length) result[char] = issues;
     }
+  // 같은 자모의 다른 표본과 모양이 크게 다른 글자(그 자모를 쓰는 조합 글자가 함께 틀어진다)
+  if (project && (project.settings.script ?? "ko") === "ko") {
+    const outliers = jamoOutliers(
+      project.samples,
+      project.fontPreparation?.separations,
+      project.settings,
+    );
+    for (const char of Object.keys(outliers))
+      result[char] = [
+        ...(result[char] ?? []),
+        { kind: "outlier", label: "같은 자모를 쓴 다른 글자와 모양이 많이 달라요" },
+      ];
+  }
   return result;
 }

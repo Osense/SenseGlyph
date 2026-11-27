@@ -13,7 +13,7 @@ import { paintStroke } from "../lib/brushes";
 import { drawGrid, drawSample } from "../lib/drawing";
 import { useStudio } from "../lib/store";
 import { referenceUsesFallback } from "../lib/font/reference";
-import { loadReferenceFont, referenceStack } from "../lib/reference-fonts";
+import { guideStack, loadReferenceFont } from "../lib/reference-fonts";
 import { isBoxedCategory, strokesAreSafe } from "../lib/safety";
 import CanvasStepButtons, { type CanvasNavigation } from "./CanvasStepButtons";
 let penDetectedThisSession = false;
@@ -333,7 +333,7 @@ export default function WritingPad({
             style={{
               fontFamily: referenceUsesFallback(char, settings.referenceFont)
                 ? '"Noto Sans KR"'
-                : referenceStack(settings.referenceFont),
+                : guideStack(settings.referenceFont),
             }}
           >
             {char}

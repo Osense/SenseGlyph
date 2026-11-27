@@ -36,7 +36,10 @@ const FONT_FACES = `
   src: url("${BASE_PATH}/fonts/SpecialSymbolsFallback.ttf") format("truetype");
   font-display: swap;
 }
-${REFERENCE_FONTS.map(({ family, file }) => {
+${REFERENCE_FONTS.flatMap((font) => [
+  font,
+  ...("guide" in font ? [font.guide] : []),
+]).map(({ family, file }) => {
   const format = file.endsWith(".ttf") ? "truetype" : file.split(".").at(-1);
   return `
 @font-face {

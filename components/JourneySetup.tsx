@@ -36,6 +36,13 @@ const brushes: { id: BrushId; label: string; note: string }[] = [
   { id: "nib", label: "납작펜", note: "각도에 따라 다르게" },
   { id: "pixel", label: "픽셀펜", note: "네모 입자로 또렷하게" },
 ];
+/** 한국어 조사 '으로/로'(받침이 없거나 ㄹ이면 '로') */
+function ro(word: string) {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  const jong = code >= 0 && code < 11172 ? code % 28 : 0;
+  return jong === 0 || jong === 8 ? "로" : "으로";
+}
+
 export default function JourneySetup({
   step,
   settings,
@@ -401,6 +408,35 @@ export default function JourneySetup({
               </button>
             );
           })}
+          {(() => {
+            // 견본마다 따라 쓰기 좋은 도구. 지금 도구와 다르면 한 번에 바꿀 수 있게 알려 준다.
+            const font = fonts.find((f) => f.id === chosenFont);
+            const want = font && "brush" in font ? font.brush : undefined;
+            const label = brushes.find((b) => b.id === want)?.label;
+            if (!want || !label || want === settings.activeBrush || locked)
+              return null;
+            return (
+              <div
+                data-ui
+                className="font-brush-hint flex items-center justify-between gap-3 rounded-xl border border-dashed border-border px-4 py-2.5 text-[13px] text-muted-foreground max-sm:px-3 max-sm:py-2 max-sm:text-[12px]"
+              >
+                <span className="break-keep">
+                  {t("이 견본은 {brush}{ro} 따라 쓰면 획이 견본과 가장 비슷해요.", {
+                    brush: t(label),
+                    ro: ro(label),
+                  })}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => update({ activeBrush: want })}
+                >
+                  {t("{brush}{ro} 바꾸기", { brush: t(label), ro: ro(label) })}
+                </Button>
+              </div>
+            );
+          })()}
         </div>
       )}
     </section>

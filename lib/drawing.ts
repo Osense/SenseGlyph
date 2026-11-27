@@ -2,7 +2,7 @@ import { JA_PUNCT, SPECIAL_SYMBOLS } from "../data/charset";
 import { t } from "./i18n";
 import { METRICS } from "../config/metrics";
 import type { CharCategory, ProjectSettings } from "./types";
-import { referenceFont, referenceStack } from "./reference-fonts";
+import { guideStack, referenceFont } from "./reference-fonts";
 import { referenceFit, referenceUsesFallback } from "./font/reference";
 import {
   categoryForChar,
@@ -113,7 +113,7 @@ export function drawSample(
   ctx.textBaseline = "alphabetic";
   const family = referenceUsesFallback(char, settings?.referenceFont)
     ? '"Noto Sans KR"'
-    : referenceStack(settings?.referenceFont);
+    : guideStack(settings?.referenceFont);
   // 가나·한자·일본어 문장 기호: 글꼴의 네모 칸을 그대로 옮겨 작은 가나와 、。의 자리를 지킨다.
   const category = categoryForChar(char);
   if (

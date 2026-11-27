@@ -3,18 +3,17 @@
 타자기 활자가 종이에 찍힌 느낌: 모든 자모를 한 픽셀 격자(PX)에 찍고, 글쇠(자모)마다 잉크 상태가 달라
 어떤 글쇠는 진하게 번지고 어떤 글쇠는 흐리게 찍힌다(같은 글쇠는 어느 글자에서나 같다).
 
-명조 자모(고운바탕, OFL)를 떼어 내어 옛 세벌식 타자기의 규칙대로 찍는다.
-- 초성 1벌·중성 1벌·종성 1벌. 셋 다 모든 글자에서 같은 자리에 찍힌다(합성할 때 옮기지 않는다).
-  초성은 왼쪽 위(‘긩’ 짜임). 세로 모음은 첫 기둥이 모두 같은 x, 가로 모음은 가로획이 모두 같은 높이.
-  세로 모음 기둥은 가로획 높이까지 내려와서, 섞인 모음(ㅘ = ㅗ + ㅏ)도 두 모음을 제자리 그대로 겹친 것이다.
-  받침은 모든 글자에서 같은 줄. 받침이 없으면 아래가 비어 글자 아래 끝이 들쭉날쭉한 탈사각이 된다.
-- 닿음: 자모 모양은 그대로 두고 자리(줄·기둥 위치)를 모든 조합에서 GAP 이상 떨어지게 정한다.
-  넓은 겹자음과 닿는 ㅓ·ㅔ 계열 왼쪽 가지 끝만 조금 줄인다.
+명조 자모(고운바탕, OFL)를 떼어 내어 조합 엔진의 자리 구분과 같은 규칙으로 놓는다.
+- 초성 3벌(세로·가로·섞인 모음 짜임: 겅·공·궹에서), 모음 1벌(받침 글자의 짧은 모음), 받침 3벌(앙·응·읭에서).
+  같은 짜임 안에서는 자모의 자리·모양이 모든 글자에서 같다(타자기). 받침이 없으면 아래가 비는 탈네모.
+- 자리는 고운바탕이 받침 글자에 둔 자리 그대로. 닿으면 모음을 오른쪽으로·가지 끝을 줄이고,
+  ㅗ·ㅛ 꼭지는 TICK_UP 까지만 남기며, 그래도 닿는 초성만 위로 올린다.
+- 쓰기 칸 안내선용 매끈한 판(Guide)과 고르기 화면용 잉크 픽셀 판을 함께 만든다.
 - 음절 11,172자는 자모 글리프를 겹친 합성 글리프(TrueType composite)라 파일이 작다.
 
 필요: fonttools, shapely, brotli, numpy, pillow
 실행: python3 scripts/build-sagaktalchul.py
-  → public/fonts/WSNS-Sagaktalchul.woff2, lib/reference-fonts.ts 의 frame, data/reference-regions.json 의 squareout
+  → public/fonts/WSNS-Sagaktalchul.woff2(픽셀)·WSNS-Sagaktalchul-Guide.woff2(매끈), lib/reference-fonts.ts 의 frame, data/reference-regions.json 의 squareout
 """
 import json
 import re
@@ -35,11 +34,12 @@ from shapely.ops import unary_union
 
 SOURCE = Path("public/fonts/GowunBatang-Regular.woff")
 OUT = Path("public/fonts/WSNS-Sagaktalchul.woff2")
+OUT_GUIDE = Path("public/fonts/WSNS-Sagaktalchul-Guide.woff2")
 ADV = 1000
 GAP = 34          # 자모 사이 최소 틈(글꼴 단위)
 JONG_GAP = 30     # 받침과 그 위 자모 사이
-TICK_UP = 112      # ㅗ·ㅛ 기둥: 가로획 가운데에서 위로 이만큼까지
-TICK_DOWN = 120    # ㅜ·ㅠ 기둥: 가로획 가운데에서 아래로 이만큼까지
+CHO_GAP = 16      # 초성과 모음 사이(고운바탕처럼 ㅓ 가지가 초성 밑으로 살짝 들어가도 되게)
+TICK_UP = 105      # ㅗ·ㅛ 꼭지: 가로획 가운데에서 위로 이만큼까지
 RIGHT_EDGE = 955  # 모음이 넘지 않을 오른쪽 끝(글자 너비 1000)
 
 CHO = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ"
@@ -112,10 +112,16 @@ def above(ps, bar, slack=12):
 
 
 # ---------------------------------------------------------------- 자모 떼어 오기
-def cho_geom(ci, form):
-    """초성: 왼쪽(‘긩’ 짜임) / 위(‘긍’ 짜임). 받침 있는 짜임이라 아담하다. 가로줄 위에 떠 있는 조각."""
-    ps = pieces(syllable(ci, JUNG.index("ㅢ" if form == "left" else "ㅡ"), 21))
-    return union(above(ps, widest(ps)))
+def cho_geom(ci, form, vowel=None):
+    """초성: 왼쪽(‘긩’ 짜임) / 위(‘긍’ 짜임). 받침 있는 짜임이라 아담하다. 가로줄 위에 떠 있는 조각.
+    vowel 을 주면 그 모음 짜임(‘공’·‘곽’ 등)에서 뗀다. 모음 꼭지 자리를 비워 둔 초성이라 닿지 않는다."""
+    v = vowel or ("ㅢ" if form == "left" else "ㅡ")
+    ps = pieces(syllable(ci, JUNG.index(v), 21))
+    bar = widest(ps)
+    out = union(above(ps, bar))
+    if out.area < cho_geom(ci, form).area * 0.75 if vowel else False:
+        return cho_geom(ci, form)  # 모음과 붙어 못 떼면 기본 짜임에서
+    return out
 
 
 def ring_thickness():
@@ -158,10 +164,15 @@ def trim_left(g, others, gap=GAP, limit=160):
 
 
 def horizontal_vowel(v, final):
-    """가로 모음: ‘소·수…’ 또는 ‘송·숭…’의 가로줄 조각. ㅅ은 줄에서 떨어져 있어 기둥이 온전히 남는다."""
-    char = syllable(SIOT, JUNG.index(v), 21 if final else 0)
-    return widest(pieces(char) if not final else
-                  [g for g in getattr(ring_cut(char, top=False, bottom=True), "geoms", [ring_cut(char, top=False, bottom=True)])])
+    """가로 모음: ‘공·궁…’(가로 모음 초성과 같은 짜임)의 가로줄 조각.
+    붙어서 못 떼면 ‘봉·붕…’, ‘송·숭…’에서."""
+    for c in "ㄱㅂㅅ":
+        char = syllable(CHO.index(c), JUNG.index(v), 21 if final else 0)
+        g = widest(pieces(char) if not final else
+                   [g for g in getattr(ring_cut(char, top=False, bottom=True), "geoms", [ring_cut(char, top=False, bottom=True)])])
+        if g.bounds[3] - g.bounds[1] < 260:
+            return g
+    return g
 
 
 def short_bar(h, final):
@@ -254,63 +265,118 @@ def set_stem_bottom(g, bottom):
     return union(parts)
 
 
-def make_jamo():
-    """타자기처럼 초성·중성·종성이 각각 늘 같은 자리에 찍히게 자모를 놓는다.
-    - 초성 1벌: 왼쪽 위(‘긩’ 짜임)
-    - 세로 모음: 첫 기둥이 모두 같은 x(STEM_X). 가로 모음: 가로획이 모두 같은 높이(BAR_Y).
-      세로 모음 기둥 끝은 모두 가로획 높이까지(섞인 모음에서 ㅗ·ㅏ가 각자 제자리에 찍혀 만난다).
-    - 종성 1벌: 모든 글자에서 같은 줄(가장 낮은 모음 아래)."""
-    cho = {i: cho_geom(i, "left") for i in range(len(CHO))}
-    chos = list(cho.values())
-    cho_right = max(g.bounds[2] for g in chos)
-    cho_bottom = min(g.bounds[1] for g in chos)
+TYPES = "VHC"
 
-    # 가로 모음: ㅗ·ㅛ·ㅜ·ㅠ 기둥을 짧게 잘라(TICK) 초성·중성·종성이 오밀조밀 모이게.
-    # 가로획은 ㅗ 기둥 끝이 초성 아래로 GAP 만큼 떨어지는 높이에 둔다.
-    def short_ticks(g):
-        mid = bar_middle(g); x0, y0, x1, y1 = g.bounds
-        return g.intersection(rect(x0 - 1, mid - TICK_DOWN, x1 + 1, mid + TICK_UP))
-    horizontal = {v: short_ticks(horizontal_vowel(v, True)) for v in HORIZONTAL}
-    bars = {h: short_ticks(short_bar(h, True)) for h in "ㅗㅜㅡ"}
-    rise = max(g.bounds[3] - bar_middle(g) for g in [*horizontal.values(), *bars.values()])
-    bar_y = cho_bottom - GAP - rise
-    jung = {}
-    for v, g in horizontal.items():
-        jung[v] = affinity.translate(g, 0, bar_y - bar_middle(g))
 
-    # 세로 모음 자리: 모든 세로 모음의 첫 기둥이 같은 x. ㅓ·ㅕ 가지가 들어갈 만큼 띄우되,
-    # 기둥이 둘인 모음(ㅐ·ㅔ·ㅒ·ㅖ)이 글자 너비(RIGHT_EDGE)를 넘지 않는 데까지.
-    raw = {v: vertical_vowel(v, True) for v in VERTICAL}
-    widest_right = max(g.bounds[2] - stem_left(g) for g in raw.values())
-    stem_x = min(cho_right + GAP + 110, RIGHT_EDGE - widest_right)
-    vertical = {}
-    for v in VERTICAL:
-        g = raw[v]
-        g = affinity.translate(g, stem_x - stem_left(g), 0)
-        thick = min(b.bounds[3] - b.bounds[1] for b in bars.values())  # 가로획 굵기쯤
-        g = set_stem_bottom(g, bar_y - thick / 2)
-        if clearance(g, chos) < GAP:  # ㅓ·ㅔ 계열 왼쪽 가지 끝만 줄인다(기둥은 건드리지 않는다)
-            g = trim_left(g, chos, limit=int(stem_x - g.bounds[0]) - 25)
-        vertical[v] = g
-        jung[v] = g
+def vtype(v):
+    return "V" if v in VERTICAL else "H" if v in HORIZONTAL else "C"
 
-    for v, (h, vv) in MIXED.items():
-        bar = bars[h]
-        bar = affinity.translate(bar, stem_x + 4 - bar.bounds[2], bar_y - bar_middle(bar))
-        jung[v] = union([bar, vertical[vv]])
 
-    jong = {}
-    for ti in range(1, len(JONG)):
+def cho_vertical(ci):
+    """세로 모음 짜임 초성: ‘겅’(받침 ㅇ)에서 받침 고리와 ㅓ를 뺀 나머지. ㅓ 가지 자리를 비워 둔 모양이라
+    ㅏ·ㅐ·ㅕ…와 모두 닿지 않는다."""
+    want = cho_geom(ci, "left").area * 0.75
+    for v in "ㅓㅏㅣ":  # 붙어 있어 못 떼면(ㅃ+ㅓ 등) 다른 모음 짜임에서
+        geom = ring_cut(syllable(ci, JUNG.index(v), 21), top=False, bottom=True)
+        stem = stem_left(vertical_vowel(v, True))
+        ps = [g for g in getattr(geom, "geoms", [geom]) if g.area > 200 and g.bounds[2] < stem - 4]
+        out = union(ps)
+        if out.area > want:
+            return out
+    return out
+
+
+def stem_right_left(g):
+    """가장 오른쪽 큰 기둥의 왼쪽 가장자리(섞인 모음의 ㅏ·ㅓ·ㅣ)"""
+    x0, y0, x1, y1 = g.bounds
+    cols = [(g.intersection(rect(x, y0 - 1, x + 3, y1 + 1)).area, x) for x in range(int(x0), int(x1), 3)]
+    best = max(cols)[0]
+    tall = [x for a, x in cols if a > best * 0.6]
+    right = max(tall)
+    while right - 3 in tall: right -= 3
+    return right
+
+
+def jong_from(ti, t):
+    """받침: 고운바탕의 받침 글자에서 그 짜임 그대로 떼어 온다(앙·응·읭 + 받침)."""
+    if t == "V":
         ps = pieces(syllable(IEUNG, 0, ti))
         top_ring = max((g for g in ps if g.interiors), key=lambda g: g.bounds[3])
         rest = [g for g in ps if g is not top_ring]
-        stem = max(rest, key=lambda g: g.bounds[3])  # ㅏ
-        jong[ti] = union([g for g in rest if g is not stem])
-    lowest = min(g.bounds[1] for g in [*jung.values(), *chos])
-    jong_top = max(g.bounds[3] for g in jong.values())
-    dy = lowest - JONG_GAP - jong_top
-    jong = {k: affinity.translate(g, 0, dy) for k, g in jong.items()}
-    print("cho bottom", round(cho_bottom), "bar_y", round(bar_y), "stem_x", round(stem_x), "jong dy", round(dy))
+        stem = max(rest, key=lambda g: g.bounds[3])
+        return union([g for g in rest if g is not stem])
+    ps = pieces(syllable(IEUNG, JUNG.index("ㅡ" if t == "H" else "ㅢ"), ti))
+    bar = widest(ps)
+    return union([g for g in ps if g.bounds[3] < bar.bounds[1] + 6 and g is not bar])
+
+
+def make_jamo():
+    """세벌식 타자기 + 조합 엔진의 자리 구분에 맞춘 배치.
+    - 모음 1벌(받침 유무와 상관없이 받침 글자의 짧은 모음). 받침 없는 글자는 아래가 비는 탈네모.
+    - 초성은 모음 모양(세로·가로·섞임)마다 1벌씩 3벌. 같은 모양 안에서는 자리·모양이 모두 같다.
+    - 받침도 모음 모양마다 1벌씩 3벌. 같은 모양 안에서는 모두 같은 줄.
+    - 자리는 고운바탕이 받침 글자(겅·긍·긩·앙·응·읭)에 둔 자리를 그대로 쓰고, 같은 모양끼리 한 줄로만 맞춘다."""
+    cho = {}
+    for ci in range(len(CHO)):
+        cho[(ci, "V")] = cho_vertical(ci)
+        cho[(ci, "H")] = cho_geom(ci, "top", "ㅗ")
+        cho[(ci, "C")] = cho_geom(ci, "left", "ㅞ")  # 가장 붐비는 ㅞ 짜임: 모든 섞인 모음과 맞는다
+
+    # 모음은 모음마다 1벌(엔진도 모음마다 따로 잰다). 자리는 고운바탕이 받침 글자에 둔 그대로.
+    jung = {}
+    for v in JUNG:
+        jung[v] = horizontal_vowel(v, True) if vtype(v) == "H" else vertical_vowel(v, True)
+
+    # ㅗ·ㅛ(·ㅘ·ㅙ·ㅚ) 꼭지: 고운바탕은 자음마다 꼭지 길이를 바꾸지만 여기는 모음이 1벌이라,
+    # 가로획 위로 TICK_UP 까지만 남긴다(고·구가 또렷이 구별되는 길이). 나머지는 초성을 올려 비킨다.
+    for v in JUNG:
+        if v not in "ㅗㅛㅘㅙㅚ": continue
+        g = jung[v]
+        x0, y0, x1, y1 = g.bounds
+        right = x1 + 1 if vtype(v) == "H" else stem_right_left(g) - 20
+        left_part = g.intersection(rect(x0 - 1, y0 - 1, right, y1 + 1))
+        bar = widest([p for p in getattr(left_part, "geoms", [left_part])])
+        top = bar_middle(bar) + TICK_UP
+        jung[v] = g.difference(rect(x0 - 1, top, right, y1 + 1))
+
+    # 초성과 모음이 닿으면: 세로·섞인 모음은 오른쪽으로(글자 너비 안에서), 그래도 닿으면 왼쪽 가지 끝을 줄인다.
+    # 가로 모음과 닿으면 그 모양의 초성을 모두 위로.
+    for t in TYPES:
+        vs = [v for v in JUNG if vtype(v) == t]
+        chos = lambda: [cho[(ci, t)] for ci in range(len(CHO))]
+        # 세로·섞인 모음: 오른쪽으로(글자 너비 안에서), 그래도 닿으면 왼쪽 가지 끝을 줄인다
+        if t != "H":
+            for v in vs:
+                g = jung[v]
+                room = max(0, int(RIGHT_EDGE - g.bounds[2]))
+                for dx in range(0, room + 1, 3):
+                    if clearance(affinity.translate(g, dx, 0), chos()) >= CHO_GAP: break
+                g = affinity.translate(g, dx, 0)
+                if clearance(g, chos()) < CHO_GAP and t == "V":
+                    g = trim_left(g, chos(), gap=CHO_GAP, limit=70)
+                jung[v] = g
+        # 가로·섞인 모음과 아직 닿으면 그 초성을 위로(닿지 않을 때까지). 엔진도 초성마다 자리를 따로 재므로
+        # 자음마다 따로 올린다(ㅎ처럼 원래 높은 자음만 더 올라간다).
+        if t != "V":
+            for ci in range(len(CHO)):
+                c = cho[(ci, t)]
+                for lift in range(0, 240, 3):
+                    if clearance(affinity.translate(c, 0, lift), [jung[v] for v in vs]) >= CHO_GAP: break
+                cho[(ci, t)] = affinity.translate(c, 0, lift)
+                if lift > 40: print(t, CHO[ci], "lift", lift)
+
+    # 받침: 모양마다 한 줄. 윗선을 맞춘 뒤, 그 모양의 모든 초성·모음과 JONG_GAP 만큼 떨어진 가장 높은 자리
+    jong = {}
+    for t in TYPES:
+        group = {ti: jong_from(ti, t) for ti in range(1, len(JONG))}
+        top = float(np.median([g.bounds[3] for g in group.values()]))
+        group = {ti: affinity.translate(g, 0, top - g.bounds[3]) for ti, g in group.items()}
+        upper = [jung[v] for v in JUNG if vtype(v) == t] + [cho[(ci, t)] for ci in range(len(CHO))]
+        allj = union(list(group.values()))
+        dy = snug(allj, upper, "y", gap=JONG_GAP, lo=-400, hi=200)
+        for ti, g in group.items():
+            jong[(ti, t)] = affinity.translate(g, 0, dy)
+        print(t, "jong dy", dy)
     return cho, jung, jong
 
 
@@ -361,27 +427,27 @@ def pixel_jamo(cho, jung, jong):
     return cho, jung, jong
 
 
-def build():
-    cho, jung, jong = pixel_jamo(*make_jamo())
+def write_font(cho, jung, jong, out, family, family_ko, ps):
     notdef = TTGlyphPen(None)
     for bx in [((100, -60), (100, 800), (900, 800), (900, -60)), ((170, 10), (830, 10), (830, 730), (170, 730))]:
         notdef.moveTo(bx[0]); [notdef.lineTo(p) for p in bx[1:]]; notdef.closePath()
     glyphs = {".notdef": notdef.glyph(), "space": TTGlyphPen(None).glyph()}
     cmap_out = {0x20: "space", 0x3000: "space"}
-    for i, g in cho.items(): glyphs[f"cho{i}"] = tt_glyph(g)
+    for (i, t), g in cho.items(): glyphs[f"cho{i}{t}"] = tt_glyph(g)
     for i, v in enumerate(JUNG): glyphs[f"jung{i}"] = tt_glyph(jung[v])
-    for ti, g in jong.items(): glyphs[f"jong{ti}"] = tt_glyph(g)
+    for (ti, t), g in jong.items(): glyphs[f"jong{ti}{t}"] = tt_glyph(g)
 
     parts_of_char = {}
     for code in range(0xAC00, 0xD7A4):
         n = code - 0xAC00
         ci, vi, ti = n // 588, (n // 28) % 21, n % 28
-        names = [f"cho{ci}", f"jung{vi}"] + ([f"jong{ti}"] if ti else [])
+        t = vtype(JUNG[vi])
+        names = [f"cho{ci}{t}", f"jung{vi}"] + ([f"jong{ti}{t}"] if ti else [])
         pen = TTGlyphPen(glyphs)
         for name in names: pen.addComponent(name, (1, 0, 0, 1, 0, 0))  # 모두 제자리 그대로(타자기)
         glyphs[f"uni{code:04X}"] = pen.glyph()
         cmap_out[code] = f"uni{code:04X}"
-        parts_of_char[chr(code)] = [cho[ci], jung[JUNG[vi]]] + ([jong[ti]] if ti else [])
+        parts_of_char[chr(code)] = [cho[(ci, t)], jung[JUNG[vi]]] + ([jong[(ti, t)]] if ti else [])
     for code in range(0x3131, 0x3164):  # 낱자(호환 자모)는 고운바탕의 낱자를 그대로
         if code not in cmap: continue
         pen = TTGlyphPen(None)
@@ -401,12 +467,12 @@ def build():
     fb.setupHorizontalMetrics(metrics)
     fb.setupHorizontalHeader(ascent=880, descent=-120)
     fb.setupNameTable({
-        "familyName": {"en": "WSNS Sagaktalchul", "ko": "WSNS 사각탈출"},
+        "familyName": {"en": family, "ko": family_ko},
         "styleName": "Regular",
-        "uniqueFontIdentifier": "WSNS studio: WSNS Sagaktalchul Regular 3",
-        "fullName": "WSNS Sagaktalchul Regular",
-        "psName": "WSNSSagaktalchul-Regular",
-        "version": "Version 3.000",
+        "uniqueFontIdentifier": f"WSNS studio: {family} Regular 4",
+        "fullName": f"{family} Regular",
+        "psName": f"{ps}-Regular",
+        "version": "Version 4.000",
         "copyright": "Copyright 2021 The Gowun Batang Project Authors; Copyright 2026 WSNS studio",
         "manufacturer": "WSNS studio",
         "description": "Gowun Batang jamo rearranged by Sebeolsik typewriter rules.",
@@ -423,11 +489,19 @@ def build():
                 ulUnicodeRange1=1 << 0, ulUnicodeRange2=(1 << 24) | (1 << 20))
     fb.setupPost()
     fb.font.flavor = "woff2"
-    fb.save(str(OUT))
-    print(OUT, OUT.stat().st_size, "bytes,", len(order), "glyphs; frame", frame)
+    fb.save(str(out))
+    print(out, out.stat().st_size, "bytes,", len(order), "glyphs; frame", frame)
+    return frame, parts_of_char
+
+
+def build():
+    """쓰기 칸 안내선·빈 글자 채우기·자모 판정에는 매끈한 판(Guide), 고르기 화면의 견본 문장에는 픽셀 판."""
+    jamo = make_jamo()
+    frame, parts = write_font(*jamo, OUT_GUIDE, "WSNS Sagaktalchul Guide", "WSNS 사각탈출 안내선", "WSNSSagaktalchulGuide")
+    write_font(*pixel_jamo(*jamo), OUT, "WSNS Sagaktalchul", "WSNS 사각탈출", "WSNSSagaktalchul")
     write_frame(frame)
-    write_regions(parts_of_char, frame)
-    return parts_of_char
+    write_regions(parts, frame)
+    return parts
 
 
 def write_frame(frame):

@@ -73,7 +73,7 @@ function fallbackFontUrls(referenceId?: string, script: WritingScript = "ko") {
   return [
     {
       name: chosen.name,
-      url: url(chosen.file),
+      url: url("guide" in chosen ? chosen.guide.file : chosen.file),
       frame: "frame" in chosen ? chosen.frame : undefined,
     },
     // 일본어 견본에 없는 글자는 Klee One으로

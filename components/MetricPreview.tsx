@@ -10,7 +10,7 @@ import { mergeInk } from "../lib/font/layout";
 import { outlines } from "../lib/brushes";
 import { METRICS, UPM } from "../config/metrics";
 import { fontLayout } from "../lib/font/pipeline";
-import { loadReferenceFont, referenceStack } from "../lib/reference-fonts";
+import { guideStack, loadReferenceFont } from "../lib/reference-fonts";
 import type { FontProject } from "../lib/types";
 import type { FontPreparation } from "../lib/font/types";
 
@@ -217,7 +217,7 @@ export default function MetricPreview({
           ctx.fill("nonzero");
         } else if (!/\s/.test(glyph.char)) {
           ctx.fillStyle = dark ? "#a68488" : "#c9b3b5";
-          ctx.font = `${original.plan.bodySize * scale * 0.86}px ${referenceStack(project.settings.referenceFont)}`;
+          ctx.font = `${original.plan.bodySize * scale * 0.86}px ${guideStack(project.settings.referenceFont)}`;
           ctx.fillText(glyph.char, x + 4, baseline - 6);
         }
         x += glyph.advance * scale;

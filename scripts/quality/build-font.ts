@@ -18,6 +18,9 @@ const auto = process.env.QUALITY_AUTO === "1";
 const truth: Record<string, Record<string, Part>> = {};
 const project = newProject();
 project.name = "quality";
+// 견본 글꼴(sans·squareout 등). 글줄 맞춤 방식이 이것에 따라 정해진다.
+if (process.env.QUALITY_REF)
+  project.settings.referenceFont = process.env.QUALITY_REF as typeof project.settings.referenceFont;
 let t = 0;
 for (const char of HANGUL) {
   const lines = data.samples[char];

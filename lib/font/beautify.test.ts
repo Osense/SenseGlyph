@@ -177,7 +177,7 @@ describe("handwriting correction", () => {
 describe("output consistency", () => {
   it("gives composed glyphs the same scale and stroke weight as written glyphs", () => {
     const project = completeFixture();
-    const prep = defaultPreparation("test");
+    const prep = defaultPreparation("test", 0);
     const pipeline = fontPipeline(project, prep);
     const scale = pipeline.plan.hangulScale;
     for (const char of ["곤", "안", "녕"]) {

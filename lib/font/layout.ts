@@ -29,6 +29,16 @@ export interface LayoutPlan {
   typicalByLayout?: Map<string, number>;
   /** 짜임별 쓴 글자 폭의 중앙값(폭 고르기) */
   widthByLayout?: Map<string, number>;
+  /**
+   * 글줄 맞춤(크기 고르기 강도만큼):
+   * box = 네모꼴 견본. 한글 높이를 모두 같은 키(lineHeight)로, 윗선·아랫선을 하나로.
+   * top = 탈네모 견본. 윗선(lineTop)만 맞추고 받침 있는 글자는 아래로 길게.
+   */
+  lineMode?: "box" | "top" | "none";
+  lineHeight?: number;
+  lineTop?: number;
+  /** 짜임별 가로/세로 비의 중앙값(네모꼴 글줄에서 폭 맞춤) */
+  aspectByLayout?: Map<string, number>;
   hangulScale: number;
   latinScale: number;
   symbolScale: number;
@@ -224,6 +234,7 @@ export function createLayoutPlan(
   settings: FontBuildSettings,
   sizeEvening = 0,
   script: WritingScript = "ko",
+  lineMode: "box" | "top" | "none" = "none",
 ): LayoutPlan {
   const target = bodySize(settings),
     measurements = [...direct].flatMap(([char, paths]) => {
@@ -238,12 +249,17 @@ export function createLayoutPlan(
   // 같은 짜임끼리의 보통 크기: '이'와 '뷁'처럼 짜임이 다르면 원래 크기가 다르므로 섞어 맞추지 않는다.
   const byLayout = new Map<string, number[]>();
   const widths = new Map<string, number[]>();
+  const aspects = new Map<string, number[]>();
   for (const item of measurements) {
     const key = syllableLayout(item.char);
     const size = Math.max(item.bounds.width, item.bounds.height);
     if (key && size > 40) {
       byLayout.set(key, [...(byLayout.get(key) ?? []), size]);
       widths.set(key, [...(widths.get(key) ?? []), item.bounds.width / size]);
+      aspects.set(key, [
+        ...(aspects.get(key) ?? []),
+        item.bounds.width / Math.max(1, item.bounds.height),
+      ]);
     }
   }
   const widthByLayout = new Map(
@@ -272,6 +288,23 @@ export function createLayoutPlan(
         : typicalHangulSize;
   const emScale = Math.max(0.5, Math.min(8, target / typicalCjk));
   const hangulScale = Math.max(0.5, Math.min(8, target / typicalHangulSize));
+  // 글줄: 쓴 한글 높이(출력 단위)의 중앙값. 탈네모는 받침 있는 글자 기준으로 윗선을 정해
+  // 받침 글자가 가운데에 오고, 받침 없는 글자는 같은 윗선에서 짧게 끝난다.
+  const hangulHeights = (jong?: boolean) =>
+    measurements
+      .filter((item) => {
+        const d = categoryForChar(item.char) === "hangul-syllable" && decompose(item.char);
+        return d && (jong === undefined || !!d.jong === jong);
+      })
+      .map((item) => item.bounds.height * hangulScale)
+      .filter((h) => h > 40 * hangulScale);
+  const allHeights = hangulHeights();
+  const lineHeight = allHeights.length >= 5 ? median(allHeights, 0) : 0;
+  const tall = hangulHeights(true);
+  const lineTop =
+    lineMode === "top"
+      ? 500 - median(tall.length >= 3 ? tall : allHeights, lineHeight) / 2
+      : 500 - lineHeight / 2;
   const capHeight = target * 0.8;
   const capitals = measurements
     .filter((item) => /^[A-Z0-9]$/.test(item.char))
@@ -316,6 +349,14 @@ export function createLayoutPlan(
     typicalHangulSize,
     typicalByLayout,
     widthByLayout,
+    lineMode: lineHeight ? lineMode : "none",
+    aspectByLayout: new Map(
+      [...aspects]
+        .filter(([, list]) => list.length >= 3)
+        .map(([key, list]) => [key, median(list, 1)]),
+    ),
+    lineHeight,
+    lineTop,
     hangulScale,
     latinScale,
     symbolScale,
@@ -393,7 +434,20 @@ export function layoutGlyph(
       : plan.latinScale;
   if (hangul) {
     const own = Math.max(1, bounds.width, bounds.height);
-    if (category === "hangul-syllable" && plan.sizeEvening > 0) {
+    if (
+      category === "hangul-syllable" &&
+      plan.sizeEvening > 0 &&
+      plan.lineMode === "box" &&
+      plan.lineHeight
+    ) {
+      // 네모꼴: 모든 한글을 같은 키로(짜임과 상관없이). 한 번에 0.8~1.25배까지만.
+      const height = Math.max(1, bounds.height) * scale;
+      scale *= Math.max(
+        0.8,
+        // 글줄은 본문에서 가장 먼저 눈에 띄므로 강도보다 조금 세게(50% → 71%)
+        Math.min(1.25, (plan.lineHeight / height) ** Math.sqrt(plan.sizeEvening)),
+      );
+    } else if (category === "hangul-syllable" && plan.sizeEvening > 0) {
       // 같은 짜임 글자의 보통 크기 쪽으로(커도 작아도) 강도만큼 맞춘다. 한 번에 0.8~1.25배까지만.
       const layout = syllableLayout(char);
       const typical =
@@ -404,18 +458,56 @@ export function layoutGlyph(
         Math.min(1.25, (typical / own) ** (plan.sizeEvening * 0.8)),
       );
     }
-    scale = Math.min(scale, plan.bodySize / own);
+    // 글자가 몸통을 넘지 않게. 네모꼴 글줄에서는 키를 맞추는 게 우선이라 가로는 조금 더 허용한다.
+    scale =
+      plan.lineMode === "box" && category === "hangul-syllable"
+        ? Math.min(
+            scale,
+            plan.bodySize / Math.max(1, bounds.height),
+            (plan.bodySize * 1.15) / Math.max(1, bounds.width),
+          )
+        : Math.min(scale, plan.bodySize / own);
   }
   // 폭 고르기: 같은 짜임 글자의 보통 가로세로비 쪽으로 가로만 살짝(0.9~1.1배)
   let sx = 1;
-  if (category === "hangul-syllable" && plan.sizeEvening > 0) {
+  const aspect =
+    plan.lineMode === "box" && plan.lineHeight
+      ? plan.aspectByLayout?.get(syllableLayout(char) ?? "")
+      : undefined;
+  if (category === "hangul-syllable" && plan.sizeEvening > 0 && aspect) {
+    // 네모꼴: 같은 짜임 글자의 평소 폭(키 × 평소 가로세로비)으로
+    const width = Math.max(1, bounds.width) * scale;
+    sx = Math.max(
+      0.85,
+      Math.min(
+        1.15,
+        ((aspect * plan.lineHeight!) / width) ** Math.sqrt(plan.sizeEvening),
+      ),
+    );
+  } else if (category === "hangul-syllable" && plan.sizeEvening > 0) {
     const layout = syllableLayout(char);
     const ratio = layout && plan.widthByLayout?.get(layout);
     const own = bounds.width / Math.max(1, bounds.width, bounds.height);
     if (ratio && own > 0.2)
       sx = Math.max(0.9, Math.min(1.1, (ratio / own) ** (plan.sizeEvening * 0.6)));
   }
+  if (aspect) {
+    // 폭은 몸통을 넘지 않게: 가로를 먼저 좁히고(0.85배까지), 그래도 넓으면 전체를 줄인다.
+    const width = Math.max(1, bounds.width) * scale * sx;
+    if (width > plan.bodySize) {
+      sx = Math.max(0.85, (sx * plan.bodySize) / width);
+      scale = Math.min(scale, plan.bodySize / (Math.max(1, bounds.width) * sx));
+    }
+  }
   const cy = (bounds.top + bounds.bottom) / 2;
+  // 탈네모 글줄: 윗선을 강도만큼 공통 윗선으로
+  const lift =
+    category === "hangul-syllable" &&
+    plan.lineMode === "top" &&
+    plan.lineTop !== undefined
+      ? (plan.lineTop - (500 - (bounds.height * scale) / 2)) *
+        Math.sqrt(plan.sizeEvening)
+      : 0;
   const referenceWidth = bounds.width * scale * sx;
   const contentWidth =
     category === "digit"
@@ -427,7 +519,7 @@ export function layoutGlyph(
       Math.round(left + (x - bounds.left) * scale * sx),
       Math.round(
         hangul
-          ? 500 + (y - cy) * scale
+          ? 500 + lift + (y - cy) * scale
           : METRICS.baseline + (y - METRICS.baseline) * scale,
       ),
     ]),

@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,60888,t=>{"use strict";var e=t.i(43476),i=t.i(71645),u=t.i(81524),c=t.i(6315);t.s(["default",0,function(){return(0,i.useEffect)(()=>c.x.getState().detect(),[]),(0,e.jsx)(u.C,{page:"refund"})}])}]);

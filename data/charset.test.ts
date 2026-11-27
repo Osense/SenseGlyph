@@ -1,11 +1,13 @@
 import { it, expect } from "vitest";
 import { HANGUL, CHARSET, CATEGORIES } from "./charset";
 import { slotKeys } from "../lib/hangul";
-it("preserves all 138 unique specified syllables", () => {
-  expect(HANGUL).toHaveLength(138);
-  expect(new Set(HANGUL).size).toBe(138);
+it("preserves all 150 unique specified syllables", () => {
+  expect(HANGUL).toHaveLength(150);
+  expect(new Set(HANGUL).size).toBe(150);
   expect(HANGUL.slice(0, 10).join(" ")).toBe("겨 구 귀 갛 겪 곧 곬 괆 괬 괶");
-  expect(HANGUL.slice(-7).join(" ")).toBe("해 호 홰 혨 홅 흖 휰");
+  expect(HANGUL.slice(131, 138).join(" ")).toBe("해 호 홰 혨 홅 흖 휰");
+  // 가장 자주 쓰는 글자 12자(직접 쓴 그대로 들어간다)
+  expect(HANGUL.slice(-12).join("")).toBe("이다는에을가하한고지서를");
 });
 it("covers all 237 positional slots", () => {
   const slots = new Set(HANGUL.flatMap(slotKeys));
@@ -14,11 +16,11 @@ it("covers all 237 positional slots", () => {
   expect([...slots].filter((k) => k.startsWith("jong:"))).toHaveLength(81);
   expect(slots.size).toBe(237);
 });
-it("has 180 required and 422 unique characters including optional symbols", () => {
+it("has 192 required and 434 unique characters including optional symbols", () => {
   expect(
     CATEGORIES.filter((c) => c.required).flatMap((c) => c.chars),
-  ).toHaveLength(180);
-  expect(CHARSET).toHaveLength(422);
-  expect(new Set(CHARSET.map((c) => c.char)).size).toBe(422);
+  ).toHaveLength(192);
+  expect(CHARSET).toHaveLength(434);
+  expect(new Set(CHARSET.map((c) => c.char)).size).toBe(434);
   expect(CATEGORIES[2].chars).toHaveLength(32);
 });

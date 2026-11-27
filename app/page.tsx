@@ -1536,6 +1536,19 @@ export default function Page() {
                       ? t("표시 지우기")
                       : t("나중에 다시 보기")}
                   </Button>
+                  {currentIssues.some((issue) => issue.kind === "outlier") && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="sg-shape-ok flex-1"
+                      data-ink-locked={busy || undefined}
+                      disabled={busy}
+                      data-lock-zone={lock}
+                      onClick={() => useStudio.getState().acceptShape(char)}
+                    >
+                      {t("이 모양이 맞아요")}
+                    </Button>
+                  )}
                   {category === "hangul-syllable" && strokes.length > 0 && (
                     <Button
                       variant="secondary"

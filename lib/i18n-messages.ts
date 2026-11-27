@@ -230,7 +230,7 @@ export const JA: Record<string, string> = {
  "쓰지 않은 글자 쓰러 가기 →": "書いていない文字を書く →",
  "쓰지 않은 글자는 견본 글꼴로 대체됩니다": "書いていない文字は見本フォントで補われます",
  "쓰지 않은 글자를 견본 글꼴로 채우고 있어요": "書いていない文字を見本フォントで補っています",
- "쓴 138자에서 자모를 떼어 11,172자를 만들어요. 한 글자를 대충 쓰면 그 자모가 들어간 수많은 글자에 똑같이 나타나요. 천천히, 또박또박!": "書いた138字から字母を取り出して11,172字を作ります。1字を雑に書くと、その字母を使うたくさんの字に同じように出てしまいます。ゆっくり、ていねいに！",
+ "쓴 150자에서 자모를 떼어 11,172자를 만들어요. 한 글자를 대충 쓰면 그 자모가 들어간 수많은 글자에 똑같이 나타나요. 천천히, 또박또박!": "書いた150字から字母を取り出して11,172字を作ります。1字を雑に書くと、その字母を使うたくさんの字に同じように出てしまいます。ゆっくり、ていねいに！",
  "쓴 그대로": "書いたまま",
  "쓴 그대로의 손글씨 미리보기": "書いたままの手書きプレビュー",
  "쓴 글자가 그대로 폰트가 돼요": "書いた字がそのままフォントに",
@@ -462,7 +462,7 @@ export const JA: Record<string, string> = {
  "기기 성능에 따라 시간이 걸릴 수 있어요. 태블릿·휴대폰은 컴퓨터보다 조금 더 걸려요.": "端末の性能によって時間がかかることがあります。タブレット・スマホはパソコンより少し長くかかります。",
  "작업 중단": "中止",
  "자모 균형": "字母のバランス",
- "다른 글자에서 빌려 온 자모의 크기·위치를 평균에 맞추고, 크게 어긋난 초성·받침만 바로잡아요": "ほかの文字から借りた字母の大きさ・位置を平均に合わせ、大きくずれた初声・パッチムだけを直します",
+ "다른 글자에서 빌려 온 자모의 크기·위치를 평균에 맞추고, 크게 어긋난 초성·받침을 바로잡아요. 견본을 따라 썼다면 견본이 그 글자에서 자모를 두는 자리도 참고해요": "ほかの文字から借りた字母の大きさ・位置を平均に合わせ、大きくずれた初声・パッチムを直します。見本をなぞって書いた場合は、見本がその文字で字母を置く位置も参考にします",
  "가장 고르게": "いちばん均一に",
  "획 끝을 다듬는 중": "線の端を整え中",
  "자모끼리 인사시키는 중": "字母どうしをあいさつさせ中",
@@ -525,7 +525,7 @@ export const JA: Record<string, string> = {
  "카카오로 계속하기": "カカオで続ける",
  "로그인 없이 시작하기 →": "ログインせずに始める →",
  "베타 기간에는 로그인 없이도 모든 기능을 쓸 수 있어요. 계정 저장은 준비 중이라, 지금은 어떤 값을 넣어도 이 기기에서만 들어가져요.": "ベータ期間中はログインなしですべての機能を使えます。アカウント保存は準備中のため、今はどんな値を入れてもこの端末の中だけで入れます。",
- "138자만 쓰면 11,172자": "138字書けば11,172字",
+ "150자만 쓰면 11,172자": "150字書けば11,172字",
  "자모를 나눠 조합해서 현대 한글 전부를 내 글씨로 채워요.": "字母を分けて組み合わせ、現代ハングルすべてをあなたの字で埋めます。",
  "태블릿과 펜이면 충분해요": "タブレットとペンがあれば十分",
  "설치도 스캔도 없이, 브라우저에서 바로 써요.": "インストールもスキャンもなしで、ブラウザですぐ書けます。",
@@ -739,7 +739,8 @@ export const JA: Record<string, string> = {
  "WSNS 사각탈출": "WSNS 四角脱出",
  "이 견본은 {brush}{ro} 따라 쓰면 획이 견본과 가장 비슷해요.": "この見本は{brush}でなぞると、線がいちばん見本に近くなります。",
  "{brush}{ro} 바꾸기": "{brush}に切り替える",
- "같은 자모를 쓴 다른 글자와 모양이 많이 달라요": "同じ字母を書いたほかの文字と形が大きく違います"
+ "같은 자모를 쓴 다른 글자와 모양이 많이 달라요": "同じ字母を書いたほかの文字と形が大きく違います",
+ "이 모양이 맞아요": "この形で合っています"
 };
 export const EN: Record<string, string> = {
  " 폰트 이름": " font name",
@@ -972,7 +973,7 @@ export const EN: Record<string, string> = {
  "쓰지 않은 글자 쓰러 가기 →": "Write the missing characters →",
  "쓰지 않은 글자는 견본 글꼴로 대체됩니다": "Characters you didn't write use the sample font",
  "쓰지 않은 글자를 견본 글꼴로 채우고 있어요": "Filling unwritten characters with the sample font",
- "쓴 138자에서 자모를 떼어 11,172자를 만들어요. 한 글자를 대충 쓰면 그 자모가 들어간 수많은 글자에 똑같이 나타나요. 천천히, 또박또박!": "Your 138 characters are split into jamo to make 11,172. A sloppy character shows up in every syllable that reuses its jamo. Slow and steady!",
+ "쓴 150자에서 자모를 떼어 11,172자를 만들어요. 한 글자를 대충 쓰면 그 자모가 들어간 수많은 글자에 똑같이 나타나요. 천천히, 또박또박!": "Your 150 characters are split into jamo to make 11,172. A sloppy character shows up in every syllable that reuses its jamo. Slow and steady!",
  "쓴 그대로": "As written",
  "쓴 그대로의 손글씨 미리보기": "Preview of handwriting as written",
  "쓴 글자가 그대로 폰트가 돼요": "What you write becomes the font",
@@ -1204,7 +1205,7 @@ export const EN: Record<string, string> = {
  "기기 성능에 따라 시간이 걸릴 수 있어요. 태블릿·휴대폰은 컴퓨터보다 조금 더 걸려요.": "This may take a while depending on your device. Tablets and phones take a bit longer than computers.",
  "작업 중단": "Stop",
  "자모 균형": "Jamo balance",
- "다른 글자에서 빌려 온 자모의 크기·위치를 평균에 맞추고, 크게 어긋난 초성·받침만 바로잡아요": "Match borrowed jamo to their average size and position, and fix only initials and finals that are clearly off",
+ "다른 글자에서 빌려 온 자모의 크기·위치를 평균에 맞추고, 크게 어긋난 초성·받침을 바로잡아요. 견본을 따라 썼다면 견본이 그 글자에서 자모를 두는 자리도 참고해요": "Match borrowed jamo to their average size and position and fix initials and finals that are clearly off. If you traced the sample, its per-letter jamo placement is used as a hint too",
  "가장 고르게": "Most even",
  "획 끝을 다듬는 중": "Trimming stroke ends",
  "자모끼리 인사시키는 중": "Introducing jamo to each other",
@@ -1267,7 +1268,7 @@ export const EN: Record<string, string> = {
  "카카오로 계속하기": "Continue with Kakao",
  "로그인 없이 시작하기 →": "Start without signing in →",
  "베타 기간에는 로그인 없이도 모든 기능을 쓸 수 있어요. 계정 저장은 준비 중이라, 지금은 어떤 값을 넣어도 이 기기에서만 들어가져요.": "During the beta every feature works without an account. Account sync is coming, so for now any details just let you in on this device.",
- "138자만 쓰면 11,172자": "Write 138, get 11,172",
+ "150자만 쓰면 11,172자": "Write 150, get 11,172",
  "자모를 나눠 조합해서 현대 한글 전부를 내 글씨로 채워요.": "Jamo are split and recombined to fill every modern Hangul syllable in your hand.",
  "태블릿과 펜이면 충분해요": "A tablet and a pen are enough",
  "설치도 스캔도 없이, 브라우저에서 바로 써요.": "No installs, no scanning — write right in the browser.",
@@ -1481,5 +1482,6 @@ export const EN: Record<string, string> = {
  "WSNS 사각탈출": "WSNS Sagaktalchul",
  "이 견본은 {brush}{ro} 따라 쓰면 획이 견본과 가장 비슷해요.": "Trace this sample with the {brush} to get strokes closest to it.",
  "{brush}{ro} 바꾸기": "Switch to {brush}",
- "같은 자모를 쓴 다른 글자와 모양이 많이 달라요": "This jamo looks very different from the same jamo in your other letters"
+ "같은 자모를 쓴 다른 글자와 모양이 많이 달라요": "This jamo looks very different from the same jamo in your other letters",
+ "이 모양이 맞아요": "This shape is right"
 };

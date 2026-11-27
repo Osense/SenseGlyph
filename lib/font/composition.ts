@@ -13,6 +13,8 @@ import { decompose, slotKeys, vowelType } from "../hangul";
 import { activeSeparation, effectiveSample } from "./editing";
 import { cachedJudgement } from "./judge";
 import { arrangePieces, relationsOf, type Piece } from "./relations";
+import { cachedShape, shapeDistance, shapeGroup } from "./jamo-shape";
+import { referenceLayout } from "./reference-layout";
 import { alignPieces, averagePieces, ownChoOffset } from "./balance";
 import {
   blendStrokes,
@@ -193,11 +195,68 @@ export function componentLibrary(project: FontProject, prep: FontPreparation) {
  * - 원본 프로젝트는 바꾸지 않습니다. */
 export type Handwriting = ReturnType<typeof baseHandwriting>;
 
+/**
+ * 표본마다 '같은 자모의 다른 표본들과 얼마나 다른지'(거리 중앙값)와, 눈에 띄게 다른 표본(suspect)인지.
+ * 자모를 잘못 나눴거나 한 글자를 삐끗한 표본이 그 자리의 대표가 되어 수백 자에 퍼지는 것을 막는 데 쓴다.
+ */
+const oddness = new WeakMap<
+  Map<string, ComponentSample[]>,
+  Map<ComponentSample, { score: number; suspect: boolean }>
+>();
+function oddnessOf(pools: Map<string, ComponentSample[]>) {
+  let info = oddness.get(pools);
+  if (info) return info;
+  info = new Map();
+  const groups = new Map<string, ComponentSample[]>();
+  for (const pool of pools.values())
+    for (const c of pool) {
+      const group = !c.derived && shapeGroup(c);
+      if (group && cachedShape(c.strokes))
+        groups.set(group, [...(groups.get(group) ?? []), c]);
+    }
+  const mid = (values: number[]) =>
+    [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
+  for (const members of groups.values()) {
+    if (members.length < 3) continue;
+    const scores = members.map((m) =>
+      mid(
+        members
+          .filter((o) => o !== m)
+          .map((o) =>
+            shapeDistance(cachedShape(m.strokes)!, cachedShape(o.strokes)!),
+          ),
+      ),
+    );
+    const usual = mid(scores);
+    members.forEach((m, i) =>
+      info!.set(m, {
+        score: scores[i],
+        suspect: !m.confirmed && scores[i] > Math.max(0.13, usual * 2.4),
+      }),
+    );
+  }
+  oddness.set(pools, info);
+  return info;
+}
+
+/** 이 표본들을 쓸 때 고른 견본 글꼴(견본 배치 활용에 쓴다) */
+const poolFont = new WeakMap<Map<string, ComponentSample[]>, string>();
+
 function libraryFrom(pools: Map<string, ComponentSample[]>) {
   const library = new Map<string, ComponentSample>();
+  const odd = oddnessOf(pools);
   for (const [key, pool] of pools) {
     const confirmed = pool.filter((component) => component.confirmed);
-    library.set(key, confirmed[0] ?? pool[0]);
+    // 대표 표본: 확인한 것 → 먼저 쓴 것. 다만 먼저 쓴 것이 같은 자모의 다른 표본들과 눈에 띄게 다르면
+    // 그 자리의 다른 표본 가운데 가장 닮은 것으로 바꾼다.
+    let pick = confirmed[0] ?? pool[0];
+    if (!pick.confirmed && odd.get(pick)?.suspect) {
+      const better = pool
+        .filter((c) => odd.has(c) && !odd.get(c)!.suspect)
+        .sort((a, b) => odd.get(a)!.score - odd.get(b)!.score)[0];
+      if (better) pick = better;
+    }
+    library.set(key, pick);
   }
   // 쓰지 않은 짜임은 가까운 짜임의 내 글씨로 만들어 채운다(조합 보간).
   return deriveMissingSlots(library, ALL_SLOTS);
@@ -229,6 +288,7 @@ export function baseHandwriting(project: FontProject, prep: FontPreparation) {
     for (const part of own)
       pools.set(part.key, [...(pools.get(part.key) ?? []), part]);
   }
+  poolFont.set(pools, project.settings.referenceFont ?? "sans");
   return { library: libraryFrom(pools), direct, pools, parts };
 }
 
@@ -296,6 +356,7 @@ export function correctHandwriting(
     for (const part of corrected)
       pools.set(part.key, [...(pools.get(part.key) ?? []), part]);
   }
+  poolFont.set(pools, project.settings.referenceFont ?? "sans");
   return { library: libraryFrom(pools), direct, pools, parts };
 }
 
@@ -496,6 +557,13 @@ function choOffsetOf(pools: Map<string, ComponentSample[]>) {
   return value;
 }
 
+/**
+ * 모음 갈래: 같은 짜임(세로·가로·섞임) 안에서도 초성·받침의 모양과 자리를 바꾸는 모음 묶음.
+ * 세로: ㅏㅑㅣ / ㅓㅕ / ㅐㅒㅔㅖ, 가로: ㅗㅛ / ㅜㅠ / ㅡ, 섞임: ㅘㅙㅚ / ㅝㅞㅟ / ㅢ
+ */
+const VOWEL_FAMILY = [0, 2, 0, 2, 1, 2, 1, 2, 3, 6, 6, 6, 3, 4, 7, 7, 7, 4, 5, 8, 0];
+export const vowelFamily = (jung: number) => VOWEL_FAMILY[jung];
+
 /** Exact contextual slots already share the same writing layout and em coordinates. */
 export function composeGlyph(
   char: string,
@@ -509,6 +577,7 @@ export function composeGlyph(
   if (!pools) return keys.flatMap((key) => library.get(key)!.strokes);
 
   const wanted = decompose(char)!;
+  const odd = oddnessOf(pools);
   const [initialKey, medialKey] = keys;
   const matches = new Map<string, Map<string, ComponentSample>>();
   for (const key of keys) {
@@ -542,7 +611,12 @@ export function composeGlyph(
     return (
       Number(!!component.confirmed) * 4 +
       Number(source.jung === wanted.jung) * 2 +
-      Number(source.cho === wanted.cho)
+      // 같은 모음은 아니어도 같은 갈래(ㅗ·ㅛ / ㅜ·ㅠ / ㅏ·ㅑ·ㅣ / ㅓ·ㅕ …)에서 쓴 자모를 먼저:
+      // '고'의 ㄱ과 '구'의 ㄱ처럼 모음 갈래에 따라 초성 모양·자리가 달라진다.
+      Number(vowelFamily(source.jung) === vowelFamily(wanted.jung)) * 1.5 +
+      Number(source.cho === wanted.cho) -
+      // 같은 자모의 다른 표본들과 눈에 띄게 다른 표본은 맨 뒤로
+      Number(!!odd.get(component)?.suspect) * 8
     );
   };
   // 자모를 모아 놓을 글자 범위: 짝이 맞는 글자(anchor)가 있으면 그 글자, 없으면 같은 짜임의 보통 범위
@@ -599,13 +673,163 @@ export function composeGlyph(
   // 자리만 맞춘 조각들을 내 글씨에서 배운 관계(간격·맞춤·크기)대로 다시 쌓는다(lib/font/relations.ts).
   const arranged = arrangePieces(char, averaged, relationsOf(pools), target);
   // 균형 보정 2: 초성–모음 기둥 맞춤, 받침 가운데(강도만큼)
-  return alignPieces(
+  const aligned = alignPieces(
     char,
     arranged,
     target,
     balance,
     choOffsetOf(pools),
-  ).flatMap(
+  );
+  // 균형 보정 3: 견본을 따라 쓴 만큼, 견본이 이 글자에서 자모를 두는 자리·크기 쪽으로(강도만큼)
+  return followReference(char, aligned, pools, balance).flatMap(
     (piece) => piece.strokes,
   );
+}
+
+/* ---------- 견본 배치 활용 ---------- */
+type Rel = [cx: number, cy: number, w: number, h: number];
+interface Follow {
+  /** 견본을 따라 쓴 정도 0~1 */
+  degree: number;
+  /** 내 글씨가 견본에서 한결같이 벗어난 만큼(자모·짜임별, 글자 범위 비율) */
+  bias: Map<string, Rel>;
+  residual: number;
+}
+const follows = new WeakMap<Map<string, ComponentSample[]>, Follow | null>();
+const relOf = (box: Box, frame: Frame): Rel => [
+  (box.x + box.width / 2 - frame.x) / frame.width,
+  (box.y + box.height / 2 - frame.y) / frame.height,
+  box.width / frame.width,
+  box.height / frame.height,
+];
+const med = (values: number[]) => {
+  const s = [...values].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+};
+/** 견본을 따라 쓴 정도를 잴 때: 이 값보다 덜 벗어나면 그대로 따라 쓴 것, FOLLOW_NONE 보다 크면 따라 쓰지 않은 것 */
+const FOLLOW_FULL = 0.015,
+  FOLLOW_NONE = 0.035;
+
+/**
+ * 쓴 글자마다 자모 상자를 견본의 그 글자 자모 상자와 견준다.
+ * - 한결같은 차이(bias): 펜 굵기, 초성을 크게 쓰는 버릇처럼 모든 글자에 같이 나타나는 차이.
+ * - 남는 차이(residual): 견본을 따라 쓰지 않을수록 크다 → 따라 쓴 정도(degree).
+ */
+export function followOf(pools: Map<string, ComponentSample[]>): Follow | null {
+  if (follows.has(pools)) return follows.get(pools)!;
+  const font = poolFont.get(pools);
+  let result: Follow | null = null;
+  if (font) {
+    const diffs = new Map<string, Rel[]>();
+    const seen = new Set<ComponentSample>();
+    for (const pool of pools.values())
+      for (const c of pool) {
+        if (c.derived || seen.has(c) || !decompose(c.char)) continue;
+        seen.add(c);
+        const frame = sourceFrame(pools, c.char),
+          ref = referenceLayout(font, c.char)?.[c.part],
+          own = frameOf(c.strokes);
+        if (!frame || !ref || !own || frame.width < 60 || frame.height < 60)
+          continue;
+        const a = relOf(own, frame),
+          b: Rel = [
+            ref.x + ref.width / 2,
+            ref.y + ref.height / 2,
+            ref.width,
+            ref.height,
+          ];
+        const key = c.part + ":" + layoutKey(c.char);
+        diffs.set(key, [
+          ...(diffs.get(key) ?? []),
+          [a[0] - b[0], a[1] - b[1], a[2] - b[2], a[3] - b[3]],
+        ]);
+      }
+    const bias = new Map<string, Rel>();
+    const residuals: number[] = [];
+    for (const [key, list] of diffs) {
+      if (list.length < 3) continue;
+      const b = [0, 1, 2, 3].map((k) => med(list.map((d) => d[k]))) as Rel;
+      bias.set(key, b);
+      for (const d of list)
+        residuals.push(
+          (Math.abs(d[0] - b[0]) +
+            Math.abs(d[1] - b[1]) +
+            Math.abs(d[2] - b[2]) +
+            Math.abs(d[3] - b[3])) /
+            4,
+        );
+    }
+    if (residuals.length >= 30) {
+      const residual = med(residuals);
+      result = {
+        bias,
+        residual,
+        degree: Math.max(
+          0,
+          Math.min(1, (FOLLOW_NONE - residual) / (FOLLOW_NONE - FOLLOW_FULL)),
+        ),
+      };
+    }
+  }
+  follows.set(pools, result);
+  return result;
+}
+
+/**
+ * 견본 배치 활용: 조합한 글자의 자모를 '견본이 이 글자에서 두는 자리·크기 + 내 글씨의 한결같은 차이' 쪽으로 옮긴다.
+ * 견본은 11,172자를 모두 따로 그렸기 때문에, 같은 자리 안에서 글자마다 달라지는 차이
+ * (ㅃ 옆의 좁은 ㅏ, ㅗ 위의 낮은 ㄱ)를 알고 있다. 옮기는 양 = 따라 쓴 정도 × 균형 보정 강도.
+ * 획 모양은 건드리지 않고 자리와 크기(0.85~1.18배)만 바꾼다. 짝이 맞는 글자에서 온 자모(fixed)는 그대로.
+ */
+function followReference(
+  char: string,
+  pieces: Piece[],
+  pools: Map<string, ComponentSample[]>,
+  balance: number,
+): Piece[] {
+  if (balance <= 0 || pieces.every((p) => p.fixed)) return pieces;
+  const follow = followOf(pools);
+  const font = poolFont.get(pools);
+  if (!follow || !font || follow.degree <= 0.05) return pieces;
+  const ref = referenceLayout(font, char);
+  const frame = frameOf(pieces.flatMap((p) => p.strokes));
+  if (!ref || !frame || frame.width < 60 || frame.height < 60) return pieces;
+  const weight = follow.degree * Math.min(1, balance * 1.5) * 0.8;
+  return pieces.map((piece) => {
+    const r = ref[piece.part],
+      bias = follow.bias.get(piece.part + ":" + layoutKey(char)),
+      box = frameOf(piece.strokes);
+    if (piece.fixed || !r || !bias || !box || box.width < 4 || box.height < 4)
+      return piece;
+    const want = {
+      cx: frame.x + (r.x + r.width / 2 + bias[0]) * frame.width,
+      cy: frame.y + (r.y + r.height / 2 + bias[1]) * frame.height,
+      w: Math.max(4, (r.width + bias[2]) * frame.width),
+      h: Math.max(4, (r.height + bias[3]) * frame.height),
+    };
+    const cx = box.x + box.width / 2,
+      cy = box.y + box.height / 2;
+    const limit = (v: number) => Math.max(0.85, Math.min(1.18, v));
+    // 가늘고 긴 자모(ㅡ·ㅣ)는 긴 쪽만 맞춘다(얇은 쪽을 늘이면 떨림이 커진다)
+    const sx =
+      box.height > box.width * 2.5 ? 1 : limit((want.w / box.width) ** weight),
+      sy =
+        box.width > box.height * 2.5
+          ? 1
+          : limit((want.h / box.height) ** weight);
+    const nx = cx + (want.cx - cx) * weight,
+      ny = cy + (want.cy - cy) * weight;
+    return {
+      ...piece,
+      strokes: piece.strokes.map((stroke) => ({
+        ...stroke,
+        points: stroke.points.map((p) => ({
+          ...p,
+          x: nx + (p.x - cx) * sx,
+          y: ny + (p.y - cy) * sy,
+        })),
+      })),
+    };
+  });
 }

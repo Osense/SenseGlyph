@@ -17,7 +17,6 @@ import {
   type LaidOutGlyph,
 } from "./layout";
 import type { FontBuildSettings, FontPreparation } from "./types";
-import { referenceFont } from "../reference-fonts";
 
 export interface PipelineOptions {
   /** 손글씨 정돈을 적용할지(미리보기의 '보정 전'은 false) */
@@ -49,17 +48,13 @@ export function fontLayout(
     [...direct].map(([char, strokes]) => [char, strokeContours(strokes)]),
   );
   const script = project.settings.script ?? "ko";
-  // 견본이 탈네모(frame)면 윗선만, 네모꼴이면 윗선·아랫선 모두 맞춘다.
+  // 글줄 맞춤(네모꼴·윗선·아랫선·가운데)은 고른 견본이 아니라 실제로 쓴 글씨에서 읽는다.
   const plan = createLayoutPlan(
     references,
     settings,
     sizeEvening,
     script,
-    script !== "ko"
-      ? "none"
-      : "frame" in referenceFont(project.settings.referenceFont, script)
-        ? "top"
-        : "box",
+    script === "ko" ? "auto" : "none",
   );
   const render = createStrokeRenderer(settings);
   const strokesFor = (char: string) => {

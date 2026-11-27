@@ -52,9 +52,32 @@ if (process.env.QUALITY_DETAIL)
     layout: 0, straighten: 0, smooth: 0, size: 0, weight: 0, balance: 0,
     ...JSON.parse(process.env.QUALITY_DETAIL),
   };
+// 시험: 일부 글자에서 모음의 마지막 획을 빼먹은 경우
+for (const char of process.env.QUALITY_DROP ?? "") {
+  const sample = project.samples[char];
+  const ids = Object.keys(truth[char] ?? {}).filter((id) => truth[char][id] === "jung");
+  if (sample && ids.length > 1)
+    sample.strokes = sample.strokes.filter((s) => s.id !== ids[ids.length - 1]);
+}
+// 시험: 일부 글자의 자모 나누기를 일부러 틀리게(모음의 마지막 획을 초성으로)
+for (const char of process.env.QUALITY_CORRUPT ?? "") {
+  const ids = Object.keys(truth[char] ?? {}).filter((id) => truth[char][id] === "jung");
+  if (ids.length > 1) truth[char][ids[ids.length - 1]] = "cho";
+}
 if (!auto)
   for (const [char, assignments] of Object.entries(truth))
     preparation.separations[char] = { assignments };
+// 빠른 진단: 자동 자모 나누기 오답만 세고 끝낸다 (QUALITY_SEP=1, QUALITY_AUTO=1 과 함께)
+if (process.env.QUALITY_SEP) {
+  const { prepareHandwriting } = await import("../../lib/font/composition");
+  const hw = prepareHandwriting(project, preparation, false);
+  const wrongChars: string[] = [];
+  for (const [char, parts] of hw.parts)
+    if (parts.some((part) => part.strokes.some((s) => truth[char]?.[s.id] !== part.part)))
+      wrongChars.push(char);
+  console.log(`오답 ${wrongChars.length}/${hw.parts.size} ${wrongChars.join("")}`);
+  process.exit(0);
+}
 const started = Date.now();
 const font = generateFont({ project, preparation, includePremium: true });
 writeFileSync(output, Buffer.from(font.ttf));
@@ -106,3 +129,12 @@ if (process.env.QUALITY_COMPOSE) {
   writeFileSync(process.env.QUALITY_COMPOSE_OUT ?? "/tmp/compose.json", JSON.stringify(out));
 }
 
+if (process.env.QUALITY_LOG) {
+  const { fontPipeline } = await import("../../lib/font/pipeline");
+  const { prepareHandwriting, followOf } = await import("../../lib/font/composition");
+  const follow = followOf(prepareHandwriting(project, preparation, false).pools);
+  console.log(
+    "lineMode", fontPipeline(project, preparation).plan.lineMode,
+    "| follow", follow ? `degree ${follow.degree.toFixed(2)} residual ${follow.residual.toFixed(3)}` : "none",
+  );
+}

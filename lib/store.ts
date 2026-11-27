@@ -16,6 +16,8 @@ interface State {
   settings: (s: Partial<ProjectSettings>) => void;
   rename: (name: string) => void;
   markReview: (char: string, category: CharCategory, value: boolean) => void;
+  /** 이 글자의 '모양이 달라요' 경고를 끈다 */
+  acceptShape: (char: string) => void;
   prepareFont: (preparation: import("./font/types").FontPreparation) => void;
   commit: (
     char: string,
@@ -68,6 +70,19 @@ export const useStudio = create<State>((set, get) => ({
           ...project,
           updatedAt: Date.now(),
           samples: { ...project.samples, [char]: { ...sample, needsReview } },
+        },
+      };
+    }),
+  acceptShape: (char) =>
+    set((state) => {
+      const project = state.project,
+        sample = project?.samples[char];
+      if (!project || project.purchase || !sample) return {};
+      return {
+        project: {
+          ...project,
+          updatedAt: Date.now(),
+          samples: { ...project.samples, [char]: { ...sample, shapeOk: true } },
         },
       };
     }),
@@ -133,6 +148,7 @@ export const useStudio = create<State>((set, get) => ({
             char,
             category,
             strokes,
+            shapeOk: undefined,
             rewritePending:
               !strokes.length &&
               (!!p.samples[char]?.strokes.length ||
@@ -164,6 +180,7 @@ export const useStudio = create<State>((set, get) => ({
           [char]: {
             ...p.samples[char],
             strokes,
+            shapeOk: undefined,
             rewritePending: !strokes.length,
             status: strokes.length ? "done" : "empty",
             updatedAt: Date.now(),
@@ -194,6 +211,7 @@ export const useStudio = create<State>((set, get) => ({
           [char]: {
             ...p.samples[char],
             strokes,
+            shapeOk: undefined,
             rewritePending: !strokes.length,
             status: strokes.length ? "done" : "empty",
             updatedAt: Date.now(),

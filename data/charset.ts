@@ -1,7 +1,10 @@
 import type { CharCategory, WritingScript } from "../lib/types";
 import { JOYO_REST, KANJI_GRADE } from "./kanji";
+// 앞의 138자: 초성·중성·종성의 모든 자리(237개)를 한 번씩 채우는 글자.
+// 뒤의 12자: 글에서 가장 자주 나오는 글자. 직접 쓴 그대로 폰트에 들어가서 본문이 내 글씨에 더 가까워지고,
+// 가장 많이 쓰이는 자모 자리(이·다·는…)에 표본이 하나 더 생긴다.
 export const HANGUL =
-  "겨 구 귀 갛 겪 곧 곬 괆 괬 괶 끼 꾜 꽈 껍 꿎 뀓 너 뉴 놔 냄 늉 눷 뎌 됴 둬 닺 돝 듡 뒹 떼 뜨 뙈 떪 뚧 뙚 뛟 띊 려 로 롸 랖 륨 뤽 머 무 뭬 밌 몫 묽 뭏 묄 볘 뷰 붜 밗 받 볕 빛 볶 붶 뺘 쁘 뾔 뻁 뽈 뾗 세 수 숴 싫 숯 싌 써 쑤 쒀 쎈 쓨 쒡 얘 요 의 얹 없 엌 엷 읽 옳 읊 읔 왯 왼 웸 쟤 즈 좨 잺 졺 줍 좶 쥝 찌 쪼 쬐 짢 쭉 쬙 쬩 쳐 츠 최 챨 촚 췧 카 쿠 쾌 캑 콧 퀋 테 튜 퇴 팃 톺 튑 페 퓨 퓌 펭 푠 풪 해 호 홰 혨 홅 흖 휰".split(
+  "겨 구 귀 갛 겪 곧 곬 괆 괬 괶 끼 꾜 꽈 껍 꿎 뀓 너 뉴 놔 냄 늉 눷 뎌 됴 둬 닺 돝 듡 뒹 떼 뜨 뙈 떪 뚧 뙚 뛟 띊 려 로 롸 랖 륨 뤽 머 무 뭬 밌 몫 묽 뭏 묄 볘 뷰 붜 밗 받 볕 빛 볶 붶 뺘 쁘 뾔 뻁 뽈 뾗 세 수 숴 싫 숯 싌 써 쑤 쒀 쎈 쓨 쒡 얘 요 의 얹 없 엌 엷 읽 옳 읊 읔 왯 왼 웸 쟤 즈 좨 잺 졺 줍 좶 쥝 찌 쪼 쬐 짢 쭉 쬙 쬩 쳐 츠 최 챨 촚 췧 카 쿠 쾌 캑 콧 퀋 테 튜 퇴 팃 톺 튑 페 퓨 퓌 펭 푠 풪 해 호 홰 혨 홅 흖 휰 이 다 는 에 을 가 하 한 고 지 서 를".split(
     " ",
   );
 export const SPECIAL_SYMBOLS = [
@@ -108,7 +111,7 @@ export const CHARSET = CATEGORIES.flatMap((c) =>
   c.chars.map((char) => ({ char, category: c.id })),
 );
 
-/** 기본형: 한글 필수 138자·숫자·기본 기호·영문. 프리미엄: 낱자모·문장 기호·특수 기호를 더합니다. */
+/** 기본형: 한글 필수 150자·숫자·기본 기호·영문. 프리미엄: 낱자모·문장 기호·특수 기호를 더합니다. */
 export const PREMIUM_CATEGORIES: ReadonlySet<CharCategory> = new Set([
   "hangul-jamo",
   "korean-punct",

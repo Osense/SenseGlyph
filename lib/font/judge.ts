@@ -277,13 +277,14 @@ export function judgeStrokes(
   }
   // 획순을 따르는 쪽을 기본으로 하고, 자리만으로 본 결과가 훨씬 그럴듯할 때만(획순을 다르게 쓴 경우) 그쪽을 쓴다.
   // 두 결과를 같은 잣대(자리 + 자모 문법 + 획수)로 비교한다.
-  const total = (assign: number[]) => {
+  /** 자모 문법(획 기본형 줄)과 획수에서 벗어난 정도 */
+  const shapeCost = (assign: number[]) => {
     let sum = 0;
     for (let j = 0; j < k; j++) {
       const idx = assign
         .map((p, i) => (p === partIndex[j] ? i : -1))
         .filter((i) => i >= 0);
-      sum -=
+      sum +=
         GRAMMAR_WEIGHT *
           grammarCost(
             idx.flatMap((i) => strokeShape(ordered[i]).prims),
@@ -291,13 +292,22 @@ export function judgeStrokes(
           ) +
         0.5 * countPenalty(idx.length, ranges[j].range);
     }
-    return sum + assign.reduce((s, p, i) => s + scores[i][p], 0);
+    return sum;
   };
+  const total = (assign: number[]) =>
+    assign.reduce((s, p, i) => s + scores[i][p], 0) - shapeCost(assign);
+  /** 한 자모의 획이 다른 자모 획을 사이에 두고 둘 이상으로 흩어졌는지(획순으로는 드문 일) */
+  const scattered = (assign: number[]) =>
+    assign.filter((p, i) => i === 0 || p !== assign[i - 1]).length >
+    new Set(assign).size;
   // 획순대로 나눈 결과를 기본으로 하고, 획순을 무시한 결과가 같은 잣대로 확실히 더 나을 때만 그쪽을 쓴다.
+  // 자리 판정이 한 자모를 흩어 놓았다면(예: 받침 → 모음 → 다시 받침), 견본과 다른 짜임으로 써서 자리가 어긋난
+  // 경우가 대부분이다. 그때는 자모 모양까지 자리 판정 쪽이 더 잘 맞을 때만 따른다.
   const useOrdered =
     ordered_ !== null &&
     Number.isFinite(orderedScore) &&
-    total(free) - total(ordered_) < 2;
+    (total(free) - total(ordered_) < 2 ||
+      (scattered(free) && shapeCost(free) >= shapeCost(ordered_) - 1));
   const chosen = useOrdered ? ordered_! : free;
   if (!useOrdered && n >= k) {
     // 자리만으로 나눠도 빠진 자모가 없게: 그 자모일 가능성이 가장 큰 획을 넘겨준다.

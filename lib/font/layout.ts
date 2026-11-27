@@ -31,12 +31,16 @@ export interface LayoutPlan {
   widthByLayout?: Map<string, number>;
   /**
    * 글줄 맞춤(크기 고르기 강도만큼):
-   * box = 네모꼴 견본. 한글 높이를 모두 같은 키(lineHeight)로, 윗선·아랫선을 하나로.
-   * top = 탈네모 견본. 윗선(lineTop)만 맞추고 받침 있는 글자는 아래로 길게.
+   * 어느 쪽인지는 견본이 아니라 실제로 쓴 글씨에서 읽는다(detectLineMode).
+   * box = 네모꼴로 쓴 글씨. 한글 높이를 모두 같은 키(lineHeight)로, 윗선·아랫선을 하나로.
+   * top = 윗선을 맞춰 쓴 탈네모 글씨. 윗선(lineTop)만 맞추고 받침 있는 글자는 아래로 길게.
+   * bottom = 아랫선을 맞춰 쓴 글씨. 아랫선(lineBottom)만 맞춘다.
+   * none = 가운데를 맞춰 쓴 글씨(글자마다 가운데 정렬 그대로).
    */
-  lineMode?: "box" | "top" | "none";
+  lineMode?: LineMode;
   lineHeight?: number;
   lineTop?: number;
+  lineBottom?: number;
   /** 짜임별 가로/세로 비의 중앙값(네모꼴 글줄에서 폭 맞춤) */
   aspectByLayout?: Map<string, number>;
   hangulScale: number;
@@ -225,6 +229,54 @@ function syllableLayout(char: string) {
   return d ? vowelType(d.jung) + (d.jong ? "j" : "") : null;
 }
 
+export type LineMode = "box" | "top" | "bottom" | "none";
+
+/**
+ * 쓴 글씨의 글줄 습관을 읽는다.
+ * - 짜임(받침 유무·모음 모양)이 달라도 글자 키가 거의 같으면 네모꼴(box)
+ * - 아니면 윗선·가운데·아랫선 가운데 가장 고르게 맞춰 쓴 쪽(가운데면 none)
+ * 판단할 글자가 모자라면(12자 미만) none.
+ */
+export function detectLineMode(
+  items: { char: string; top: number; bottom: number }[],
+): LineMode {
+  const syllables = items.filter(
+    (item) => syllableLayout(item.char) && item.bottom - item.top > 40,
+  );
+  if (syllables.length < 12) return "none";
+  const byLayout = new Map<string, number[]>();
+  for (const item of syllables) {
+    const key = syllableLayout(item.char)!;
+    byLayout.set(key, [...(byLayout.get(key) ?? []), item.bottom - item.top]);
+  }
+  const medians = [...byLayout.values()]
+    .filter((list) => list.length >= 3)
+    .map((list) => median(list, 0));
+  const overall = median(
+    syllables.map((item) => item.bottom - item.top),
+    1,
+  );
+  if (
+    medians.length >= 3 &&
+    (Math.max(...medians) - Math.min(...medians)) / overall <= 0.12
+  )
+    return "box";
+  // 가운데값에서 벗어난 정도의 중앙값(MAD): 한두 글자가 튀어도 흔들리지 않는다
+  const mad = (values: number[]) => {
+    const m = median(values, 0);
+    return median(
+      values.map((v) => Math.abs(v - m)),
+      0,
+    );
+  };
+  const top = mad(syllables.map((item) => item.top)),
+    bottom = mad(syllables.map((item) => item.bottom)),
+    center = mad(syllables.map((item) => (item.top + item.bottom) / 2));
+  if (top <= center * 0.8 && top <= bottom) return "top";
+  if (bottom <= center * 0.8 && bottom < top) return "bottom";
+  return "none";
+}
+
 export function bodySize(settings: FontBuildSettings) {
   return settings.bodySize ?? 840;
 }
@@ -234,7 +286,8 @@ export function createLayoutPlan(
   settings: FontBuildSettings,
   sizeEvening = 0,
   script: WritingScript = "ko",
-  lineMode: "box" | "top" | "none" = "none",
+  /** "auto": 쓴 글씨에서 글줄 습관을 읽는다. 그 밖의 값은 그대로 쓴다. */
+  lineHint: LineMode | "auto" = "none",
 ): LayoutPlan {
   const target = bodySize(settings),
     measurements = [...direct].flatMap(([char, paths]) => {
@@ -301,10 +354,21 @@ export function createLayoutPlan(
   const allHeights = hangulHeights();
   const lineHeight = allHeights.length >= 5 ? median(allHeights, 0) : 0;
   const tall = hangulHeights(true);
+  const lineMode: LineMode =
+    lineHint === "auto"
+      ? detectLineMode(
+          measurements.map((item) => ({
+            char: item.char,
+            top: item.bounds.top,
+            bottom: item.bounds.bottom,
+          })),
+        )
+      : lineHint;
+  // 윗선·아랫선 맞춤은 받침 있는 글자가 가운데 오도록 그 키를 기준으로 선을 정한다.
+  const tallHeight = median(tall.length >= 3 ? tall : allHeights, lineHeight);
   const lineTop =
-    lineMode === "top"
-      ? 500 - median(tall.length >= 3 ? tall : allHeights, lineHeight) / 2
-      : 500 - lineHeight / 2;
+    lineMode === "top" ? 500 - tallHeight / 2 : 500 - lineHeight / 2;
+  const lineBottom = 500 + tallHeight / 2;
   const capHeight = target * 0.8;
   const capitals = measurements
     .filter((item) => /^[A-Z0-9]$/.test(item.char))
@@ -357,6 +421,7 @@ export function createLayoutPlan(
     ),
     lineHeight,
     lineTop,
+    lineBottom,
     hangulScale,
     latinScale,
     symbolScale,
@@ -500,14 +565,16 @@ export function layoutGlyph(
     }
   }
   const cy = (bounds.top + bounds.bottom) / 2;
-  // 탈네모 글줄: 윗선을 강도만큼 공통 윗선으로
+  // 탈네모 글줄: 윗선(또는 아랫선)을 강도만큼 공통 선으로
+  const half = (bounds.height * scale) / 2;
   const lift =
-    category === "hangul-syllable" &&
-    plan.lineMode === "top" &&
-    plan.lineTop !== undefined
-      ? (plan.lineTop - (500 - (bounds.height * scale) / 2)) *
-        Math.sqrt(plan.sizeEvening)
-      : 0;
+    category !== "hangul-syllable"
+      ? 0
+      : plan.lineMode === "top" && plan.lineTop !== undefined
+        ? (plan.lineTop - (500 - half)) * Math.sqrt(plan.sizeEvening)
+        : plan.lineMode === "bottom" && plan.lineBottom !== undefined
+          ? (plan.lineBottom - (500 + half)) * Math.sqrt(plan.sizeEvening)
+          : 0;
   const referenceWidth = bounds.width * scale * sx;
   const contentWidth =
     category === "digit"

@@ -100,3 +100,48 @@ it("keeps manual choices", () => {
   })!;
   expect(judged.parts.get("a")).toBe("jung");
 });
+
+it("keeps the stroke order when the layout differs from the sample (low ㅜ of 뒹 is not a final)", () => {
+  order = 0;
+  const poly = (id: string, pts: [number, number][]): Stroke => ({
+    id,
+    order: order++,
+    createdAt: order,
+    brush: "pen",
+    params: { size: 30, usePressure: false },
+    points: pts.flatMap(([x, y], k) =>
+      k === 0
+        ? [{ x, y, p: 1, t: 0 }]
+        : Array.from({ length: 6 }, (_, i) => ({
+            x: pts[k - 1][0] + ((x - pts[k - 1][0]) * (i + 1)) / 6,
+            y: pts[k - 1][1] + ((y - pts[k - 1][1]) * (i + 1)) / 6,
+            p: 1,
+            t: k * 10 + i,
+          })),
+    ),
+  });
+  // 탈네모로 쓴 '뒹': ㄷ 아래에 ㅜ 가 낮게 놓여, 견본(네모꼴)에서는 받침 자리다.
+  const strokes = [
+    line("ㄷ1", 200, 150, 460, 150),
+    poly("ㄷ2", [
+      [200, 150],
+      [200, 330],
+      [460, 330],
+    ]),
+    line("ㅜ1", 150, 560, 520, 560),
+    line("ㅜ2", 340, 560, 340, 700),
+    line("ㅣ", 660, 100, 660, 720),
+    poly(
+      "ㅇ",
+      Array.from({ length: 13 }, (_, i): [number, number] => [
+        400 + 80 * Math.cos((i / 12) * Math.PI * 2),
+        860 + 60 * Math.sin((i / 12) * Math.PI * 2),
+      ]),
+    ),
+  ];
+  const judged = judgeStrokes("뒹", strokes, settings)!;
+  expect(judged.parts.get("ㅜ1")).toBe("jung");
+  expect(judged.parts.get("ㅜ2")).toBe("jung");
+  expect(judged.parts.get("ㅇ")).toBe("jong");
+  expect(judged.ordered).toBe(true);
+});

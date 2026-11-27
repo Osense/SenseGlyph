@@ -38,6 +38,8 @@ export type CharCategory =
 export type WritingScript = "ko" | "ja";
 export interface GlyphSample {
   needsReview?: boolean;
+  /** '같은 자모와 모양이 달라요' 경고를 사용자가 괜찮다고 끔(획을 고치면 지워짐) */
+  shapeOk?: boolean;
   rewritePending?: boolean;
   char: string;
   category: CharCategory;

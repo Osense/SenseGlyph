@@ -63,7 +63,7 @@ const KO: { title: string; intro: string; sections: Section[] } = {
     {
       title: "7. 문의",
       items: [
-        "운영과 개인정보 보호책임자: OSNS.studio 운영자. 문의는 osns.studio@gmail.com 으로 보내 주세요.",
+        "운영과 개인정보 보호책임자: WSNS studio 운영자. 문의는 osns.studio@gmail.com 으로 보내 주세요.",
         "로그인 기능을 연 뒤에는 계정에 저장된 정보의 열람·정정·삭제·처리 정지를 언제든 요청할 수 있어요.",
         "개인정보 침해가 걱정되면 개인정보침해신고센터(국번 없이 118, privacy.kisa.or.kr)에도 신고하거나 상담할 수 있어요.",
       ],
@@ -137,7 +137,7 @@ const JA: typeof KO = {
     {
       title: "7. お問い合わせ",
       items: [
-        "運営と個人情報保護責任者：OSNS.studio の運営者。お問い合わせは osns.studio@gmail.com までお送りください。",
+        "運営と個人情報保護責任者：WSNS studio の運営者。お問い合わせは osns.studio@gmail.com までお送りください。",
         "ログイン機能の提供開始後は、アカウントに保存された情報の閲覧・訂正・削除・処理停止をいつでも求めることができます。",
         "韓国の個人情報侵害申告センター（118、privacy.kisa.or.kr）に申告・相談することもできます。",
       ],
@@ -211,7 +211,7 @@ const EN: typeof KO = {
     {
       title: "7. Contact",
       items: [
-        "Operator and privacy officer: the operator of OSNS.studio. Contact us at osns.studio@gmail.com.",
+        "Operator and privacy officer: the operator of WSNS studio. Contact us at osns.studio@gmail.com.",
         "Once sign-in is available, you can ask at any time to view, correct, delete or stop the processing of information stored in your account.",
         "You can also report or consult the Korea Personal Information Infringement Report Center (118, privacy.kisa.or.kr).",
       ],

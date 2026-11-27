@@ -102,3 +102,34 @@ it("does not mark a valid g descender red, but still flags a stroke beyond the L
     true,
   );
 });
+
+it("flags a jamo that looks unlike the same jamo elsewhere, and lets the writer accept it", () => {
+  const p = completeFixture();
+  // '겨'의 ㅕ 획을 뒤죽박죽으로(지그재그) 바꾼다
+  const sample = p.samples["겨"];
+  p.samples["겨"] = {
+    ...sample,
+    strokes: sample.strokes.map((stroke, i) =>
+      i === 0
+        ? stroke
+        : {
+            ...stroke,
+            points: stroke.points.map((point, k) => ({
+              ...point,
+              x: point.x + (k % 2 ? 90 : -90),
+              y: point.y + (k % 3 ? -70 : 70),
+            })),
+          },
+    ),
+  };
+  useStudio.getState().setProject(p);
+  const flagged = projectIssues(useStudio.getState().project);
+  expect(flagged["겨"]?.some((issue) => issue.kind === "outlier")).toBe(true);
+  useStudio.getState().acceptShape("겨");
+  const accepted = useStudio.getState().project!;
+  expect(projectIssues(accepted)["겨"]?.some((i) => i.kind === "outlier")).toBeFalsy();
+  // 저장했다 불러와도 남고, 획을 고치면 지워진다
+  expect(parseProject(JSON.stringify(accepted)).samples["겨"].shapeOk).toBe(true);
+  useStudio.getState().commit("겨", "hangul-syllable", sample.strokes);
+  expect(useStudio.getState().project!.samples["겨"].shapeOk).toBeUndefined();
+});

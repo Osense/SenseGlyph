@@ -12,14 +12,14 @@ import { completeFixture } from "./fixtures";
 import { newProject } from "../defaults";
 
 describe("Hangul component assembly", () => {
-  it("separates all 237 slots and covers every modern syllable from the 138 samples", () => {
+  it("separates all 237 slots and covers every modern syllable from the 150 samples", () => {
     const project = completeFixture(),
       prep = defaultPreparation(project.name);
     const report = coverage(project, prep);
     expect(report.slots).toBe(237);
     expect(report.missingSlots).toEqual([]);
-    expect(report.direct).toBe(138);
-    expect(report.composed).toBe(11172 - 138);
+    expect(report.direct).toBe(150);
+    expect(report.composed).toBe(11172 - 150);
     expect(new Set(report.available).size).toBe(11172);
     const library = componentLibrary(project, prep);
     for (const char of ["가", "값", "안", "녕", "힣", "휰"])

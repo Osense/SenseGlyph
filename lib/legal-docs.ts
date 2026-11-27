@@ -306,7 +306,7 @@ const TERMS: Docs = {
   ko: {
     title: "이용약관",
     intro:
-      "이 약관은 OSNS.studio(이하 ‘운영자’)가 제공하는 쎈스 글리프(이하 ‘서비스’)를 이용할 때의 조건과 절차, 운영자와 이용자의 권리·의무를 정해요.",
+      "이 약관은 WSNS studio(이하 ‘운영자’)가 제공하는 쎈스 글리프(이하 ‘서비스’)를 이용할 때의 조건과 절차, 운영자와 이용자의 권리·의무를 정해요.",
     sections: [
       {
         title: "제1조 (서비스)",
@@ -392,7 +392,7 @@ const TERMS: Docs = {
   ja: {
     title: "利用規約",
     intro:
-      "この規約は、OSNS.studio（以下「運営者」）が提供する SenseGlyph（以下「サービス」）を利用する際の条件と手続き、運営者と利用者の権利・義務を定めるものです。",
+      "この規約は、WSNS studio（以下「運営者」）が提供する SenseGlyph（以下「サービス」）を利用する際の条件と手続き、運営者と利用者の権利・義務を定めるものです。",
     sections: [
       {
         title: "第1条（サービス）",
@@ -478,7 +478,7 @@ const TERMS: Docs = {
   en: {
     title: "Terms of Service",
     intro:
-      "These terms set out the conditions and procedures for using SenseGlyph (the “Service”) provided by OSNS.studio (the “Operator”), and the rights and duties of the Operator and users.",
+      "These terms set out the conditions and procedures for using SenseGlyph (the “Service”) provided by WSNS studio (the “Operator”), and the rights and duties of the Operator and users.",
     sections: [
       {
         title: "1. The Service",

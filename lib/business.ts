@@ -45,7 +45,7 @@ export const LEGAL_EFFECTIVE = "2026-11-15";
 /** 환불·오류 신고 등 모든 문의를 받는 이메일 */
 export const CONTACT_EMAIL = "osns.studio@gmail.com";
 /** 운영자 웹사이트 */
-export const CONTACT_URL = "https://osns.studio/";
+export const CONTACT_URL = "https://wsns.studio/";
 
 /** 사업자 정보가 채워졌는지 */
 export const hasBusinessInfo = () =>

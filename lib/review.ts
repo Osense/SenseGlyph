@@ -97,11 +97,13 @@ export function projectIssues(project: FontProject | null) {
       project.fontPreparation?.separations,
       project.settings,
     );
-    for (const char of Object.keys(outliers))
+    for (const char of Object.keys(outliers)) {
+      if (project.samples[char]?.shapeOk) continue;
       result[char] = [
         ...(result[char] ?? []),
         { kind: "outlier", label: "같은 자모를 쓴 다른 글자와 모양이 많이 달라요" },
       ];
+    }
   }
   return result;
 }

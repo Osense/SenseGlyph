@@ -207,7 +207,7 @@ try {
   assert.deepEqual(restored.fontPreparation, saved.fontPreparation);
   await page.reload();
   await page.locator(".writing-area").waitFor();
-  assert.equal(await page.locator(".glyph.done").count(), 138);
+  assert.equal(await page.locator(".glyph.done").count(), 150);
   check(
     "original project ID, every vector and manual correction survive switching and browser reload",
   );

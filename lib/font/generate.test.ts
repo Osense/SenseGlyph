@@ -18,8 +18,8 @@ it("creates a parseable OTF with all 11,172 nonempty Hangul glyphs, space and va
   expect(new TextDecoder().decode(result.buffer.slice(0, 4))).toBe("OTTO");
   expect(font.unitsPerEm).toBe(1000);
   expect(font.glyphs.length).toBe(11175);
-  expect(result.stats.direct).toBe(138);
-  expect(result.stats.composed).toBe(11034);
+  expect(result.stats.direct).toBe(150);
+  expect(result.stats.composed).toBe(11022);
   for (let code = 0xac00; code <= 0xd7a3; code++) {
     const glyph = font.charToGlyph(String.fromCharCode(code));
     expect(glyph.index).toBeGreaterThan(0);
